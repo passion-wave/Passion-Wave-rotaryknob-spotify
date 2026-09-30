@@ -4,6 +4,8 @@ Stand 2026-09-30. Für den gewünschten Mehrnutzer-Produktpfad wurden öffentlic
 
 ## Entscheidungsregister
 
+Die [neun beantworteten Produktfragen](15-OFFENE-PRODUKTENTSCHEIDUNGEN.md) sind in die folgenden Entscheidungen übernommen. Q01/Q02 ändern ADR-11/12, Q07 bestätigt den erreichbaren USB-Normalbetrieb aus ADR-10. Offene Hardwaregenerationen, Erweiterungsmengen und Termine bleiben im Fragenregister sichtbar; Nutzerantworten ersetzen keine technischen oder vertraglichen Nachweise.
+
 | ID | Entscheidung | Begründung / Status |
 | --- | --- | --- |
 | ADR-01 | Eigenständiges Repository und Versionen | Keine Abhängigkeit vom HA-/MA-Releasezug; Altprojekt bleibt unverändert |
@@ -12,18 +14,22 @@ Stand 2026-09-30. Für den gewünschten Mehrnutzer-Produktpfad wurden öffentlic
 | ADR-04 | Pure ESP-IDF-Zielarchitektur, gezielte Portierung | ESPHome-Monolith nicht blind übernehmen; genaue Versionen erst nach Buildspike |
 | ADR-05 | Freigegebener Provider hinter Schnittstelle | Controller-Produktzugang ungeklärt; eSDK ist nicht automatisch Fremdlautsprechercontroller |
 | ADR-06 | Keine neue Spotify-Suche voraussetzen | Kunden fügen freigegebene Presets/Links über erlaubten Weg hinzu |
-| ADR-07 | Radio Browser als Verzeichnis | Offene Suche und URLs; separater Wiedergabeweg erforderlich |
+| ADR-07 | Radio Browser als Verzeichnis, Ausgabe später | Q03: erste Version verwaltet Sender; ein geeigneter Wiedergabeweg ist Folgeumfang |
 | ADR-08 | Klinke zunächst nur mögliche Line-Ausgabe | Kopfhörerverstärker/Last nicht belegt |
 | ADR-09 | Ein Updateprodukt, ESP32 zuerst, S3 danach | Website bleibt während erster Phase auf S3; Zwischenpaar braucht Kompatibilität |
-| ADR-10 | Normales Display-Aus statt S3-Deep-Sleep | S3 muss Website/Provider weiterhin bedienen |
-| ADR-11 | Sicherer Verwaltungs-AP als Basis | Komfortables LAN-HTTPS ohne Zertifikatsbetrieb noch offen |
-| ADR-12 | Externer Linkingdienst nur explizite Option | Kann PKCE vereinfachen, erweitert aber Alles-auf-dem-Gerät-Vorgabe |
-| ADR-13 | Sonos zuerst als Connect-Ziel, LAN gesondert prüfen | Lokale Sonos-Route benötigt belegten Zugang/Lizenz; Cloud ist eine abweichende Betriebsoption |
+| ADR-10 | Überwiegend USB, Display-Aus bei laufendem S3 | Q07: Website/Provider bleiben erreichbar; keine verbindliche Akkulaufzeitzusage |
+| ADR-11 | Sichere Konfiguration jederzeit im Heim-WLAN | Q02: kein WLAN-Wechsel für Alltagsverwaltung; Transport/Identität bleiben G2, AP nur Erstsetup/Recovery |
+| ADR-12 | Kein eigener externer Anmeldedienst | Q01: auch keine eigene externe Callbackseite als Ersatz; freigegebenen Partner-/Geräteflow unter G0/G2 nachweisen |
+| ADR-13 | Sonos zuerst als Connect-Ziel, LAN gesondert prüfen | Roam/Move sind Prüfziele; lokale Sonos-Route benötigt Zugang/Lizenz. Cloud mit eigenem Authdienst ist keine aktive Umsetzungsroute |
 | ADR-14 | Ein Provider pro Wiedergabesitzung | Keine Doppelsteuerung desselben Sonos-Raums über verschiedene APIs |
 | ADR-15 | Wetter ausdrücklich im Portumfang | Direkte S3-Provider ersetzen HA; UI, Wetterfotos und Avatar werden portiert |
 | ADR-16 | Wetter und Radar haben getrennte Datenverträge | Stundenforecast ist kein Nowcast; ETA/Vektor benötigen eigenes Gate |
 | ADR-17 | Komprimierte lokale Wetter-/Avatarassets | Flashbudget mit A/B und Signatur-/Rollbackbindung früh qualifizieren |
 | ADR-18 | Bestand, Anpassung und neue Funktionen getrennt | Quellaudit statt pauschalem Kopierplan; Backendautorität wandert auf S3 |
+| ADR-19 | Wetter/Radar für Deutschland ohne laufende Anbietergebühren | Q04/Q05: DWD zuerst, gegebenenfalls MET nach Prüfung; Rechte/Abdeckung/Quoten bleiben Gates, kein Wetter-Abo für Kunden |
+| ADR-20 | Erste Version mit Wetter/Avatar, Radar danach | Q06: L3 Pilot und L4 erste Produktversion ohne Radar-Pflicht; P11/L5 bleibt Gesamtumfang mit eigenen Nachweisen |
+| ADR-21 | Pilot mit zwei RotaryKnobs des Hauptprojekttyps | Q08/Q09: Roam/Move als vorhandene Testausgaben; genaue Revisionen/Generationen offen. Keine Produktionsmenge, Testerzahl oder feste Frist daraus ableiten |
+| ADR-22 | Statischer Updatehost bleibt erlaubt | Signierte Paketverteilung ist kein Spotify-Anmeldedienst und keine laufende Mediensteuerung |
 
 ## Quellenindex
 
@@ -59,7 +65,7 @@ Stand 2026-09-30. Für den gewünschten Mehrnutzer-Produktpfad wurden öffentlic
 
 ## Heute offene Annahmen
 
-Keine Freigabe des Controllerprofils, kein bestätigtes S3-SDK, keine sichere browserübergreifende automatische OAuth-LAN-Rückgabe, keine vermessene Kopfhörerlast, keine kompilierte native Firmware, keine echte Dual-MCU-OTA. Diese Grenzen sind in Tests/Plan verankert und dürfen bei späterer Umsetzung nur durch konkrete Evidenz aufgehoben werden.
+Keine Freigabe des Controllerprofils, kein bestätigtes S3-SDK, kein nachgewiesener einfacher Spotify-Anmeldeweg ohne eigenen externen Dienst und kein qualifizierter sicherer Heimnetz-Browserzugriff. Ebenso fehlen vermessene Kopfhörerlast, kompilierte native Firmware und echte Dual-MCU-OTA. Die gewählten Produktvorgaben lösen diese technischen Fragen nicht. Diese Grenzen sind in Tests/Plan verankert und dürfen bei späterer Umsetzung nur durch konkrete Evidenz aufgehoben werden.
 
 ## Sonos-Quellen und Abgrenzung
 
@@ -67,6 +73,6 @@ Die [Sonos-Untersuchung](12-SONOS-PRUEFUNG.md) enthält die einzelnen Primärbel
 
 ## Wetterquellen und Portplanung
 
-[Wetterarchitektur](14-WETTER.md) enthält die offiziellen Belege zu DWD MOSMIX/WMS/Nutzungsrechten, Open-Meteo Customer API und Intervallen, MET Norway und RainViewer. DWD-Direktzugang ist der erste schlüssellose Spike; Open-Meteo bleibt ein funktionaler Komfortkandidat unter Schlüssel-/Produktgate. Die aktuelle DWD-WMS-Layerprobe ist offen. RainViewer-Transitionangaben haben Vorrang vor älteren FAQ-Versprechen zu Zukunftsradar.
+[Wetterarchitektur](14-WETTER.md) enthält die offiziellen Belege zu DWD MOSMIX/WMS/Nutzungsrechten, Open-Meteo Customer API und Intervallen, MET Norway und RainViewer. DWD-Direktzugang ist der erste schlüssellose Spike für Deutschland; gegebenenfalls wird MET als Alternative geprüft. Open-Meteo Customer bleibt als Vergleich dokumentiert, ist wegen der bestätigten Gebührenvorgabe aber keine aktive Umsetzungsoption. Die aktuelle DWD-WMS-Layerprobe ist Teil der späteren Radarstufe. RainViewer käme nur mit passend nachgewiesener Nutzung ohne laufende Anbietergebühren infrage; Transitionangaben haben Vorrang vor älteren FAQ-Versprechen zu Zukunftsradar.
 
 [Featuretabellen](13-FEATURE-PORTIERUNG.md) verankern den lokalen Codeaudit auf `9cc5576`. Quelltext und Modelltests ersetzen weder physische Wetter-/Radarabnahme noch neue Produktfreigaben. Die freien Wetterangebote sind nicht pauschal als unbegrenzte kommerzielle Flottenlösung eingeplant.

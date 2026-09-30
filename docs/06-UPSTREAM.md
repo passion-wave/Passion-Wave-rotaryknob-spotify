@@ -40,7 +40,7 @@ Bislang rendert der S3 die Oberfläche; der klassische ESP32 übernimmt Netzwerk
 
 Im neuen Produkt besitzt der S3 alle Anwendungskomponenten: WLAN, lokale Website, Zugangsdaten, Favoriten, Provider, OTA-Koordination und UI. Der klassische ESP32 bleibt Begleiter für benötigte IO-/Mute-Funktionen, EC2-Diagnose und seinen Updateempfänger. Ein WLAN-Client und eine IP-Adresse vereinfachen Einrichtung und Betrieb.
 
-Der bisherige regelmäßige S3-Tiefschlaf ist dafür ungeeignet: Website und Provider wären dann offline. Im normalen erreichbaren Betrieb darf nur das Display ausgehen; geeignete Modem-Sleep-Stufen müssen gemessen werden. Expliziter Batterieschlaf wird als offline angezeigt. Kein vorhandener Laufzeitwert wird als neue Akku-Zusage übernommen.
+Der bisherige regelmäßige S3-Tiefschlaf ist dafür ungeeignet: Website und Provider wären dann offline. Q07 bestätigt überwiegenden USB-Betrieb mit erreichbarer Website und Steuerung. Im normalen Betrieb darf nur das Display ausgehen; geeignete Modem-Sleep-Stufen müssen gemessen werden. Ein möglicher gesonderter Batterieschlaf wäre offline und gehört nicht zur ersten Priorität. Kein vorhandener Laufzeitwert wird als neue Akku-Zusage übernommen. Der Nutzer nennt denselben Knob wie im Hauptprojekt; seine konkrete PCB-/Chiprevision bleibt in P2.1 am Testgerät zu erfassen.
 
 Die 8 MB PSRAM machen den S3 zum plausiblen Host, beweisen aber keine stabile parallele UI-/TLS-/Audioausführung. Interne DMA-Puffer, zusammenhängender Heap, Task-Stacks, Flashpausen und Watchdog bleiben harte Budgetfragen. [Firmware-Gates](../firmware/README.md) müssen vor einem Geräte-Build belegt sein.
 

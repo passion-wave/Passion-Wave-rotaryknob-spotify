@@ -4,13 +4,13 @@ Stand: 30. September 2026. Auftrag: Sonos-Lautsprecher als weitere Ausgabemögli
 
 ## Entscheidung
 
-**Zuerst Sonos als Spotify-Connect-Ziel im vorhandenen Spotify-Pfad testen. Parallel die offizielle Sonos-LAN-Integration für Favoriten, Gruppen und Radio prüfen.** Die LAN-Route passt am besten zum Ziel eines ausschließlich auf dem RotaryKnob laufenden Controllers, ist aber noch kein frei verfügbarer Produktweg. Die öffentliche Sonos-Cloud-API bleibt eine dokumentierte Alternative mit zusätzlichem Authentifizierungs-/Betriebsbedarf.
+**Zuerst die vom Nutzer benannten Sonos Roam und Move als Spotify-Connect-Ziele testen. Parallel die offizielle Sonos-LAN-Integration für Favoriten, Gruppen und Radio prüfen.** Die LAN-Route passt zum Ziel eines ausschließlich auf dem RotaryKnob laufenden Controllers, ist aber noch kein frei verfügbarer Produktweg. Native Sonos-Steuerung und Radioausgabe sind keine Pflicht der ersten Version. Die öffentliche Sonos-Cloud-API bleibt Quellenvergleich; ein eigener Auth-/Refreshdienst passt nicht zu den [bestätigten Vorgaben](15-OFFENE-PRODUKTENTSCHEIDUNGEN.md) und ist keine aktive Ausweichroute.
 
 | Route | Nutzen | Eigener dauerhafter Server | Status / erstes Gate |
 | --- | --- | --- | --- |
 | A: Sonos über Spotify Connect | Bestehende Spotify-Inhalte und Steuerlogik auf Sonos nutzen | Keiner zusätzlich zur bisherigen Spotify-Architektur | Zielgerät tatsächlich in zugelassener Spotify-Schnittstelle sichtbar/steuerbar; G0 bleibt |
 | B: Offizielle Sonos-LAN-API | Direkte lokale Gruppen-/Favoriten-/ggf. Radiosteuerung | Ziel: keiner | Zugang, sichere Geräteautorisierung, Lizenz und konkrete API-Fähigkeiten schriftlich bestätigen |
-| C: Sonos Cloud Control API | Öffentlich dokumentierte Gruppen, Lautstärke, Status und Favoriten | Für das dokumentierte Client-Secret-Modell sicherer Dienst voraussichtlich nötig | Nur nach ausdrücklicher Architekturentscheidung; nicht Standard |
+| C: Sonos Cloud Control API | Öffentlich dokumentierte Gruppen, Lautstärke, Status und Favoriten | Für das dokumentierte Client-Secret-Modell sicherer Dienst voraussichtlich nötig | Unter aktuellen Vorgaben nicht aktive Umsetzung; nur Quellenvergleich |
 | D: Beobachtete lokale UPnP-/SOAP-Wege | Möglicher technischer Vergleich | Technisch oft lokal | Keine zugesagte offiziell unterstützte Vertriebsgrundlage; nicht Produktions-Fallback |
 
 Spotify nennt Sonos ausdrücklich als Connect-Ausgabe. Das belegt die allgemeine Zusammenarbeit, **nicht** die Sichtbarkeit jedes Modells über unsere spätere Controller-Schnittstelle. [Spotify auf Sonos](https://support.spotify.com/us/article/spotify-on-sonos/)
@@ -83,16 +83,13 @@ flowchart LR
   S --> C[Spotify Connect: auch Sonos testen]
   R -.-> L[SonosLanProvider: Gate S0-LAN]
   L -.-> G[Sonos-Gruppe / Favoriten / Radio]
-  R -.-> H[SonosCloudProvider: abweichende Betriebsoption]
-  H -.-> SC[Sonos Cloud]
-  SC -.-> G
 ```
 
 Geplante neue Verantwortung: `OutputRouter` bindet **eine** Steuerautorität pro Sitzung. Derselbe physische Sonos-Raum kann über Connect und Sonos sichtbar sein, soll aber nicht von beiden Adaptern gleichzeitig Befehle bekommen. Routenwechsel erhöht die lokale Generation, verwirft alte Befehle und holt einen frischen Snapshot. Die Zuordnung einer Spotify-Geräte-ID zu einer Sonos-Player-ID benötigt bestätigte Identität; gleiche Namen genügen nicht. Ein fehlgeschlagener Connect-Befehl löst keinen stillen Sonos-Fallback aus. Eine fremde Sitzungsübernahme wird im Zustand angezeigt; der Knob erzwingt nicht automatisch eine neue eigene Sitzung. Der neue Anbieter benutzt die bereits vorgesehenen gebundenen Kommandos/Snapshots, nicht einen zweiten UI-Zustand.
 
 Vor einem Vertragsupdate nach S0 vorgesehen:
 
-- `route`: Spotify Connect / Sonos LAN / Sonos Cloud, getrennt von Hersteller/Modell.
+- `route`: Spotify Connect / nachgewiesenes Sonos LAN, getrennt von Hersteller/Modell; kein Cloud-Adapter im aktuellen Umsetzungsumfang.
 - `household_ref`, `anchor_player_ref`; aktuelle Gruppe nur als flüchtiger Resolverzustand.
 - `sonos_favorite_ref` als eigener, haushaltsgebundener Inhaltstyp; nicht in `spotify_uri` verstecken.
 - Fähigkeiten separat: Gruppe steuern, Favorit starten, Episode starten, vorhandenen Radiofavoriten starten, freie Stream-URL, Gruppen-/Einzellautstärke.
@@ -103,7 +100,7 @@ Die aktuelle JSON-/C++-/Python-API erhält in dieser Prüfphase keine vorgetäus
 ## Onboarding und Website
 
 1. „Ausgabe hinzufügen“ bietet nach verfügbarer Fähigkeit Spotify Connect oder den freigegebenen Sonos-Pfad.
-2. Connect: vorhandener Spotify-Anmeldeweg und tatsächlich sichtbare Geräte. Sonos LAN: partnerdefiniertes lokales Pairing; noch keinen erfundenen Knopfdruck-/Tokenflow anzeigen. Cloud: Sonos OAuth nur im ausdrücklich gewählten Betriebsprofil.
+2. Connect: freigegebener Spotify-Anmeldeweg ohne eigenen externen Dienst und tatsächlich sichtbare Geräte. Sonos LAN: partnerdefiniertes lokales Pairing; noch keinen erfundenen Knopfdruck-/Tokenflow anzeigen. Kein Cloud-Onboarding unter aktuellen Vorgaben.
 3. Haushalt und Raum wählen; betroffene Gruppenmitglieder anzeigen. Keine Zusammenführung nur nach Namen.
 4. Sonos-Favoriten freigeben; für das Spotify-Produkt andere Musikdienste nicht pauschal importieren. Dienstzuordnung verifizieren, unbekannte Quellen gesperrt lassen; Radio gesondert freigeben.
 5. Testwiedergabe nach Nutzeraktion. Fehler „Raum schläft“, „Konto getrennt“, „Favorit entfernt“, „Gruppe geändert“ unterscheiden, soweit Adapterdaten dies belegen.
@@ -114,7 +111,7 @@ Sonos-Musikdienst-Zugangsdaten bleiben im Sonos-System; der Knob liest keine Spo
 
 | Gate | Prüfung | Nachweis vor Freischaltung |
 | --- | --- | --- |
-| S-CONNECT | Zwei Sonos-Modellfamilien über zugelassenen Spotify-Weg | Sichtbarkeit, Start, Lautstärke, Metadaten und Reconnect pro Modell |
+| S-CONNECT | Vorhandene Sonos Roam und Move über zugelassenen Spotify-Weg | Generation/Firmware, Sichtbarkeit, Start, Lautstärke, Metadaten und Reconnect pro Modell |
 | S0-LAN | Offizieller Zugang, Authentifizierung und Distribution | Geeignete Unterlagen/Lizenz, kein gemeinsames Firmware-Secret |
 | S-FAVORITE | Spotify-Playlist und Podcast als Sonos-Favorit | Gewünschter Inhalt, Queue-/Startwirkung, Konto-/Dienstrechte |
 | S-RAD-01 | Sonos-Radiofavorit | Dauerbetrieb, Lautstärke, Metadaten und Stop |
@@ -124,7 +121,7 @@ Sonos-Musikdienst-Zugangsdaten bleiben im Sonos-System; der Knob liest keine Spo
 | S-MODEL | Generation/Modell/Firmware/Standby | S1-/aktuelle-Systeme getrennt; portable Modelle WLAN/Bluetooth/Schlafmodus gesondert testen |
 | S-CLOUD | Falls ausdrücklich weiterverfolgt | Sicherer Refresh-/Eventweg und appweites Budget; Betriebsabweichung akzeptiert |
 
-Testmatrix zunächst: vorhandener Sonos Move (genaue Generation erfassen), ein stationärer aktueller Sonos-Player, Einzelraum und Gruppe; ältere S1-Geräte nur als zusätzliche Kompatibilitätsprobe. S1- und aktuelle Sonos-Systeme lassen sich nicht gemeinsam gruppieren. Bei portablen Geräten kann Battery Saver das Gerät vollständig ausschalten; daraus folgt kein vom Knob nachgewiesener Aufweckweg. [Getrennte Systeme](https://support.sonos.com/en-ie/article/known-limitations-with-separate-s1-and-s2-sonos-systems), [Akkueinstellungen](https://support.sonos.com/en/article/battery-settings-for-portable-sonos-products)
+Testmatrix zunächst: vorhandener **Sonos Roam und Sonos Move**, genaue Generation/Firmware jeweils erfassen; zwei geplante RotaryKnobs desselben Typs wie im Hauptprojekt. Einzelraum und vorhandene Gruppen prüfen, portable Geräte in WLAN/Bluetooth/Standby getrennt beobachten. Ein stationärer Sonos-Player, S1-Geräte und weitere Hersteller sind keine bestätigte Testhardware und gehören gegebenenfalls zur späteren Erweiterung. S1- und aktuelle Sonos-Systeme lassen sich nicht gemeinsam gruppieren. Bei portablen Geräten kann Battery Saver das Gerät vollständig ausschalten; daraus folgt kein vom Knob nachgewiesener Aufweckweg. [Getrennte Systeme](https://support.sonos.com/en-ie/article/known-limitations-with-separate-s1-and-s2-sonos-systems), [Akkueinstellungen](https://support.sonos.com/en/article/battery-settings-for-portable-sonos-products)
 
 Keine pauschale Bluetooth-/Wake-on-LAN-Zusage. Keine Geräte wurden für dieses Dokument angesprochen.
 

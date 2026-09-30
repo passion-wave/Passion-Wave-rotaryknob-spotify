@@ -4,6 +4,8 @@ Stand: 30. September 2026. Ziel: eigenständiges Gerät für weitere Nutzer mit 
 
 **Planungsstatus:** P0 ist als Framework vorhanden. Alle folgenden Firmware-, Hardware-, Provider- und Produktgates sind offen. Die [Featuretabellen](13-FEATURE-PORTIERUNG.md) zeigen pro Funktion Bestand, Problem und kurze Umsetzung. Der [Abnahmekatalog](09-ABNAHME.md) beschreibt die erforderlichen Nachweise. Die [Wetterarchitektur](14-WETTER.md) behandelt direkte Datenquellen, Radar, Speicher und Avatar.
 
+**Bestätigte Produktvorgaben:** Die [neun beantworteten Rückfragen](15-OFFENE-PRODUKTENTSCHEIDUNGEN.md) legen fest: kein eigener externer Anmeldedienst, sichere Website jederzeit im Heim-WLAN, zunächst Radioverwaltung, gebührenfreie Wetterquellen für Deutschland, Radar als Nachlieferung und erreichbarer USB-Normalbetrieb. Der Pilot umfasst zwei RotaryKnobs des bisherigen Projekttyps mit Sonos Roam und Move als Testausgaben. Genaue Revisionen/Generationen, Erweiterungsmenge und Termin sind noch offen.
+
 ## 1. Portierungsreferenz und Lieferstände
 
 Referenz ist `Passion-Wave-rotaryknob` Version `3.0.1-beta.16`, Commit `9cc5576c2fd4a9beb56cad24e211957c43aa2c62`. Dieser saubere Dokumentationsnachfolger enthält den neueren Featurestand; er beweist nicht, dass dieser auf allen Kundengeräten installiert ist. Der ältere Hauptcheckout `d16e0a9` und Beta15 `5b81b0e` dienen nur zum Vergleich. Jede Quellübernahme erhält Commit und Lizenzhinweis. Keine Kundeneinstellungen oder Secrets kopieren. Siehe [Quellkarte](06-UPSTREAM.md).
@@ -13,8 +15,9 @@ Referenz ist `Passion-Wave-rotaryknob` Version `3.0.1-beta.16`, Commit `9cc5576c
 | L0 Framework | Verträge, Modelle, Webdemo, vollständiger Plan | Heutiger Stand; keine lauffähige Firmware |
 | L1 Hardwareprototyp | Ring, Touch, Haptik, Medien-/Wetter-UI mit markierten Testdaten, lokaler Kern | USB-Laborstand; keine behauptete Onlinefunktion |
 | L2 verwaltbares Gerät | WLAN, sichere Website, Einstellungen/Katalog, Diagnose und qualifiziertes Pair-OTA | Spotify-Anmeldung nur nach passendem Zugang; Wetter kann separat echt laufen |
-| L3 integrierter Pilot | Freigegebene Spotify-Steuerung, Playlists/Podcasts nach Fähigkeit, Wetter/Avatar; Radar nach eigenem Gate | Hardware- und Inhaltsnachweise; noch keine allgemeine Vertriebsfreigabe |
-| L4 vollständiges Produkt | Erstnutzer-/Dauertests, Fertigung/Recovery, signierte Lieferung, vereinbarte Wetterfunktionen einschließlich qualifiziertem Radar | G0–G6 und Wetter-/Radar-Gates erfüllt; ungelöstes Radar bleibt ausdrücklich offener Umfang |
+| L3 integrierter Pilot: zwei Knobs | Freigegebene Spotify-Steuerung auf Sonos Roam/Move, Playlists/Podcasts nach Fähigkeit, Radioverwaltung, Wetter/Avatar, Website und OTA | Gerätebezogene G0–G5/W1-Nachweise, erster P9-Dauerlauf; keine allgemeine Vertriebsfreigabe |
+| L4 erste Produktversion / Erweiterung | Qualifizierter Pilotumfang, erweiterte Erstnutzer-/Dauertests, Fertigung/Recovery und signierte Lieferung | G0–G6 und W0/W1 für diesen Lieferumfang; Radar darf ausdrücklich später folgen |
+| L5 vollständiger Wetter-/Radarport | Drei Standbild-Zooms und separat qualifizierte Regenmetadaten nachliefern | W-RAD-0/W-RAD-1/W-RAD-META, erneute Ressourcen-/Integrations-/OTA-Abnahme; ungelöste Teile bleiben offen |
 | Separate Erweiterungen | Sonos LAN, Radioausgabe, lokale Klinke/Spotify-Empfänger | Jeweils eigene technische und Produktfreigabe |
 
 Erhalten werden Medienbedienung, Cover, Listen, Haptik, Wetterdarstellung, Vorhersage/Regenhinweise, Wetter-Screensaver, Avatar, Uhr, Anzeige-/Energieverhalten, Einstellungen, Diagnose und einheitliche Updates. Licht/Hue/WLED, Hausgrundriss, Fotoalbum und Timer/Wecker bleiben außerhalb dieser Edition. Seek, Repeat-Kontext, Episodenbrowser, Gerätewechsel, Webverwaltung und direkte Wetterprovider sind neue oder erweiterte Funktionen, keine unveränderten Bestandsports. AirPlay, Cast und native WiiM-Steuerung wurden besprochen, aber nicht als zusätzliche Kernimplementierung beauftragt.
@@ -58,12 +61,14 @@ flowchart TD
   P6B --> P9[P9 Pilot und Freigabe G6]
   P7 --> P9
   P10 --> P9
-  P11 --> P9
+  P9 --> L4[L4 erste Produktversion ohne Radar-Pflicht]
+  P11 --> L5[L5 Radar-Nachlieferung und erneute Abnahme]
+  L4 --> L5
   P2 -.-> P8[P8 Klinke optional]
   P1 -.-> S[Sonos separat]
 ```
 
-P1 blockiert den echten Produkt-Spotifyadapter, nicht UI, WLAN, Wetter, Mock-Katalog oder OTA. P7 beginnt nach P3 und wird nicht bis zum Ende verschoben. P6a kann vor P5 laufen. P10/P11 können unabhängig vom Spotify-Zugang entwickelt werden. Der erste Teilpilot darf ohne Radar beginnen; die vollständige Wetterabnahme darf das offene Radar nicht verschweigen.
+P1 blockiert den echten Produkt-Spotifyadapter, nicht UI, WLAN, Wetter, Mock-Katalog oder OTA. P7 beginnt nach P3 und wird nicht bis zum Ende verschoben. P6a kann vor P5 laufen. P10/P11 können unabhängig vom Spotify-Zugang entwickelt werden. Nach Q06 dürfen sowohl der Zweigerätepilot als auch die erste Produktversion ohne Radar erscheinen. P11 bleibt Nachlieferung des vollständigen Ports und erhält eine eigene erneute Abnahme; keine Kante von P11 blockiert P9/L4.
 
 ## 4. Arbeitspakete und Umsetzungstabelle
 
@@ -77,7 +82,7 @@ Repository, Architektur, Verträge, C++-Interfaces, Python-Modelle, Webdemo und 
 
 | Auftrag | Umsetzung / Ergebnis | Fertig, wenn |
 | --- | --- | --- |
-| P1.1 Produktprofil | Fremdlautsprecher-Controller für mehrere Nutzer, Presets/Podcasts, Wetterdisplay und Radiozusatz beschreiben | Inhalt, Bedienung und Vertrieb eindeutig |
+| P1.1 Produktprofil | Fremdlautsprecher-Controller für weitere Nutzer, Start mit zwei Knobs, Presets/Podcasts, Wetterdisplay und Radioverwaltung beschreiben | Kein eigener Anmeldedienst; Inhaltsumfang, Bedienung und spätere Erweiterung eindeutig |
 | P1.2 Partnerklärung | Eigentümer klärt zugelassenen API-/SDK-Weg, Plattform und Redistribution | Schriftliche Freigabe und tatsächlich nutzbare Schnittstelle vorhanden |
 | P1.3 Funktionsmatrix | Playlist-/Trackstart, Tracklisten, Episoden/Resume, Metadaten, Lautstärke und Suche einzeln klären | Jede Fähigkeit bestätigt oder explizit eingeschränkt |
 | P1.4 Integrationsprofil | Abhängigkeiten, Lizenzablage, Auth, Testkonten und Buildprofil festlegen | Kein Developerkonto für Kunden und kein geteiltes Firmware-Secret |
@@ -88,13 +93,13 @@ Repository, Architektur, Verträge, C++-Interfaces, Python-Modelle, Webdemo und 
 
 | Auftrag | Umsetzung / Ergebnis | Fertig, wenn |
 | --- | --- | --- |
-| P2.1 Board/Recovery | Reale PCB-, Chip-, Flash-/PSRAM-Revision, Pinprofil und beide USB-Wege erfassen | Wiederherstellung beider Chips im Labor funktioniert |
+| P2.1 Board/Recovery | Zwei Pilotknobs des bisherigen PassionWave-Typs planen; reale PCB-, Chip-, Flash-/PSRAM-Revision, Pinprofil und beide USB-Wege erfassen | Identität je Testgerät dokumentiert; Wiederherstellung beider Chips im Labor funktioniert |
 | P2.2 Minimalbuild | Getrennte S3-/ESP32-Apps, gepinnte ESP-IDF/LVGL/Treiber/Compiler | Sauberer reproduzierbarer Laborbuild |
 | P2.3 Treiber | Display/Touch/EC1/Haptik/Backlight/UART und EC2-Diagnose | Ring und Touch funktionieren; EC2 erzeugt keine Doppelaktion |
 | P2.4 Flash/Assets | A/B, Journal, NVS, Web, Wetter-/Avatarassets und OTA-Staging budgetieren | Reale Größen; alte und neue Darstellung beim Rollback erhalten |
 | P2.5 Vorläufige Lastprobe | Synthetische UI-/TLS-/Weblast und repräsentative Cover-/Wetter-/Radar-Testbilder, UART | Vorläufiges Heap/DMA/PSRAM/Stack-/Latenzbudget ohne fertige Provider |
 
-**G1 Basis:** belastbare Board-/Buildbasis mit synthetischer repräsentativer Last; Voraussetzung für P3. Vollständige G1-Ressourcenqualifikation folgt mit real integrierter Last nach P5/P10/P11 und erneut bei Änderungen an SDK/Assets/Partitionen vor L3/L4. Startziel mindestens 20% Reserve je Appslot im vorgesehenen Maximalbuild; lokale Eingabeantwort p95 <50 ms, p99 <100 ms. Das sind Prüfziele. 15 unkomprimierte 368×368-RGB565-Wetterbilder allein benötigen rund 4 MiB; Avatar zusätzlich. Deshalb Assetkompression/-teilung früh prüfen, nicht nach fertigem OTA. Minimalbuilds entstehen vor voller Lastqualifikation, OTA-Stromausfallprüfung erst in P7. Nach zugelassenem SDK nochmals Ressourcen prüfen. Verantwortlich: Embedded. [Firmware-Gates](../firmware/README.md).
+**G1 Basis:** belastbare Board-/Buildbasis mit synthetischer repräsentativer Last; Voraussetzung für P3. Die Ressourcenqualifikation für L3/L4 folgt mit real integrierter Last nach P5/P10; für L5 zusätzlich nach P11. Änderungen an SDK/Assets/Partitionen verlangen erneute Qualifikation. Startziel mindestens 20% Reserve je Appslot im vorgesehenen Maximalbuild; lokale Eingabeantwort p95 <50 ms, p99 <100 ms. Das sind Prüfziele. 15 unkomprimierte 368×368-RGB565-Wetterbilder allein benötigen rund 4 MiB; Avatar zusätzlich. Deshalb Assetkompression/-teilung einschließlich späterem Radar früh budgetieren, nicht nach fertigem OTA. Minimalbuilds entstehen vor voller Lastqualifikation, OTA-Stromausfallprüfung erst in P7. Nach zugelassenem SDK nochmals Ressourcen prüfen. Verantwortlich: Embedded. [Firmware-Gates](../firmware/README.md).
 
 ### P3 — Kern, UI und Systemport · 10–16 PT · nach G1
 
@@ -104,7 +109,7 @@ Repository, Architektur, Verträge, C++-Interfaces, Python-Modelle, Webdemo und 
 | P3.2 Eingabe | PCNT-Richtungsimpulse, Touch/Swipe/Long-Press, Modal-/Wakepriorität, Haptik | Schnelles Drehen/Wechsel/Gleichzeitigkeit; erste Wakegeste greift nicht durch |
 | P3.3 Medienansichten | Player, Lautstärke, Transport, Optionen, Kategorien und Detailnavigation | Vertraute Bedienung, keine leeren HA-Seiten, fehlende Aktionen erklärt |
 | P3.4 Darstellung | Titel/Interpret/Fortschritt, Coveransicht, Platzhalter, Text-/Bilddeltas | Atomare Präsentation; Medienmarken-/Bildregeln berücksichtigt |
-| P3.5 Energie/Uhr | Dim/Fade, Display-Aus nach Playbackstatus, Wake, Zeitzone/SNTP, ADC-Anzeige | Netzwerk bleibt bei normalem Display-Aus aktiv; Uhr-/Akkuunsicherheit sichtbar |
+| P3.5 Energie/Uhr | USB-Normalbetrieb nach Q07, Dim/Fade, Display-Aus nach Playbackstatus, Wake, Zeitzone/SNTP, ADC-Anzeige | Website/Steuerung bleiben bei Display-Aus erreichbar; kein normaler S3-Tiefschlaf, keine zugesagte Akkulaufzeit |
 | P3.6 Speicher/Peer | Atomare Settings, Migration/Rückfall, Secrets getrennt; PW-S-Codec/Handshake | Save-Power-Cut, falsche Rolle, kaputte/duplizierte Frames geprüft |
 
 **L1:** real bedienbarer Mock-Prototyp. Native UI Next ist im untersuchten Quellprofil aktiv; nicht den alten UI-Zweig als einzig aktuellen Port verwenden. Kein NVS-Write pro Detent. Vertragserweiterungen gemeinsam versionieren. Verantwortlich: Embedded/UI. [Featuretabellen](13-FEATURE-PORTIERUNG.md).
@@ -115,17 +120,17 @@ Repository, Architektur, Verträge, C++-Interfaces, Python-Modelle, Webdemo und 
 | --- | --- | --- |
 | P4.1 Setup | Individuelle Identität/QR, geschützter AP mit Zeitfenster, SSID-Scan/manuelle SSID, AP+STA | Kennwortfehler/Routerwechsel korrigierbar, Setup wiederaufnehmbar |
 | P4.2 Verwaltung | S3-Webassets, mDNS/IP-Hilfe, Sitzung/Origin/Host/CSRF, revisionsgebundene Saves | Fremdzugriff und Schreibkollisionen abgewiesen |
-| P4.3 Transport | Vertrauenswürdiges LAN-HTTPS gegen geschützten Verwaltungs-AP qualifizieren | Konkreter Kundenweg auf iOS/Android/Desktop nachgewiesen |
-| P4.4 Spotify-Linker | Nach G0 Partnerflow; PKCE/HTTPS-Callback nur falls erlaubt | Kein Tokenkopieren; externer Linkingdienst nur nach gesondertem Entscheid |
+| P4.3 Transport | Sicheren schreibenden Heimnetz-Zugriff ohne WLAN-Wechsel qualifizieren: Namensauflösung, Browservertrauen, Identität und Erneuerung | iOS/Android/Desktop nachgewiesen; AP nur Setup/Recovery, keine Zertifikatswarnung als Kundenweg |
+| P4.4 Spotify-Verknüpfung | Nach G0 erlaubten Anmelde-/Rückweg ohne eigenen externen Dienst nachweisen; PKCE nur falls passend zugelassen | Kein eigener Linking-/Callback-/Tokenbroker, kein manueller Tokenimport als fertiges Onboarding |
 | P4.5 Credentials | Refresh/Widerruf/Abbruch, Konto-/Besitzwechsel; Wetterkeys separat | Keine Secrets in Browserstorage/Export; alte Requests nach Wechsel ungültig |
 
-P4.1–3 benötigen P3; P4.4–5 für Spotify zusätzlich G0. **G2:** sichere, einfache Verwaltung/Anmeldung, zunächst mit fünf unbeteiligten Erstnutzern. Komfortables LAN-HTTPS bleibt eine zu lösende Entscheidung; gesicherter AP ist der dokumentierte Basiskompromiss. Verantwortlich: Web/Embedded + Securityreview. [Onboarding](03-ONBOARDING-WEB.md).
+P4.1–3 benötigen P3; P4.4–5 für Spotify zusätzlich G0. **G2:** sichere Verwaltung/Anmeldung unter Q01/Q02 auf den beiden Pilotgeräten technisch nachweisen; vor L4 zusätzlich mindestens fünf unbeteiligte Erstnutzer, gegebenenfalls nacheinander an denselben Geräten. Komfortabler Heimnetz-Zugriff ist entschieden, seine technische Lösung bleibt offen. Ein ausschließlich schreibender Geräte-AP erfüllt Q02 nicht. Ein eigener externer Anmeldedienst ist ausgeschlossen; lässt sich kein passender Weg nachweisen, bleibt der Anmeldeanteil blockiert. Eine verpflichtende Zusatz-App ist keine bereits gewählte Ausweichlösung. Verantwortlich: Web/Embedded + Securityreview. [Onboarding](03-ONBOARDING-WEB.md).
 
 ### P5 — Spotify und Ausgaben · 8–14 PT · nach G0/G2
 
 | Auftrag | Umsetzung / Ergebnis | Fertig, wenn |
 | --- | --- | --- |
-| P5.1 Minimaladapter | Geräte, Status, Play/Pause, absolute Lautstärke | Zwei konkrete Lautsprecherfamilien hörbar bestätigt |
+| P5.1 Minimaladapter | Geräte, Status, Play/Pause, absolute Lautstärke zunächst auf vorhandenen Sonos Roam und Move | Exakte Generation/Firmware je Modell erfasst, Wiedergabe hörbar bestätigt; keine Aussage über andere Hersteller |
 | P5.2 Zielwahl | Bevorzugtes Gerät, ID-Neuauflösung, doppelte Namen, Verlust und expliziter Transfer | Kein unbeabsichtigter anderer Raum |
 | P5.3 Bedienung | Next/Previous, Shuffle, Repeat one/off; Kontext/Seek als belegte Erweiterungen | Fähigkeiten geprüft; nicht-idempotente Befehle nicht blind wiederholt |
 | P5.4 Abgleich | Volume-Coalescing, adaptive Updates, App-Übernahme, unbekannter Ausgang nach Timeout | Keine Rückkopplung, veralteten Bestätigungen oder Requeststürme |
@@ -142,7 +147,7 @@ P4.1–3 benötigen P3; P4.4–5 für Spotify zusätzlich G0. **G2:** sichere, e
 | P6.2 Listenport | Kategorien, virtuelle Zeilen, begrenzte Seiten, Prefetch, Loading/Leer/Fehler | Alte Seiten nach Kontextwechsel verworfen, Fokus bleibt korrekt |
 | P6.3 Playlists | Erlaubte Links/Importe, Kontextstart, optionale Trackseiten und Kontextoffset | Queue bleibt erhalten; fehlende Trackliste nicht als fehlender Playliststart umdeuten |
 | P6.4 Podcasts | Shows/Episoden trennen, Episodenliste, Start und Resume | Reeller Episodenstart aus Ruhe oder erklärte fehlende Fähigkeit |
-| P6.5 Radio | Radio Browser, Spiegelwahl, Suche, eigene URL, Codec-/Redirect-/SSRF-Probe | Liste nutzbar; ohne Renderer kein vorgetäuschtes Play |
+| P6.5 Radio | Radio Browser, Spiegelwahl, Suche, eigene URL, Codec-/Redirect-/SSRF-Probe | Erste Version liefert Senderverwaltung; Wiedergabe bleibt ohne qualifizierten späteren Renderer deaktiviert |
 | P6.6 Webabschluss | Alle Medien-/Wetter-/Displayparameter, Ausgaben, Update, Diagnose, Export/Import | Web und Knob teilen Zustand/Setter; echte Persistenz statt Demo |
 
 P6a mit Mock nach P3/P4a; echte Inhalte nach P5. **G4:** Katalog und Anzeige konsistent; 360-px-Mobilbreite, Tastatur/Fokus und Grundtest mit Screenreader. Bestehende Auswahl bis 500 Einträge wird nicht still versprochen: Ziel zunächst 64 Spotify-Referenzen + 64 Radios, Listeninhalte paginiert; Erhöhung nur nach Ressourcen-/UX-Nachweis. Verantwortlich: Web/Embedded/Provider.
@@ -162,13 +167,13 @@ P6a mit Mock nach P3/P4a; echte Inhalte nach P5. **G4:** Katalog und Anzeige kon
 
 ### P8 — Optionales lokales Radio/Klinke · zusätzlich 6–12 PT
 
-P8.1 echte Guition-Audioschaltung/Last/Mux/Mute prüfen → P8.2 I2S-Line-Out mit Testlast/Rampen → P8.3 MP3, danach AAC mit Puffer → P8.4 Netzverlust/Unterlauf und gleichzeitige UI/Web/Wetterlast → P8.5 elektrische und hörbare Abnahme. HLS/weitere Codecs separat. Kopfhörerbetrieb nur nach bestätigter Ausgangsstufe; kein PCM über UART. Lokales Spotify-Audio bleibt ein getrenntes SDK-/Zertifizierungsprojekt ohne belastbare Schätzung vor Zugang. Ein mit Radiowiedergabe beworbenes Produkt benötigt mindestens einen qualifizierten Radioausgang, auch wenn P8 selbst optional ist. [Audio](04-RADIO-AUDIO.md).
+Nach Q03 spätere Erweiterung, keine Voraussetzung für L3/L4. P8.1 echte Guition-Audioschaltung/Last/Mux/Mute prüfen → P8.2 I2S-Line-Out mit Testlast/Rampen → P8.3 MP3, danach AAC mit Puffer → P8.4 Netzverlust/Unterlauf und gleichzeitige UI/Web/Wetterlast → P8.5 elektrische und hörbare Abnahme. HLS/weitere Codecs separat. Kopfhörerbetrieb nur nach bestätigter Ausgangsstufe; kein PCM über UART. Lokales Spotify-Audio bleibt ein getrenntes SDK-/Zertifizierungsprojekt ohne belastbare Schätzung vor Zugang. Eine spätere Version mit Radiowiedergabe benötigt mindestens einen qualifizierten Radioausgang. [Audio](04-RADIO-AUDIO.md).
 
 ### P10 — Direkte Wetterdaten, Vorhersage und Avatar · 10–16 PT
 
 | Auftrag | Umsetzung / Ergebnis | Fertig, wenn |
 | --- | --- | --- |
-| P10.1 Provider/Standort | Produktgeeignete Datenquelle, Nutzungsrechte/Quoten, Ort/Koordinaten/Zeitzone und Credentials festlegen | Gate W0; keine kostenlose Privat-API still als Produktbasis |
+| P10.1 Provider/Standort | Gebührenfreie produktgeeignete Quelle für Deutschland, Rechte/Quoten, Ort/Koordinaten/Zeitzone festlegen; DWD zuerst prüfen | Gate W0; keine laufenden Wettergebühren und keine kostenlose Privat-API als kommerzielle Produktbasis |
 | P10.2 Wettermodell | Aktuell, gefühlt, Wind/Regen, Stunden/Tage und Zeit-/Quellenstatus normalisieren | Einheiten/Nullwerte/Zeitzonen und Standortgeneration getestet |
 | P10.3 Fetch/Cache | Begrenzte HTTPS-Abfrage, ausgewählte Felder, Backoff, begrenzter Cache und Quellenzeit | Offline/stale/kein Wert unterscheiden; keine Pollinglast auf UI |
 | P10.4 Wetteransichten | Aktuell/Tagesabschnitte/Forecast/Regenhinweise auf bestehende UI abbilden | Mit realen Daten und Randfällen; keine künstliche Regen-ETA |
@@ -177,30 +182,32 @@ P8.1 echte Guition-Audioschaltung/Last/Mux/Mute prüfen → P8.2 I2S-Line-Out mi
 
 Nach P3/P4a, G1 inklusive Assetbudget; Spotify unabhängig. **W1:** gesamte nicht-radarbasierte Wetterfunktion physisch nachgewiesen. Regenprognosen werden nach Datenauflösung beschriftet. HA-Sensoren für Helligkeit/Regen werden durch belegte Provider-/Tageslichtwerte oder explizite Fallbacks ersetzt. Morgenfenster darf OTA/aktive Bedienung nicht überlagern. Verantwortlich: Wetter/Embedded/UI. [Wetterarchitektur](14-WETTER.md).
 
-### P11 — Radar auf dem Gerät · weitere 5–10 PT nach geeignetem Datenzugang
+### P11 — Radar-Nachlieferung auf dem Gerät · weitere 5–10 PT nach geeignetem Datenzugang
 
 | Auftrag | Umsetzung / Ergebnis | Fertig, wenn |
 | --- | --- | --- |
-| P11.1 Rechte/Format | Produktgeeignete Radarquelle, Kartenrechte/Attribution, Gebiet/Zoom/Frames/Quoten prüfen | Gate W-RAD-0; kein nicht erlaubter kommerzieller API-Einsatz |
+| P11.1 Rechte/Format | Gebührenfreie produktgeeignete Radarquelle für Deutschland, Kartenrechte/Attribution, Gebiet/Zoom/Frames/Quoten prüfen | Gate W-RAD-0; keine laufenden Datengebühren, kein nicht erlaubter kommerzieller API-Einsatz |
 | P11.2 Ressourcen-Spike | Kleine Kachel-/Frameprobe direkt auf S3; begrenztes Decode/Komposit/PSRAM | Kein externer Renderer notwendig, Displayreaktion innerhalb Budget |
 | P11.3 Radar-UI | Standort und drei Standbild-Zoomstufen, Loading/Fehler/Quellenzeit | Nur bestätigte Daten; Radarzeit nicht mit Forecast verwechseln |
 | P11.4 Integration | Scheduler mit Cover/Wetter/Web/OTA, Cache-Abbruch bei Standortwechsel | Kein UI-/Heap-Einbruch; Medienbefehle bleiben priorisiert |
 | P11.5 Regenmetadaten | Direkte Quelle für Regen-ETA, Zugrichtung und Geschwindigkeit untersuchen und bei Nachweis anbinden | Gate W-RAD-META; fehlende Quelle hält diesen Portteil offen |
 | P11.6 Abnahme | Gebietsränder, fehlende Bilder, langsames Netz, beschädigte Bilder, Offline | W-RAD-1 physisch/quellenrechtlich und W-RAD-META separat bestanden |
 
-Radar ist angefragter Funktionsumfang, aber noch keine technisch/rechtlich gesicherte Fähigkeit. ETA, Zugrichtung und Geschwindigkeit aus bisherigen externen Sensoren erfordern zusätzlich Gate W-RAD-META; ohne Quelle bleiben sie offen. Animation/Timeline sind spätere neue Optionen, keine Bestandsportierung. Scheitert Direktverarbeitung, bleibt die Funktion offen: weniger Auflösung/Frames oder andere erlaubte Quelle prüfen, nicht heimlich HA/Cloudrenderer einführen. Die 5–10 PT enthalten die Metadaten-Quellenprobe und die Anbindung einer geeigneten vorhandenen Schnittstelle, nicht die Entwicklung eines eigenen Nowcastmodells. Ohne passenden Nachweis sind Vollumfang und Termin offen. Aufwand nach P11.2 neu schätzen.
+Radar bleibt angefragter Gesamtumfang, folgt nach Q06 aber als L5 und blockiert L3/L4 nicht. Es ist noch keine technisch/rechtlich gesicherte Fähigkeit. ETA, Zugrichtung und Geschwindigkeit aus bisherigen externen Sensoren erfordern zusätzlich Gate W-RAD-META; ohne Quelle bleiben sie offen. Animation/Timeline sind spätere neue Optionen, keine Bestandsportierung. Scheitert Direktverarbeitung, bleibt die Funktion offen: weniger Auflösung/Frames oder andere erlaubte gebührenfreie Quelle prüfen, nicht heimlich HA/Cloudrenderer einführen. Die 5–10 PT enthalten die Metadaten-Quellenprobe und die Anbindung einer geeigneten vorhandenen Schnittstelle, nicht die Entwicklung eines eigenen Nowcastmodells. Ohne passenden Nachweis sind Vollumfang und Termin offen. Aufwand nach P11.2 neu schätzen; L5 erhält erneute Mischlast-/OTA-/Regressionstests aus P9.
 
 ### P9 — Gemeinsamer Pilot und Produktabnahme · 7–12 PT plus Langzeitläufe
 
-P9.1 zehn Erstnutzer (WLAN, Spotify, Wetterort, Router-/Kontowechsel) → P9.2 mindestens 72 h gemischte Musik/Wetter/Radar/Standby/Netzverlust → P9.3 mehrere Knobs/Konten/Standorte und parallele Spotify-App → P9.4 wiederholte Pair-OTA/Asset-/Settings-Rückfälle → P9.5 Fertigungsidentitäten/Schlüssel, Support und freigegebene Modell-/Quellenmatrix → P9.6 Abnahme exakt signierter Artefakte.
+**P9a / L3: zunächst zwei RotaryKnobs.** Boardrevisionen und die Generationen von Sonos Roam/Move erfassen; WLAN-/Spotify-/Wetterkonfiguration ohne eigenen Anmeldedienst, parallele Knobs/Konten/Standorte und Spotify-App prüfen. Mindestens 72 h Musik/Wetter/Avatar/Standby/Netzverlust sowie wiederholte Pair-OTA-/Asset-/Settings-Rückfälle. Roam und Move sind zwei Modellfamilien desselben Herstellers, keine herstellerübergreifende Abnahme.
 
-**G6:** sämtliche ausgelieferten Kernfunktionen qualifiziert; offene angefragte Funktionen bleiben sichtbar offen. Ziel Einrichtung Median <3 min, p90 <5 min ohne Entwicklerhilfe, erst messen. Ein Hosttest oder Build ist keine physische Bild-/Ton-/Strommessung. Verantwortlich: QA/Produkt und jeweilige Implementierung.
+**P9b / L4: anschließende Erweiterung.** Zehn Erstnutzer als Abnahmeziel (nicht zehn gleichzeitig erforderliche Geräte), Router-/Kontowechsel, Fertigungsidentitäten/Schlüssel, Support und dokumentierte Modell-/Quellenmatrix; danach Abnahme exakt signierter Artefakte. Weitere Lautsprechermodelle/Hersteller vor entsprechender Kompatibilitätszusage ergänzen. Mengen und Termine sind noch nicht festgelegt. **P9c / L5:** Radar einschließlich später belegter Metadaten erneut unter Mischlast, Dauerbetrieb und OTA-Rückfall qualifizieren.
+
+**G6:** sämtliche Funktionen der jeweiligen Lieferung qualifiziert; Radar ist für L4 bewusst nachgelagerter offener Umfang, Radioausgabe bleibt spätere Erweiterung. Ziel Einrichtung Median <3 min, p90 <5 min ohne Entwicklerhilfe, erst in der erweiterten Nutzerprobe belastbar messen. Ein Hosttest oder Build ist keine physische Bild-/Ton-/Strommessung. Verantwortlich: QA/Produkt und jeweilige Implementierung.
 
 ## 5. Sonos-Prüfzweig
 
 S1 Sonos über Spotify Connect ist Teil P5.6. Parallel P1 wird in S2 offizieller LAN-Zugang inklusive Verteilung/Pairing geklärt. S3 prüft Spotify-/Podcastfavoriten, vorhandene Radiofavoriten und freie URLs separat: insgesamt ca. 6–10 zusätzliche PT Untersuchung nach Zugang. Ein freigegebener Volladapter mit Playeranker/Gruppenresolver/OutputRouter benötigt vorläufig weitere 8–15 PT, neu zu schätzen mit tatsächlichem SDK. S4/S5 testen Haushalte, Gruppenwechsel, portable/S1-Modelle und doppelte Connect-Sichtbarkeit. Genau eine Route pro Wiedergabesitzung. [Sonos](12-SONOS-PRUEFUNG.md).
 
-Sonos Cloud verlangt einen gesonderten Betriebsentscheid. Native WiiM/UPnP-, AirPlay-/Cast-/Bluetoothwege sind nicht Teil dieses Ports. Sonos/WiiM als bereits vorhandene Connect-Empfänger sind mögliche P5-Testziele.
+Roam und Move sind die benannten ersten Testziele; ihre Generationen bleiben zu erfassen. Sonos Cloud mit eigenem Auth-/Refreshdienst passt nicht zu den bestätigten Vorgaben und ist keine aktive Ausweichroute. Native WiiM/UPnP-, AirPlay-/Cast-/Bluetoothwege sind nicht Teil dieses Ports. Weitere Connect-Empfänger erst für eine konkrete Erweiterung der Modellmatrix einplanen; kein WiiM-Testgerät ist als vorhanden bestätigt.
 
 ## 6. Noch erforderliche Vertragsänderungen
 
@@ -224,11 +231,27 @@ Startbudgets für Medien: 64 Spotify-Favoriten, 64 Radios, 20 Zeilen pro API-Sei
 
 Durchgehende Fehlerfälle: schnelle Eingabe, verspätete Antworten, Konto/Ziel/Standort während Download wechseln, falsche Uhr, beschädigte Daten/Bilder, voller Speicher, konkurrierende Browser, Netzverlust, Neustart ohne Internet und Stromausfall beim Save/Update. [Abnahme](09-ABNAHME.md).
 
-Kern P1–P7 + P9: **59–96 PT**. Wetter P10/P11: **15–26 PT** zusätzlich. Voller geplanter Kern mit Wetter/Radar: **74–122 PT**, mit ca. 20% Integrationsreserve **89–147 PT**, etwa **18–30 Vollzeitwochen** für eine Person. P8 und Sonos-Volladapter zusätzlich. Dies ersetzt die frühere grobe Pilot-Schätzung; es ist weder Fixpreis noch Termin. Mehrere Entwickler können unabhängige Pakete parallel bearbeiten. Nach P2, P5.1 und P11.2 neu schätzen; Partnerwartezeiten bleiben unbestimmt.
+Kern P1–P7 + P9: **59–96 PT**. Erste Produktversion L4 einschließlich P10-Wetter/Avatar, ohne Pflicht-Radar: **69–112 PT**, mit ca. 20% Integrationsreserve **83–135 PT**, etwa **17–27 Vollzeitwochen** für eine Person. P11-Radar folgt mit **5–10 PT** plus passender Reserve; vollständiges Ziel einschließlich Radar unverändert **74–122 PT**, mit Reserve **89–147 PT** beziehungsweise etwa **18–30 Wochen**. P8 und Sonos-Volladapter zusätzlich. Das sind vorläufige Paketbudgets, weder Fixpreis noch Termin; insbesondere G0/G2 und Datenzugang sind unbewiesen. L3 mit zwei Geräten erhält nach den frühen Proben eine eigene belastbarere Teilschätzung; zwei Geräte halbieren den Entwicklungsaufwand nicht. Nach P2, P4.3/P4.4, P5.1 und P11.2 neu schätzen; externe Wartezeiten und die noch unbekannte Erweiterungsmenge bleiben offen.
 
 ## 8. Nächste konkrete Aufträge
 
-1. P1.1/P1.3 und P10.1/P11.1 als Produkt-/Datenzugangsklärung vorbereiten; externe Kontakte/Abos werden nicht in diesem Planungsauftrag ausgelöst.
+### Bestätigte Produktentscheidungen in der Umsetzung
+
+| Rückfrage | Betroffene Umsetzung | Vorgabe aus der Antwort |
+| --- | --- | --- |
+| Q01 Anmeldedienst; Q02 Webzugriff | P4.2–4, G2, ADR-11/12 | Kein eigener externer Anmeldedienst; sicherer Heimnetz-Webzugriff ohne WLAN-Wechsel ist Pflicht |
+| Q03 Radio zur ersten Veröffentlichung | P6.5, P8, Sonos, P9 | Senderverwaltung zuerst; Radioausgabe später |
+| Q04 Wettergebiet; Q05 Kostenmodell | P10.1/P11.1, W0/W-AUTH | Deutschland, keine laufenden Anbietergebühren; passende gebührenfreie Produktquellen qualifizieren |
+| Q06 Staffelung Wetter/Radar | L3/L4/L5, P9/P11 | Wetter/Avatar in erster Version; Radar danach, vollständiger Port weiterhin offen |
+| Q07 USB-/Akkubetrieb | P2, P3.5, P9, ADR-10 | USB-Normalbetrieb, Website und Steuerung erreichbar |
+| Q08 reale Testgeräte | P2.1, P5.1, P9 | Knob des bisherigen Projekttyps, Sonos Roam und Move; genaue Revisionen/Generationen erfassen |
+| Q09 Mengen und Termin | P1/P9, Aufwand | Zwei Pilotknobs, spätere Erweiterung; Jahresmenge und Termine offen |
+
+Die Antworten vom 30. September 2026 und verbleibenden Detailklärungen stehen im [Register](15-OFFENE-PRODUKTENTSCHEIDUNGEN.md). Nutzerentscheidungen legen das Produktziel fest; technische Gates bleiben nachweispflichtig. Generationen, Erweiterungsmenge und Termine werden ergänzt, sobald bekannt; sie verhindern keine unabhängige Framework-/Quellenarbeit.
+
+### Technische Vorbereitung
+
+1. P1.1/P1.3 unter Q01 vorbereiten und P4.3/P4.4 als frühe Machbarkeitsaufträge für lokalen Heimnetz-Zugriff und Anmeldung ohne eigenen Dienst spezifizieren; P10.1/P11.1 auf gebührenfreie Deutschlandquellen ausrichten. Externe Kontakte/Abos werden nicht in diesem Planungsauftrag ausgelöst.
 2. P2.1 Testgerät/Revision und Recovery festhalten; Produktionsgeräte bleiben unberührt.
 3. P2.2/P2.3 minimale Firmwarebasis und Eingabe-Smoke-Test, dann P2.4/P2.5 inklusive Wetterassets.
 4. P3.1/P3.6 Kern, Mock, Persistenz und Peer; danach Medien-/Wetter-UI.

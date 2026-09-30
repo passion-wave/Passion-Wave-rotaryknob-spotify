@@ -31,3 +31,9 @@ Die Ergänzung inventarisiert Medien/UI/Backend und Wetter einschließlich Radar
 Es wurden keine Featureimplementierungen, Wetter-/Spotifykonten oder Anbieterabonnements angelegt. Die bestehenden Verträge und Webdemo wurden nicht um vorgetäuschte Wetterfunktionen erweitert. Host-/Syntax-/Linkprüfungen prüfen weiterhin das Framework; die neuen WT-Abnahmen sind offene Sollfälle. Eine grüne CI bestätigt keine Geräte-, Radar-, Partner- oder Produktfreigabe.
 
 Für diesen Dokumentationsstand erneut ausgeführt: `python3 tools/check.py` mit 35 bestandenen Tests sowie C++-/JavaScript-Syntax und internen Links; `git diff --check`. Zusätzlich temporär geprüft: 129 eindeutige Feature-/Abgrenzungs-IDs und sämtliche expliziten Abnahmeverweise auf vorhandene Test-IDs. Fachreview: Reihenfolge, Herkunft, Wetterfrische, Radar-Metadatengate und OTA-Assetbindung konsistent. Keine neuen WT-/Hardwaretests als ausgeführt gewertet.
+
+## Übernahme der neun Produktantworten
+
+Die Antworten vom 30. September 2026 stehen im Entscheidungsregister und sind in Architektur, Arbeitspakete, Featuretabellen und Abnahmen übernommen: Anmeldung ohne eigenen externen Dienst, sichere Heimnetz-Verwaltung, USB-Normalbetrieb, gebührenfreie Wetterquellen für Deutschland, zuerst zwei Pilotknobs mit Roam/Move sowie getrennte erste Produktversion und Radar-Nachlieferung. Radioausgabe bleibt später. Exakte Gerätegenerationen und Erweiterungsmenge/-termin sind weiterhin offen.
+
+Für diese reine Planaktualisierung erneut ausgeführt: `python3 tools/check.py` mit **35 bestandenen Tests**, JSON-/API-/Linkprüfung, C++17- und JavaScript-Syntaxprüfung; `git diff --check` ohne Befund. Keine Tests hinzugefügt und keine Runtime-Verträge, Firmware oder Webdemo verändert. Technische und vertragliche Gates, insbesondere G0/G2, bleiben unbestanden. Die Entscheidung gegen einen Anmeldedienst ist kein Nachweis eines bereits funktionierenden alternativen Anmeldewegs.

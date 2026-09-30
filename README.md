@@ -1,8 +1,10 @@
 # Passion Wave RotaryKnob · Spotify Edition
 
-Eigenständiges Entwicklungsrepository für einen RotaryKnob mit geräteinterner Konfigurationswebsite, Spotify-Steuerung, freigegebenen Favoriten, Wetter-/Radar-/Avatarfunktionen und koordiniertem OTA. **Kein Home Assistant, kein Music Assistant, kein dauerhafter externer Steuerungsserver.**
+Eigenständiges Entwicklungsrepository für einen RotaryKnob mit geräteinterner Konfigurationswebsite, Spotify-Steuerung, freigegebenen Favoriten, Wetter-/Radar-/Avatarfunktionen und koordiniertem OTA. **Kein Home Assistant, kein Music Assistant, kein dauerhafter externer Steuerungsserver und kein eigener externer Anmeldedienst.**
 
 **Stand: 30. September 2026 · Framework / Architekturentwurf.** Das Ziel ist von Anfang an ein Produkt für weitere Nutzer. Es ist noch keine lauffähige Gerätefirmware und keine freigegebene Spotify-Hardware entstanden.
+
+Die erste Version umfasst Spotify Connect, Wettervorhersage, Wetterbilder und Avatar für Deutschland, Radioverwaltung, sichere Konfiguration jederzeit im Heim-WLAN und Pair-OTA. Radar und Radioausgabe folgen später. Der überwiegend per USB versorgte Pilot startet mit zwei RotaryKnobs; vorhandene Sonos Roam und Move sind die ersten Connect-Prüfgeräte. Wetter-/Radaranbieter dürfen keine laufenden Gebühren erfordern. Die [bestätigten Produktvorgaben](docs/15-OFFENE-PRODUKTENTSCHEIDUNGEN.md) ersetzen keine technische Abnahme: insbesondere Spotify-Anmeldung ohne eigenen Hilfsdienst und sicherer Heimnetz-Webzugriff bleiben nachzuweisen.
 
 ## Zentrale Entscheidung
 
@@ -22,6 +24,7 @@ Repository: [passion-wave/Passion-Wave-rotaryknob-spotify](https://github.com/pa
 6. [OTA & Sicherheit](docs/05-OTA-SICHERHEIT.md), [Übernahme aus dem Bestandsprojekt](docs/06-UPSTREAM.md), [Schnittstellen](docs/07-SCHNITTSTELLEN.md), [Testplan](docs/09-ABNAHME.md).
 7. [Sonos-Architektur und Prüfplan](docs/12-SONOS-PRUEFUNG.md): Connect-Ziele, lokale Sonos-Anbindung, Favoriten, Gruppen und Radio.
 8. [Entscheidungen und Quellen](docs/10-ENTSCHEIDUNGEN-QUELLEN.md) und [Prüfbericht](docs/11-PRUEFBERICHT.md).
+9. [Bestätigte Produktentscheidungen und verbleibende Klärungen](docs/15-OFFENE-PRODUKTENTSCHEIDUNGEN.md): alle neun Nutzerantworten und ihre Auswirkungen auf die Umsetzung.
 
 ## Ausprobieren und prüfen
 
@@ -50,4 +53,4 @@ Die Website ist ein **interaktiver Entwurf mit Beispieldaten**. Sie speichert Ä
 
 Separate Historie und Versionslinie `0.1.0-framework.1`; keine unveränderte Kopie der HA-Firmware. Wiederverwendung erfolgt gezielt aus dokumentierten Commits mit erhaltenen Lizenzhinweisen. Framework-Quellen werden im verknüpften GitHub-Repository gepflegt. Keine Geräteänderung, Spotify-/Sonos-Registrierung oder ausführbare Firmwareveröffentlichung durch dieses Framework.
 
-Wetter ist ausdrücklich Teil des erweiterten Portierungsplans. Der vorhandene Webentwurf, die JSON-Verträge und Referenzmodelle enthalten dafür noch keine vollständige Implementierung; Standort, Wetterprovider, Radar und Avatarparameter werden in P10/P11 ergänzt.
+Wetter ist ausdrücklich Teil des erweiterten Portierungsplans. Der vorhandene Webentwurf, die JSON-Verträge und Referenzmodelle enthalten dafür noch keine vollständige Implementierung; P10 ergänzt Standort, Wetterprovider und Avatar für die erste Version. P11 liefert Radar später nach und blockiert die erste Version nicht.

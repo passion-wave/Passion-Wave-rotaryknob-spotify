@@ -2,6 +2,17 @@
 
 Befundarten: **automatisiert am Host**, **simuliert**, **auf echter Hardware gemessen**, **physisch gesehen/gehört**, **vertraglich bestätigt**. Sie ersetzen einander nicht. Die heutigen Hosttests beweisen nur Referenzverhalten und Dokument-/Vertragskonsistenz. Alle folgenden Produktgates sind noch offen.
 
+## Lieferbezogene Abnahme nach den Nutzerantworten
+
+- **L3:** zunächst zwei RotaryKnobs des Bestandsprojekttyps, Sonos Roam und Move als Connect-Ausgaben. Generationen/Revisionen vor Testbeginn erfassen. Pflicht: sichere Heimnetz-Website ohne WLAN-Wechsel, zugelassene Anmeldung ohne eigenen externen Dienst, Spotify, Radioverwaltung, Wetter/Avatar, USB-Erreichbarkeit und Pair-OTA.
+- **L4:** erste Produktversion nach erweiterter Abnahme desselben Umfangs. Fünf Onboarding-Erstnutzer und insgesamt zehn Personen für die Produktprobe sind Ziele für spätere Tests, auch nacheinander an zwei Geräten möglich. Die kleine Pilotgruppe ersetzt diese UX-Abnahme nicht. Hersteller-/Modellzusagen nur für tatsächlich geprüfte Ziele.
+- **L5:** Radar als Nachlieferung. WT-10/11 und W-RAD-Gates erst hierfür erforderlich; WT-12/PERF-01 sowie Dauer-/OTA-Tests um die reale Radarlast ergänzen und erneut ausführen. Offene Metadaten bleiben offen.
+- **Spätere Optionen:** AUD-01/02 sowie Abnahmen nativer Sonos-Funktionen werden erst für diese Erweiterungen releasepflichtig. SON-01/07 sind für die vorhandenen portablen Connect-Testziele bereits relevant. Radioverwaltung und Ablehnung ungeeigneter Radioausgaben bleiben in L3/L4 Pflicht.
+
+Siehe [bestätigte Produktentscheidungen](15-OFFENE-PRODUKTENTSCHEIDUNGEN.md). Ein nicht ausgelieferter Funktionspfad ist „nachgelagert/nicht anwendbar“, niemals automatisch „bestanden“.
+
+## Prüfmatrix
+
 | ID | Test / Störung | Akzeptanz |
 | --- | --- | --- |
 | G0-01 | Genehmigter Controller für fremde Connect-Lautsprecher | Schriftliches Produktprofil und verwendbarer SDK-/API-Zugang |
@@ -13,12 +24,12 @@ Befundarten: **automatisiert am Host**, **simuliert**, **auf echter Hardware gem
 | UI-03 | 360-px-Website, Tastatur/Fokus, Screenreader-Grundtest | Alle Eingaben erreichbar und beschriftet, kein horizontales Layoutproblem |
 | NET-01 | Falsches Passwort, SSID fehlt, Routerwechsel, 5-GHz-only | Erklärter Zustand und lokale Recovery ohne Konto-/Favoritenverlust |
 | NET-02 | S3-Standby | Website/Provider im normalen Standby erreichbar; Deep Sleep ausdrücklich offline |
-| ON-01 | iOS/Android Erststart und captive mini-browser | Vollständige Anmeldung ohne Entwicklerwerkzeuge |
+| ON-01 | iOS/Android Erststart und captive mini-browser | Vollständige freigegebene Anmeldung ohne Entwicklerwerkzeuge und ohne eigenen externen Anmelde-/Callbackdienst |
 | ON-02 | OAuth state falsch/abgelaufen/erneut verwendet | Ablehnung, kein Konto ersetzt |
 | ON-03 | Tokenrefresh fehlt neuer Refresh-Token / 401 / Widerruf | Gültiger Token erhalten bzw. verständlich neu anmelden |
 | SEC-01 | Fremde Origin, DNS-Rebinding, CSRF, Sitzung abgelaufen | Schreibzugriff abgelehnt, keine sensitiven GETs/CORS-Freigaben |
 | SEC-02 | Export, Log, Diagnose, Factory Reset | Keine Geheimnisse sichtbar; Eigentümerwechsel löscht Konto-/Sitzungsgeheimnisse; Herstelleridentität und Firmware-Vertrauensanker bleiben |
-| SP-01 | Zwei Speakerfamilien, mehrere Konten | Sichtbare und steuerbare Modelle einzeln dokumentiert |
+| SP-01 | Zunächst Sonos Roam und Move, mehrere Konten; später weitere Modelle | Generation/Firmware und sichtbare/steuerbare Fähigkeiten einzeln dokumentiert; zwei Sonos-Familien belegen keine herstellerübergreifende Kompatibilität |
 | SP-02 | `is_restricted`, fehlende Lautstärke, verschwundene ID | Aktion deaktiviert, keine zufällige andere Ausgabe |
 | SP-03 | 429 / QUOTA_EXCEEDED / 403 / 204 | Backoff und Erklärung, kein Requeststurm |
 | SP-04 | Schnelle Playlists, parallele Spotify-App-Steuerung | Neueste Auswahl gewinnt lokal, Status wird nachgeführt |
@@ -47,7 +58,8 @@ Befundarten: **automatisiert am Host**, **simuliert**, **auf echter Hardware gem
 | SON-07 | Portable Modelle/WLAN/Bluetooth/Schlaf und ältere Generation | Tatsächliche Modell-/Firmwarematrix, keine pauschale Wake-/S1-Zusage |
 | SON-08 | Falls Cloud gewählt: Refresh/Events/Quota | Kein geteiltes Secret im Gerät; sicherer dauerhafter Weg und appweites Budget |
 | SOAK-01 | 72 h gemischter Betrieb | Keine wachsenden Lecks/Queues, keine verlorene Verwaltung |
-| PILOT-01 | Zehn neue Nutzer | Einrichtung ohne Entwicklerhilfe; Ziel median <3 min und p90 <5 min, erst messen |
+| PILOT-00 | Erster Pilot mit zwei RotaryKnobs, Roam und Move | Getrennte Identitäten, paralleler Betrieb, Wetterorte/Konten, Netzwechsel, Dauerlauf und Pair-OTA nachgewiesen; noch keine allgemeine Produktfreigabe |
+| PILOT-01 | Erweiterte Abnahme mit zehn neuen Nutzern vor L4 | Einrichtung ohne Entwicklerhilfe; Ziel median <3 min und p90 <5 min erst hier belastbar messen; keine Forderung nach zehn gleichzeitigen Geräten |
 
 ## Nachweisformat
 
@@ -57,7 +69,7 @@ Pro Gate: Commit, Build-/SDKversion, Produkt-/Chiprevision, beide Firmwarehashes
 
 `python3 tools/check.py` führt Tests der Hostmodelle aus und prüft Vertragsbeispiele/Referenzen. Die Modelle erhalten Signatur-/Freigabeevidenz als Parameter, **prüfen diese nicht kryptografisch**. Produktionsadapter müssen diese Evidenz aus verifizierten, nicht vom Browser gesetzten Quellen bilden. Die Webdemo simuliert ebenfalls nur Zustände.
 
-Ein einzelner erfolgreicher Hosttest gilt nie als bestandenes Produktgate. Vor Release sind insbesondere echte HTTPS-/PKCE-Interoperabilität, der SDK-Port, Audioelektrik und Flash-/Bootloaderverhalten erforderlich.
+Ein einzelner erfolgreicher Hosttest gilt nie als bestandenes Produktgate. Vor dem jeweiligen Release sind sicherer Heimnetz-Webzugriff, der tatsächlich freigegebene Anmeldeweg ohne eigenen externen Dienst, der zugelassene Produktadapter und Flash-/Bootloaderverhalten nachzuweisen. PKCE-/OAuth-Fälle gelten, soweit der freigegebene Flow sie verwendet; ein anderer Partnerflow benötigt entsprechende eigene Authprüfungen. Audioelektrik wird erst vor Freischaltung lokaler Audioausgabe Pflicht und blockiert L3/L4 nicht.
 
 Details und Reihenfolge der Sonos-Gates: [Sonos-Prüfplan](12-SONOS-PRUEFUNG.md). Noch keine Sonos-Hardwareabnahme durchgeführt.
 
@@ -71,15 +83,15 @@ Alle Nachweise sind offen; Zuordnung zu Funktionen in [Featuretabellen](13-FEATU
 | WT-01 | Wetteroberfläche und Navigation | Temperaturbogen, Tageskontext und zwei Folgetage passen auf das Runddisplay; Touch und Ring bleiben unter definierter Mischlast bedienbar. |
 | WT-02 | Datenqualität und Aktualität | Fehlende Werte, falsche Einheiten, alte Zeitstempel und Offlinezustände erzeugen nachvollziehbare Unbekannt-/Veraltet-Anzeigen statt erfundener Messwerte. |
 | WT-03 | Forecast-Zeitzuordnung | UTC-Offsets, Datumswechsel, Sommerzeit, Lücken, Duplikate und unvollständige Vierstundenfenster werden mit Fixtures korrekt behandelt. |
-| WT-04 | Direkter Wetteradapter | Antwortgrößen und Abrufraten sind begrenzt; TLS-, Timeout-, Rate-Limit- und Providerfehler führen zu Backoff und einem konsistenten Cachezustand. |
+| WT-04 | Direkter Wetteradapter für Deutschland ohne laufende Anbietergebühren | Produktgeeignete Rechte/Quoten und Abdeckung nachgewiesen; Antwortgrößen und Abrufraten begrenzt; TLS-, Timeout-, Rate-Limit- und Providerfehler führen zu Backoff und konsistentem Cache. |
 | WT-05 | Standort und Persistenz | Manuelle Standort-/Zeitzoneneinrichtung funktioniert; Änderungen bleiben nach Neustart erhalten; Antworten für den alten Standort werden verworfen. |
 | WT-06 | Assets und OTA-Budget | Alle Wetterfotos und Avatar-Schlüssel sind korrekt zugeordnet und geprüft; keine Randartefakte; reale Firmware-, Asset-, A/B- und Rollback-Größen sind dokumentiert. |
 | WT-07 | Avatarregeln und Konfiguration | Temperaturgrenzen, Mischwetter, Neutral-/Jetzt-Fallback, 20-Minuten-Frische und beide Identitäten bestehen die übernommenen und ergänzten Tests. |
 | WT-08 | Morgenzeit und Wakeup | 06-/10-Uhr-Grenzen, Boot im Fenster, 23-/25-Stunden-Tage, ungültige Uhr und Wecken im gewählten Schlafprofil funktionieren nachvollziehbar. |
 | WT-09 | Ansichtshoheit und Power | Manuelle Bedienung, offene Dialoge und OTA behalten Vorrang; keine durchfallende Schließ-/Wake-Geste; Display-off und Host-Sleep verhalten sich wie konfiguriert. |
-| WT-10 | Radarbild und Zoom | Direkte Quelle, Standortzentrierung und drei Zoomstufen sind belegt; Ladefehler, veraltetes Bild und Standortwechsel werden korrekt dargestellt. |
-| WT-11 | Radar-Metadatengate | Herkunft, Zeitbezug und Semantik von ETA, Richtung und Geschwindigkeit sind nachgewiesen; ohne gültige Metadaten werden diese Angaben nicht erfunden. |
-| WT-12 | Speicher und Mischlast | Wetterabruf, Spotify, Website, Cover und Avatar-/Radarwechsel laufen gemeinsam ohne Watchdog, Eingabeverlust, inkonsistente Bild-/Textwechsel oder wachsenden Speicherverbrauch. |
+| WT-10 | Radarbild und Zoom, L5-Nachlieferung | Gebührenfreie geeignete direkte Quelle für Deutschland, Standortzentrierung und drei Zoomstufen belegt; Ladefehler, Bildalter und Standortwechsel korrekt dargestellt. |
+| WT-11 | Radar-Metadatengate, L5-Nachlieferung | Herkunft, Zeitbezug und Semantik von ETA, Richtung und Geschwindigkeit nachgewiesen; ohne gültige Metadaten bleiben diese Angaben offen und werden nicht erfunden. |
+| WT-12 | Speicher und Mischlast je Lieferung | L3/L4: Wetterabruf, Spotify, Website, Cover und Avatar gemeinsam ohne Watchdog, Eingabeverlust, inkonsistente Bild-/Textwechsel oder wachsenden Speicherverbrauch. Vor L5 erneut mit realer Radarlast. |
 
 
 ## Zusätzliche Abnahmen aus dem vollständigen Port
@@ -100,8 +112,9 @@ Alle Nachweise sind offen; Zuordnung zu Funktionen in [Featuretabellen](13-FEATU
 | SYS-04 | Ungültige Uhr, UTC-Offset, DST/Zeitsprung, Offlineboot | Lokale monotone Timer getrennt, keine falsche Zeit-/TLS-/Morgenannahme |
 | SYS-05 | WLAN ok/Internet weg/Auth abgelaufen/Ziel weg/Wetter alt/Peer weg | Unterschiedliche verständliche Zustände; keine pauschal grüne Produktgesundheit |
 | WEB-01 | Vollständige Parameter-/Featureliste aus docs13 | Jede ausgelieferte Einstellung im Backend validiert, dauerhaft gespeichert und auf Web/Knob konsistent; Mockaktionen entfernt |
+| WEB-02 | Schreibende Verwaltung im Heim-WLAN auf iOS/Android/Desktop | Ohne WLAN-Wechsel erreichbar, vertrauenswürdiger Transport und Gerätidentität; kein Zertifikatswarnungs-Workaround, Erneuerung/Router-/Besitzwechsel qualifiziert |
 | OTA-09 | Firmware-, Web- und Wetter-/Avatarassetversion nach Abbruch/Rollback | Signatur/Versionsbindung gültig; altes Image kann zugehörige Assets weiter laden, keine halbe Datenpartition |
-| PERF-01 | Ring+Touch, Spotifyrefresh, Website, Cover, Wetter und Avatar/Radar zugleich | UI-Ziele aus UI-01, keine wachsenden Queues/Lecks/Watchdogs; interne RAM-/DMA-/PSRAM-Spitzen dokumentiert |
+| PERF-01 | Ring+Touch, Spotifyrefresh, Website, Cover, Wetter und Avatar; Radar zusätzlich vor L5 | UI-Ziele aus UI-01 je Lieferumfang, keine wachsenden Queues/Lecks/Watchdogs; interne RAM-/DMA-/PSRAM-Spitzen dokumentiert |
 | PILOT-02 | Mehrere Geräte/Konten/Wetterorte und zwei Browser | Keine übergreifenden Credentials, Standorte, Kataloge oder Kommandos; Geräteidentität prüfbar |
 
-W0/W-AUTH/W-RAD-0/W-RAD-META sind Quellen-/Betriebsgates aus [Wetter](14-WETTER.md); WT-01–12 sind die funktionalen Abnahmen dazu. W1/W-RAD-1 bündeln die bestandenen Wetter-/Radarabnahmen. Vor vollständiger Auslieferung alle angefragten Funktionen einzeln mit Evidenz versehen; gesperrte Fähigkeiten nicht als bestanden zählen. Wenn Radar-ETA/-Vektor fehlen, bleibt dieser Portteil offen.
+W0/W-AUTH/W-RAD-0/W-RAD-META sind Quellen-/Betriebsgates aus [Wetter](14-WETTER.md); WT-01–12 sind die funktionalen Abnahmen dazu. W-AUTH ist nur bei tatsächlicher Credentialpflicht anwendbar und erlaubt keinen kostenpflichtigen Wettervertrag. L3/L4 benötigen W0/W1 und die dazugehörigen Tests ohne Pflicht-Radar; L5 zusätzlich die jeweiligen W-RAD-Gates und wiederholte Integrationstests. Vor vollständigem Portabschluss alle angefragten Funktionen einzeln mit Evidenz versehen; gesperrte Fähigkeiten nicht als bestanden zählen. Wenn Radar-ETA/-Vektor fehlen, bleibt dieser Portteil offen, auch wenn L4 bereits abgenommen ist.

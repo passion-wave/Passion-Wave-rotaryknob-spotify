@@ -4,6 +4,8 @@ Stand: 30. September 2026. Referenz: `3.0.1-beta.16`, Commit `9cc5576c2fd4a9beb5
 
 **Art:** P = Verhalten/Algorithmen portieren; A = vorhandene Funktion mit neuer Anbindung anpassen; N = neu gegenüber dem belegten Bestand; B = bedingte Erweiterung nach eigenem Gate; X = bewusst nicht übernehmen. Auch P benötigt die Ablösung von ESPHome-Bindungen und echte Hardwaretests. Alle Umsetzungen sind offen. Q-Kürzel verweisen auf die Quellkarte am Ende; „Zielauftrag“ bezeichnet neue Nutzeranforderungen. Prüf-IDs bezeichnen Soll-Abnahmen, keine heutigen Erfolge.
 
+**Beschlossene Lieferstaffelung:** Die erste Version umfasst Spotify-Steuerung nach Produktfreigabe, jederzeitige Konfiguration im Heim-WLAN, Senderverwaltung sowie Wettervorhersage, Wetterbilder und Avatar für Deutschland. Wetter- und Radarversorgung dürfen keine laufenden Anbietergebühren verursachen. Radar einschließlich der noch zu qualifizierenden Regenmetadaten bleibt im Gesamtport und wird anschließend vervollständigt; tatsächliche Radioausgabe ist eine spätere Erweiterung. Der Pilot startet mit zwei Knobs im überwiegenden USB-Betrieb. Die beantworteten Q01–Q09 stehen im [Entscheidungsregister](15-OFFENE-PRODUKTENTSCHEIDUNGEN.md); jeder gelieferte Umfang benötigt seine eigenen technischen Nachweise.
+
 ## 1. Eingabe und Oberfläche
 
 | ID | Funktion / Herkunft | Art | Problem | Umsetzung kurz | Paket / Abnahme |
@@ -77,8 +79,8 @@ Stand: 30. September 2026. Referenz: `3.0.1-beta.16`, Commit `9cc5576c2fd4a9beb5
 | R01 | Radioeinträge auswählen (Q4/Q5) | A | MA liefert keine Sender mehr | Geräteeigene Liste mit stabilen IDs/Labels | P6.5 / CAT-01/RAD-02 |
 | R02 | Radio-Browser-Suche (Zielauftrag) | N | Spiegel/Daten können ausfallen | Begrenzte Suche mit Spiegelwechsel, Ergebnis bewusst übernehmen | P6.5 / RAD-01 |
 | R03 | Eigene Stream-URL (Zielauftrag) | N | Redirects, interne Ziele, Playlisten/Codec | URL-/DNS-/Redirectprüfung und begrenzte Probe | P6.5 / RAD-03 |
-| R04 | Radio tatsächlich hören (Q4 bisher MA) | A/B | Connect spielt keine freien Radio-URLs | Qualifizierter Sonos-Radiopfad oder optional lokaler Decoder | P8/Sonos / RAD-02/AUD-02/SON-05 |
-| R05 | Senderliste speichern ohne Radioausgang | N | Gespeichert darf nicht spielbar bedeuten | Liste verwalten; Wiedergabe mit verständlichem Grund deaktivieren | P6.5 / RAD-02 |
+| R04 | Radio tatsächlich hören (Q4 bisher MA) | A/B | Connect spielt keine freien Radio-URLs | Spätere Erweiterung nach Q03: qualifizierter Sonos-Radiopfad oder optional lokaler Decoder | P8/Sonos / RAD-02/AUD-02/SON-05 |
+| R05 | Senderliste speichern ohne Radioausgang | N | Gespeichert darf nicht spielbar bedeuten | Erste Version nach Q03: Liste verwalten; Wiedergabe mit verständlichem Grund deaktivieren | P6.5 / RAD-02 |
 
 ## 6. Lokales System, Energie und Diagnose
 
@@ -86,8 +88,8 @@ Stand: 30. September 2026. Referenz: `3.0.1-beta.16`, Commit `9cc5576c2fd4a9beb5
 | --- | --- | --- | --- | --- | --- |
 | S01 | Uhr/Datum/Zeitzone (Q1/Q2/Q6) | A | HA-Zeit entfällt; DST/ungültige Uhr | SNTP/UTC plus lokale Zeitzone, monotone Laufzeit getrennt | P3.5 / SYS-04 |
 | S02 | Helligkeit/Dimmen/Fade (Q2) | P | Alte feste Werte sollen einstellbar werden | Gemeinsame Setter für Website/Display, PWM-Fade statt UI-Schleife | P3.5/P6.6 / SYS-02 |
-| S03 | Display-Aus je Playback/Idle (Q2/Q7) | A | S3 ist künftig auch Server | Display/LVGL schlafen, Netzwerk bleibt normal erreichbar | P3.5 / NET-02 |
-| S04 | Expliziter Tiefschlaf/Wake (Q2/Q7) | A | Website/Spotify/Wetter dann offline | Klar benanntes Offlineprofil; Wake und Zustandsneuladung | P3.5/P10.5 / SYS-02/WT-09 |
+| S03 | Display-Aus je Playback/Idle (Q2/Q7) | A | S3 ist künftig auch Server | USB-Normalbetrieb nach Produktentscheidung Q07: Display/LVGL schlafen, Website und Steuerung bleiben erreichbar | P3.5 / NET-02 |
+| S04 | Expliziter Tiefschlaf/Wake (Q2/Q7) | A | Website/Spotify/Wetter dann offline | Explizites Offlineprofil; im USB-Normalbetrieb nicht automatisch aktivieren, Wake und Zustandsneuladung prüfen | P3.5/P10.5 / SYS-02/WT-09 |
 | S05 | Batterie/Ladesymbol (Q2) | A | ADC ist kein Fuel Gauge/Chargerstatus | Kalibrierte Schätzung anzeigen; OTA-Energiegate separat messen | P2/P3.5/P7 / HW-03 |
 | S06 | DEV Wachhalten (Q2/Q7) | P | Verbraucht Akku, beeinflusst Morgenansicht | Diagnoseoption, Default aus, definierte Schedulerpriorität | P3.5/P10.5 / SYS-02/WT-09 |
 | S07 | Persistente Parameter (Q2/Q4) | A | Alte verzögerte Writes können verloren gehen | Versionierter atomarer Save; Erfolg erst nach dauerhaftem Commit | P3.6 / SYS-01 |
@@ -102,8 +104,8 @@ Stand: 30. September 2026. Referenz: `3.0.1-beta.16`, Commit `9cc5576c2fd4a9beb5
 | --- | --- | --- | --- | --- | --- |
 | B01 | Werksidentität/Erstinstallation (Q8) | A | Alte Zwei-Endpunkt-/HA-Einrichtung entfällt | Hersteller flasht ein Paar; individueller S3-QR/Setupzugang | P2/P4.1/P9 / ON-01 |
 | B02 | WLAN-Scan/Join/Routerwechsel | N | Handy wechselt AP/Heimnetz | Wiederaufnehmbarer Wizard, Scan/manuelle SSID, AP+STA-Fehlerhilfe | P4.1 / NET-01/ON-01 |
-| B03 | Geschützte lokale Administration | N | Transport und Browser unterscheiden sich | Physisch aktivierter AP als Basis; LAN-HTTPS eigens qualifizieren | P4.2/P4.3 / G2/SEC-01 |
-| B04 | Spotify verknüpfen/trennen | N | Produktzugang/OAuth-Callback offen | Nur genehmigter Linker; kein Passwort-/Tokenformular | P4.4 / G0/ON-02 |
+| B03 | Geschützte lokale Administration | N | Sicherer Browser-/Pairingweg im Heim-WLAN noch offen | Jederzeitiger LAN-Zugriff ohne WLAN-Wechsel gemäß Q02; vertrauenswürdigen HTTPS-/Pairingweg vor Freigabe nachweisen, Setup-AP für Einrichtung/Recovery | P4.2/P4.3 / G2/SEC-01 |
+| B04 | Spotify verknüpfen/trennen | N | Produktzugang und Anmeldung ohne eigenen externen Dienst noch offen | Gemäß Q01 nur genehmigten Weg ohne PassionWave-Verknüpfungsdienst qualifizieren; kein Passwort-/Tokenformular, keine erfundene lokale OAuth-Freigabe | P4.4 / G0/ON-02 |
 | B05 | Tokenpflege und Kontoersatz | N | Refresh-/Abbruch-Races, gemeinsame Secrets | Ein Refreshjob, atomare Credentials, Konto erst nach Erfolg ersetzen | P4.5 / ON-03/SEC-02 |
 | B06 | Alle Portparameter lokal bearbeiten | A/N | Bisher HA-Entitäten/compile-time Werte | Geräteeinstellungen in gemeinsamer API, Grundwerte zuerst | P6.6/P10.6 / WEB-01 |
 | B07 | Inhalte freischalten/reihen/entfernen | A/N | HA-Optionsflow entfällt | Playlist/Show/Episode/Radio getrennt verwalten und validieren | P6.6 / CAT-01/WEB-01 |
@@ -141,7 +143,7 @@ Stand: 30. September 2026. Referenz: `3.0.1-beta.16`, Commit `9cc5576c2fd4a9beb5
 
 ### Wetter, Vorhersage und Standort
 
-**Port** übernimmt vorhandene Funktion und Logik. **Anpassung** ersetzt Abhängigkeiten oder korrigiert den Datenvertrag. **Neu** ergänzt eine bisher fehlende Funktion. Der Wetterdienst liefert Daten direkt an den S3; ein dauerhaft laufender Home-Assistant- oder anderer eigener Server ist nicht vorgesehen.
+**Port** übernimmt vorhandene Funktion und Logik. **Anpassung** ersetzt Abhängigkeiten oder korrigiert den Datenvertrag. **Neu** ergänzt eine bisher fehlende Funktion. Der Wetterdienst liefert Daten direkt an den S3; ein dauerhaft laufender Home-Assistant- oder anderer eigener Server ist nicht vorgesehen. Q04/Q05 legen Deutschland und den Betrieb ohne laufende Anbietergebühren fest: DWD zuerst qualifizieren, MET Norway bei Bedarf als passende gebührenfreie Alternative prüfen; kommerzielle Nutzungsrechte bleiben ein Gate. P10 ist Teil der ersten Version, P11 folgt gemäß Q06. Details und verworfene Kostenoptionen stehen in der [Wetterarchitektur](14-WETTER.md).
 
 | ID | Feature / Bestand | Problem | Kurze Umsetzung | Paket / Abnahme |
 |---|---|---|---|---|
@@ -152,11 +154,13 @@ Stand: 30. September 2026. Referenz: `3.0.1-beta.16`, Commit `9cc5576c2fd4a9beb5
 | W05 | **Anpassung:** Tagesminimum und -maximum als Bogenskala. QW1 | Der bisherige Skalenfallback −10 bis 40 °C darf nicht als Vorhersage erscheinen. | Darstellungsbereich von echten Prognosewerten trennen; unbekannte Min-/Maxwerte kennzeichnen. | P10 / WT-02 |
 | W06 | **Anpassung:** Tageskontext mit Jetzt, Morgen, Mittag, Abend und Nacht. QW1 | Alter Parser kann Stunden mit falschem Datum oder zu großem Abstand zuordnen. | UTC korrekt umrechnen; Tagesabschnitte nur mit gültigen, zeitlich passenden Stunden befüllen. | P10 / WT-03 |
 | W07 | **Anpassung:** Wetter und Temperaturspanne für morgen und übermorgen. QW1 | Der Bestand puffert fünf Tage; sichtbar sind zwei kommende Tage. Fehlende Tage erhalten teils Ersatzwerte. | Begrenzten Tagescache beibehalten; nur belegte Tageswerte anzeigen. | P10 / WT-03 |
-| W08 | **Anpassung:** Stunden- und Tagesvorhersage, bisher bis 48 Stunden und fünf Tage. QW1/QW2 | HA-Broker entfällt; Anbieterrechte, Quoten und Antwortgrößen sind zu prüfen. | S3 lädt und normalisiert begrenzte HTTPS-Antworten; Cache, Backoff und Abrufintervall nach Anbieterbedingungen. | P10 / WT-04 |
+| W08 | **Anpassung:** Stunden- und Tagesvorhersage, bisher bis 48 Stunden und fünf Tage. QW1/QW2 | HA-Broker entfällt; kommerzielle Rechte ohne laufende Gebühren, Quoten und Antwortgrößen sind zu prüfen. | Deutschland zuerst: DWD-Spike, bei Bedarf MET; S3 normalisiert begrenzte Antworten mit Cache, Backoff und zulässigem Abrufintervall. | P10 / WT-04 |
 | W09 | **Neu:** Standort und Zeitzone auf der Gerätewebsite einstellen. QW1 | Bisher ist eine HA-Wetterquelle konfiguriert; GPS oder lokale Ortssuche sind nicht vorhanden. | Ortssuche mit manueller Koordinatenalternative, Anzeigename und Zeitzone; bei Wechsel alte Anfragen verwerfen. | P10 / WT-05 |
 | W10 | **Anpassung:** Regenbeginn aus der Stundenprognose. QW1 | Stundenwerte sind kein minutengenaues Radar-Nowcast; unbekannt wurde teils als „Kein Regen“ dargestellt. | Zeitraum und Prognosequelle kenntlich machen; „unbekannt“ von „kein Regen im verfügbaren Zeitraum“ trennen. | P10 / WT-03 |
 
 ### Regenradar
+
+**Nachlieferung nach Q06:** W11–W15 und die zugehörigen Metadatengates bleiben offen im Gesamtumfang. Sie blockieren die erste Version mit P10 nicht. Vor ihrer Auslieferung ist die gesamte Mischlast mit Radar erneut am Gerät nachzuweisen.
 
 | ID | Feature / Bestand | Problem | Kurze Umsetzung | Paket / Abnahme |
 |---|---|---|---|---|
@@ -195,8 +199,8 @@ Die Wetterfotos bleiben im Umfang. Ein allgemeines Fotoalbum oder die bisherigen
 | W29 | **Anpassung:** Asynchrones JPEG-Decoding und gemeinsamer Bild-/Textwechsel. QW3 | Der vorhandene Renderer hängt an ESPHome RuntimeImage; S3 trägt künftig zusätzliche Netzwerkaufgaben. | Decoderadapter portieren, nur einen relevanten Assetjob zulassen; abgeschlossene Bilder auf dem UI-Thread übernehmen. | P10 / WT-12 |
 | W30 | **Port/Anpassung:** Morgenfenster 06:00 bis 10:00 mit lokaler Zeitzone und Sommerzeit. QW4 | HA-Uhr entfällt; frei wählbare Fensterzeiten sind bisher kein Bestand. | Lokale SNTP-/Zeitzonenbasis nutzen; feste Bestandszeiten und Ein-/Aus-Schalter portieren. | P10 / WT-08 |
 | W31 | **Port:** Automatisch nach Inaktivität, manuell auch über 10 Uhr; Modal und OTA haben Vorrang. QW1/QW4 | Die automatische Ansicht darf Bedienung und wichtige Zustände nicht verdrängen. | Eigentümer „manuell/automatisch“ und bestehende Prioritätsregeln zentral erhalten. | P10 / WT-09 |
-| W32 | **Anpassung:** Morgen-Wakeup und sichtbare Anzeige auch auf Akku. QW1/QW4 | S3-Deep-Sleep legt künftig auch Website und Spotify-Steuerung schlafen; Batterielaufzeit ist ungemessen. | Morgenwecktermin mit ausdrücklich gewähltem Schlafprofil verbinden; im Normalbetrieb Display-off getrennt vom Host-Sleep behandeln. | P10, P3 / WT-08, WT-09 |
-| W33 | **Port/Anpassung:** Tests für Wetterregeln, Assets, Frische, Rendering und DST. QW2–QW5 | HA-Transporttests passen nicht zum direkten Gerätebackend; Geräteeindruck ist kein Unit-Test-Ergebnis. | Reine Tests übernehmen, Adapter-/NVS-/Mischlasttests ergänzen und physische Abnahme separat protokollieren. | P10/P11 / WT-01–WT-12 |
+| W32 | **Anpassung:** Morgen-Wakeup und sichtbare Anzeige auch auf Akku. QW1/QW4 | S3-Deep-Sleep legt künftig auch Website und Spotify-Steuerung schlafen; Batterielaufzeit ist ungemessen. | Gewählter USB-Normalbetrieb hält den Host erreichbar; Display-off getrennt behandeln. Akku-/Offlineprofil nur ausdrücklich aktivieren und gesondert messen. | P10, P3 / WT-08, WT-09 |
+| W33 | **Port/Anpassung:** Tests für Wetterregeln, Assets, Frische, Rendering und DST. QW2–QW5 | HA-Transporttests passen nicht zum direkten Gerätebackend; Geräteeindruck ist kein Unit-Test-Ergebnis. | Reine Tests übernehmen, reale P10-Mischlast vor erster Version; vollständige Mischlast mit Radar bei P11 erneut abnehmen und physisch protokollieren. | P10/P11 / WT-01–WT-12 |
 
 
 ## 11. Bewusst nicht übernommene oder zusätzliche Funktionen

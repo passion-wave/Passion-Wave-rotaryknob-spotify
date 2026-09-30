@@ -13,7 +13,7 @@ Die Partnerroute setzt eine Organisation, Verträge, Plattformprüfung und Zerti
 ### Konkretes Klärungspaket, noch nicht versendet
 
 1. Erlaubter Controller ohne eigenen Audioplayer, direkte Steuerung anderer Connect-Geräte und freigegebener API-/SDK-Weg.
-2. Kunden-Onboarding ohne eigenes Entwicklerkonto; Mehrnutzer-/Haushaltsmodell und Abonnements.
+2. Kunden-Onboarding ohne eigenes Entwicklerkonto und nach Q01 ausdrücklich ohne eigenen externen Anmelde-/Callbackdienst; zulässigen Rückweg und Refresh klären. Produkt für weitere Nutzer, zunächst zwei Pilotknobs; Mehrnutzer-/Haushaltsmodell und Abonnements.
 3. Lokale Konfigurationswebsite, manuelle Spotify-Links, Playlists/Podcast-Presets, Metadaten und Cover; eigene Suche nicht voraussetzen.
 4. Zulässige Kombination mit Radioverzeichnis und separatem Internetradioausgang; Hardware-/API-Verträge können unterschiedliche Regeln enthalten.
 5. Konkretes S3/ESP-IDF-Toolchainpaket, Speicherbedarf, Eventloop, Netzwerkverhalten und Update-/Zertifizierungspflichten.

@@ -2,6 +2,8 @@
 
 Stand 2026-09-30. Verbindlicher Nutzerwunsch: Produkt für weitere Nutzer, Spotify auf Connect-Lautsprechern, Konfiguration im RotaryKnob, optional Klinke, Radio-Liste, OTA sowie inzwischen ausdrücklich Wetter/Vorhersage, Radar und Wetter-Avatar; keine HA-/MA-Abhängigkeit. Dieses Dokument beschreibt den Zielzustand. Implementiert sind bisher nur Verträge, Referenzmodelle und Webentwurf.
 
+Die [neun beantworteten Produktfragen](15-OFFENE-PRODUKTENTSCHEIDUNGEN.md) konkretisieren diesen Auftrag: kein eigener externer Anmeldedienst, Konfiguration jederzeit im Heim-WLAN, überwiegend USB-Betrieb und gebührenfreie Wetter-/Radardaten für Deutschland. Zwei RotaryKnobs bilden den ersten Pilot; Sonos Roam und Move stehen als Connect-Prüfgeräte zur Verfügung. Die erste Produktversion enthält Spotify, Wetter/Avatar, Radioverwaltung, Website und OTA. Radar folgt danach; Radioausgabe bleibt eine spätere Erweiterung. Exakte Hardwaregenerationen, Erweiterungsmenge und Termin sind noch offen.
+
 ## 1. Produkt und Grenzen
 
 Ein vorkonfiguriertes Gerät wird mit Strom versorgt, mit dem WLAN und einem Spotify-Konto verbunden, einem Lautsprecher zugeordnet und mit wenigen Favoriten bestückt. Danach reichen Drehen und Touch zur alltäglichen Bedienung. Telefon/Computer ist nach erfolgreicher Einrichtung für den Regelbetrieb nicht erforderlich; Spotify und der Connect-Lautsprecher brauchen Internet. Werkzeuge, YAML, persönliche Entwicklerkonten und Token-Kopieren sind kein vorgesehener Kundenweg.
@@ -9,14 +11,14 @@ Ein vorkonfiguriertes Gerät wird mit Strom versorgt, mit dem WLAN und einem Spo
 | Funktion | Ziel | Bedingung |
 | --- | --- | --- |
 | Spotify auf vorhandenem Connect-Lautsprecher | Kernfunktion | Produktgenehmigung und geeigneter offizieller Controller-Zugang müssen zuerst belegt werden |
-| Wetter, Vorhersage, Wetterfotos und Avatar | Kernumfang der erweiterten Planung | Direkter S3-Wetterprovider, Standort und Assetbudget; [Wetterarchitektur](14-WETTER.md) |
-| Radar mit drei Zoomstufen, Regenmetadaten | Angefragter Wetterumfang | Bild-/Kartenrechte, Direktverarbeitung und ETA-/Vektordaten separat nachweisen |
-| Sonos-Lautsprecher | Zusätzliche Architekturprüfung | Connect-Ziel zuerst; direkte lokale Sonos-Integration unter eigenem Gate, siehe [Sonos](12-SONOS-PRUEFUNG.md) |
+| Wetter, Vorhersage, Wetterfotos und Avatar | Erste Produktversion, Deutschland | Geeigneter direkter S3-Wetterprovider ohne laufende Anbietergebühren, Standort und Assetbudget; [Wetterarchitektur](14-WETTER.md) |
+| Radar mit drei Zoomstufen, Regenmetadaten | Verbindlicher Folgeumfang nach erster Version | Bild-/Kartenrechte, gebührenfreie Quelle, Direktverarbeitung und ETA-/Vektordaten separat nachweisen |
+| Sonos-Lautsprecher | Roam/Move als erste Connect-Prüfziele | Generationen/Steuerbarkeit prüfen; direkte lokale Sonos-Integration unter eigenem Gate, siehe [Sonos](12-SONOS-PRUEFUNG.md) |
 | Play/Pause, Titelwechsel, Lautstärke, Fortschritt, Cover | Kernfunktion | Capability des Zielgeräts und zugelassener Schnittstelle |
 | Freigegebene Playlists und Podcasts | Kernfunktion | Verlinken/aus Spotify übernehmen; keine eigene Spotify-Suche ohne passende Freigabe |
-| Lokale Konfigurationswebsite | Kernfunktion | Alle Einstellungen und Favoriten auf dem Gerät |
+| Lokale Konfigurationswebsite | Kernfunktion, jederzeit im Heim-WLAN | Alle Einstellungen und Favoriten auf dem Gerät; sicherer Browsertransport unter G2 nachzuweisen |
 | Zwei-Prozessor-OTA über Website | Kernfunktion | Signierte Images, Speicher- und Rollback-Nachweis |
-| Radio-Liste aus Radio Browser oder eigener URL | Bestandteil der Konfiguration | Wiedergabe verlangt einen separaten geeigneten Ausgabepfad und Produktfreigabe |
+| Radio-Liste aus Radio Browser oder eigener URL | Erste Version: Senderverwaltung | Wiedergabe erst später mit geeignetem Ausgabepfad und Produktfreigabe; blockiert die erste Version nicht |
 | Radio über normalen Spotify-Connect-Endpunkt | Nicht als Fähigkeit zugesagt | Connect akzeptiert keine beliebigen Internetradio-URLs |
 | Kopfhörer am Onboard-Anschluss | Optionaler Versuch | Pin-/Boardrevision, Ausgangslast und gegebenenfalls Verstärker prüfen |
 | Spotify-Audio direkt am Gerät | Eigenes optionales Teilprojekt | Lizenzierter Embedded-Player, SDK-Port, Ressourcen, Zertifizierung; Web API liefert kein Audio |
@@ -37,7 +39,7 @@ flowchart LR
   S3 -.->|Sonos LAN: Zugang und Lizenz offen| SN[Sonos-Gruppen / Favoriten / Radio]
   S3 -->|Radio-Suche / HTTPS| RB[Radio Browser]
   S3 -->|Wetterdaten / HTTPS| W[Direkter Wetteranbieter]
-  S3 -.->|Radarquelle nach Gate| R[Radarbilder und geprüfte Metadaten]
+  S3 -.->|Radar-Nachlieferung nach Gate| R[Radarbilder und geprüfte Metadaten]
   S3 -.->|optionale Decoder + I2S| DAC[PCM5100A / analoger Ausgang]
   S3 -->|signierter Download / HTTPS| U[statischer Update-Host]
 ```
@@ -94,22 +96,24 @@ Webassets ohne CDN, Frameworklaufzeit, Tracker oder externe Schriftdateien, vora
 
 Hersteller flasht beide Chips und hinterlegt eine gemeinsame Produktidentität sowie individuelle Gerätezugänge. Kunden richten ein fertiges, unkonfiguriertes Gerät ein. USB-Erstflash beider Chips ist ein Werkstatt-/Recovery-Verfahren; die bekannte USB-C-Orientierung wird dokumentiert, nicht dem normalen Onboarding zugemutet.
 
-Im Normalbetrieb läuft nur S3-WLAN. Wiederherstellung ist auch ohne Spotify, Internet oder gültiges Benutzerkonto möglich. Ein verlorener WLAN-Zugang öffnet nicht unbegrenzt automatisch einen ungesicherten AP; Setup wird physisch und zeitbegrenzt ausgelöst. Eigentümerwechsel löscht WLAN, Spotify-Credentials, Sitzungen und Favoriten; Firmwareversion/Herstelleridentität können bleiben.
+Im überwiegend per USB versorgten Normalbetrieb läuft nur S3-WLAN; Website und Steuerung bleiben auch bei ausgeschaltetem Display erreichbar. Änderungen der Konfiguration müssen sicher im Heim-WLAN möglich sein, ohne Wechsel ins Geräte-WLAN. Der sichere Browserweg einschließlich Identität und gegebenenfalls Zertifikatserneuerung bleibt Gate G2. Wiederherstellung ist auch ohne Spotify, Internet oder gültiges Benutzerkonto möglich. Ein verlorener WLAN-Zugang öffnet nicht unbegrenzt automatisch einen ungesicherten AP; Setup/Recovery werden physisch und zeitbegrenzt ausgelöst. Eigentümerwechsel löscht WLAN, Spotify-Credentials, Sitzungen und Favoriten; Firmwareversion/Herstelleridentität können bleiben.
 
-Ein statischer Updatehost und gegebenenfalls eine freigegebene HTTPS-Anmeldeseite sind Distributions-/Anmeldeinfrastruktur, kein laufender Medienserver. Falls Spotify für das Produkt eine zusätzliche laufende Vermittlungsinstanz fordert, ist das eine Abweichung vom Ziel und ein erneuter Architekturentscheid; sie wird nicht still eingeführt.
+Ein statischer Updatehost bleibt als Distributionsinfrastruktur erlaubt. Ein eigener externer Spotify-Anmeldedienst ist abgelehnt; auch eine eigene extern gehostete Callbackseite wird nicht als Ersatz eingeführt. P1/P4 prüfen einen genehmigten Partner-/Geräteflow unter dieser Vorgabe. Erfordert der tatsächlich verfügbare Spotify-Weg einen eigenen externen Dienst, bleibt das Produktgate offen und der Befund wird zur Entscheidung vorgelegt. Eine verpflichtende zusätzliche App ist ebenfalls nicht beschlossen.
 
 ## 6. Maßstab für den ersten nutzbaren Stand
 
-Erstzulassung mit einem zugelassenen Spotify-Konto, einem Connect-Lautsprecher und wenigen Favoriten, stabile Titel-/Coverwechsel, Neuverbindung nach Stromausfall, vollständig lokale Konfiguration und unterbrochenes Update beider Chips überstanden. Öffentliche Produktreife verlangt zusätzlich mehrere Nutzer, mehrere Lautsprechertypen, Plattform-Onboarding und die Gates im [Implementierungsplan](08-IMPLEMENTIERUNGSPLAN.md).
+Ein erster technischer Funktionsnachweis umfasst ein zugelassenes Spotify-Konto, einen Connect-Lautsprecher und wenige Favoriten, stabile Titel-/Coverwechsel, Neuverbindung nach Stromausfall, sichere Heimnetz-Konfiguration und ein überstandenes unterbrochenes Update beider Chips. Darauf folgt L3 mit zwei RotaryKnobs des vorhandenen Hauptprojekttyps, Sonos Roam/Move, Wetter/Avatar und Radioverwaltung. Beide Sonos-Generationen und tatsächliche Knob-Revisionen sind zu erfassen; Geräteverfügbarkeit ist kein Kompatibilitätsbeweis.
+
+L4 als erste Produktversion verlangt erweiterte Nutzer-/Modellabnahme, Plattform-Onboarding und die Gates für ihren Umfang im [Implementierungsplan](08-IMPLEMENTIERUNGSPLAN.md). Zwei Pilotgeräte legen weder die Zahl der Testpersonen noch die spätere Produktionsmenge fest. Radar wird in L5 separat qualifiziert und nachgeliefert; sein offener Status blockiert L3/L4 nicht. Weitere Lautsprecherhersteller sind erst nach entsprechender Prüfung als kompatibel auszuweisen.
 
 Normaler Standby schaltet das Display ab und nutzt abgestimmten Modem Sleep. Der S3 muss für Website und Provider erreichbar bleiben; sein bisheriges Deep Sleep wäre jetzt ein ausdrücklich offline gehender Betriebsmodus.
 
 ## 7. Sonos-Erweiterung
 
-[Sonos wird in drei getrennten Wegen geprüft](12-SONOS-PRUEFUNG.md): als vorhandenes Spotify-Connect-Ziel, über eine zugelassene lokale Sonos-Integration und als gesonderte Cloud-Alternative. Für den serverlosen Gerätebetrieb ist die lokale Route der bevorzugte zusätzliche Prüfkandidat. Sie hat noch keine zugesagte Vertriebs-/API-Freigabe. Eine Sonos-Cloud-Integration würde einen sicheren wiederkehrenden Authentifizierungsweg benötigen und wird nicht als bereits gelöste rein lokale Erweiterung behandelt.
+[Die Sonos-Architektur](12-SONOS-PRUEFUNG.md) unterscheidet Connect, offizielle LAN-Steuerung und Cloud. Aktiv geplant sind Roam/Move als Spotify-Connect-Prüfziele und die gesonderte Untersuchung der offiziellen LAN-Integration. Letztere hat noch keine zugesagte Vertriebs-/API-Freigabe. Sonos Cloud mit eigenem Authentifizierungsdienst ist unter den bestätigten Vorgaben keine aktive Umsetzungsroute; die dokumentierte Variante begründet keine Einführung eines solchen Dienstes.
 
 ## 8. Wetter als integrierter Funktionsbereich
 
-[Wetter, Radar und Avatar](14-WETTER.md) teilen sich Zeit, Konfiguration, Assets und UI-Scheduler mit Medien, haben aber eigene Provider-/Standortgenerationen. Der S3 fragt Wetterdienste direkt ab; keine lokale Wettervorhersageberechnung und kein eigener HA-/Rendererserver. Standort/Provider/Morgenavatar sind über die Website konfigurierbar. Drei Radar-Standbildzooms werden portiert; ETA/Richtung brauchen gesonderte gültige Metadaten.
+[Wetter, Radar und Avatar](14-WETTER.md) teilen sich Zeit, Konfiguration, Assets und UI-Scheduler mit Medien, haben aber eigene Provider-/Standortgenerationen. Der S3 fragt für Deutschland geeignete Wetterdienste ohne laufende Anbietergebühren direkt ab; keine lokale Wettervorhersageberechnung und kein eigener HA-/Rendererserver. DWD ist der erste Prüfkandidat, MET Norway gegebenenfalls eine Alternative nach Quellen-/Betriebsnachweis. Bezahlte Open-Meteo-Customer-Tarife sind keine aktive Option. Standort/Provider/Morgenavatar sind über die Website konfigurierbar. Wetter/Avatar gehören zur ersten Version; drei Radar-Standbildzooms folgen in L5. ETA/Richtung brauchen gesonderte gültige Metadaten.
 
 Wetterabruf und Decoder werden Medienbefehlen nachgeordnet, bei OTA ausgesetzt und begrenzt gecacht. Die 15 Wetterfotos werden komprimiert statt als rund 4 MB Rohbilder eingeplant. Signierte Firmware und Assets müssen gemeinsam rückrollbar bleiben. Die letzte gesicherte Quelle darf als veraltet angezeigt, niemals durch erfundene Werte ersetzt werden. Die Wettererweiterung ist geplant; aktuelle Verträge und Webdemo sind dafür noch zu erweitern.

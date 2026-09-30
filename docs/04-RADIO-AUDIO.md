@@ -1,5 +1,7 @@
 # Radioverzeichnis, Ausgabefähigkeiten und Klinke
 
+**Festlegung vom 30. September 2026:** Die erste Version liefert Senderverwaltung; hörbare Radioausgabe folgt als spätere Erweiterung ([Q03](15-OFFENE-PRODUKTENTSCHEIDUNGEN.md)). Klinke/Kopfhörer und ein nativer Sonos-Radiopfad bleiben eigene Prüfaufträge, keine Voraussetzung für den ersten Zweigerätepilot oder die erste Produktversion.
+
 ## 1. Radio Browser als Datenquelle
 
 Empfehlung: [Radio Browser API](https://docs.radio-browser.info/). Öffentliches Senderverzeichnis, keine verpflichtende API-Key-Eingabe für Kunden. Es liefert Sendernamen und Streamadressen; Erreichbarkeit, Codec, Region und Rechte werden dadurch nicht garantiert. Kein eigener vollständiger Datenbankspiegel auf dem Gerät.
@@ -30,7 +32,7 @@ Sonos ist jetzt der konkrete Prüfkandidat für einen solchen zusätzlichen Rend
 
 Ein Connect-Lautsprecher kann zusätzlich etwa einen herstellerspezifischen Radioplayer anbieten. Das macht diesen Radioweg nicht zu Spotify Connect. Eine solche Erweiterung wäre bewusst außerhalb des Spotify-Providers, direkt auf dem Gerät und optional; keine HA-/MA-Brücke.
 
-Die Website kann Radioeinträge immer verwalten, zeigt ohne geeigneten Ausgang „Gespeichert – Radioausgang noch nicht verfügbar“. Nicht schweigend Spotify starten oder eine Radio-URL in ein Spotify-URI-Feld einsetzen. Ein reines Spotify-Connect-Produkt ohne weiteren Audioweg kann die gewünschte Radio-Wiedergabe nicht vollständig erfüllen.
+Die Website kann Radioeinträge immer verwalten, zeigt ohne geeigneten Ausgang „Gespeichert – Radioausgang noch nicht verfügbar“. Nicht schweigend Spotify starten oder eine Radio-URL in ein Spotify-URI-Feld einsetzen. Die Senderverwaltung erfüllt Q03 für die erste Version; eine spätere Radiowiedergabe braucht einen zusätzlich qualifizierten Audioweg.
 
 Spotify- und Radioangebot gemeinsam vor Vertrieb mit dem Produktpartner klären: Öffentliche API-Policy und Hardware-Verträge haben unterschiedliche Kontexte. Keine generelle Freigabe aus technischen APIs ableiten. [Developer Policy](https://developer.spotify.com/policy), [Hardware-Anforderungen](https://developer.spotify.com/documentation/commercial-hardware/implementation/requirements/technical)
 
