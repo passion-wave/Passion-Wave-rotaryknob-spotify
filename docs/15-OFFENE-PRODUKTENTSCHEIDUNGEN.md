@@ -35,6 +35,8 @@ Die zwei Pilotgeräte können nacheinander von weiteren Testpersonen benutzt wer
 
 ## Verbleibende Klärungen und nächste Arbeit
 
+Nachtrag während der Implementierung am 30.09.2026: Hardware vom Nutzer als **JC3636K518C_I_YR1, SKU 10160002 (2633), 360×360 Touch** benannt und USB-Flashen autorisiert. Angeschlossen wurde ein ESP32-U4WDH mit 4 MiB Flash identifiziert; Originalspeicher vollständig gesichert und gegen das Gerät verifiziert. Der zweite Chip ist noch nicht über USB geprüft. Spotify-Dashboardzugang wurde mitgeteilt; Quotenmodus und Freigabe für den Verkauf sind noch nicht nachgewiesen. Normale Spotify-Kundenanmeldung ohne Käufer-Entwicklerkonto ist ausdrücklich gefordert. Die Rückfragen nach Quotenmodus und Akzeptanz einer mobilen Einrichtungs-App sind offen. Siehe [Kundenanmeldung](02-SPOTIFY.md#käufer-melden-sich-mit-ihrem-normalen-konto-an).
+
 | Punkt | Nächster konkreter Auftrag | Entscheidung / Nachweis |
 | --- | --- | --- |
 | Anmeldung ohne eigenen Hilfsdienst | P1/P4.4: zugelassenen Produktflow und Rückweg auf das Gerät unter dieser Vorgabe qualifizieren | G0/G2; keine Ersatz-Cloud und kein manueller Tokenimport als fertiges Kunden-Onboarding |

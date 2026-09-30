@@ -1,4 +1,4 @@
-name: Framework checks
+name: Firmware and framework checks
 on: [push, pull_request]
 permissions:
   contents: read
@@ -11,3 +11,56 @@ jobs:
           persist-credentials: false
       - name: Check examples, models, docs, C++ interfaces and JavaScript
         run: python3 tools/check.py
+  native-and-firmware:
+    runs-on: ubuntu-24.04
+    container: espressif/idf:v5.4.3
+    env:
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Native test dependencies
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends build-essential zlib1g-dev
+      - name: Protocol, settings, weather and real OTA signatures
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /opt/esp/idf/export.sh
+          cc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined \
+            -Ifirmware/components/pw_protocol/include \
+            firmware/components/pw_protocol/pw_protocol.c tests/native/test_protocol.c \
+            -o /tmp/pw-protocol-tests
+          /tmp/pw-protocol-tests
+          sh tests/app_native/run.sh
+          sh tests/storage_native/run.sh
+          sh tests/weather_native/run.sh
+          python tests/update_native/run.py
+          python tests/companion_update_native/run.py
+          python tests/update_service_native/run.py
+      - name: Build both processors with pinned ESP-IDF
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /opt/esp/idf/export.sh
+          idf.py -C firmware/companion -B build/companion build
+          idf.py -C firmware/s3 -B build/s3 build
+          python firmware/components/pw_assets/tests/run_host.py \
+            --lvgl firmware/s3/managed_components/lvgl__lvgl --cc cc
+  device-website:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install isolated Chromium test environment
+        run: |
+          python3 -m venv "$RUNNER_TEMP/pw-browser-env"
+          "$RUNNER_TEMP/pw-browser-env/bin/python" -m pip install playwright==1.58.0
+          "$RUNNER_TEMP/pw-browser-env/bin/python" -m playwright install --with-deps chromium
+      - name: Real website with simulated device responses
+        run: |
+          "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/device_web.py \
+            --screenshots "$RUNNER_TEMP/pw-browser-artifacts"

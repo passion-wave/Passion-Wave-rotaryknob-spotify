@@ -1,0 +1,12 @@
+{
+  "source": "https://download.geonames.org/export/zip/DE.zip",
+  "license": "CC-BY-4.0",
+  "attribution": "GeoNames",
+  "retrieved": "2026-09-30",
+  "source_sha256": "db289ace649de63d3a0bf0ce5a4b2e115ab180cd4c8b3c7218a37143b112748c",
+  "output_sha256": "ac98ead8f24883d108cc8d143fdb3b65f3f7a395aa079941130cebade266f228",
+  "records": 23297,
+  "json_bytes": 1402155,
+  "gzip_bytes": 349442,
+  "changes": "German records, five fields, coordinates rounded to four decimals; duplicates removed and sorted; gzip."
+}

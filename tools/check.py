@@ -3,6 +3,7 @@
 from pathlib import Path
 from urllib.parse import urlsplit
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -51,6 +52,16 @@ def read_json(relative):
     return json.loads((ROOT / relative).read_text())
 
 
+def source_files(suffix):
+    """Check our sources, not generated ESP-IDF output or downloaded dependencies."""
+    excluded = {'.git', 'build', 'managed_components', '__pycache__', '.venv'}
+    for directory, children, names in os.walk(ROOT):
+        children[:] = [name for name in children if name not in excluded]
+        for name in names:
+            if name.endswith(suffix):
+                yield Path(directory) / name
+
+
 def validate_config(data):
     validate(data, read_json('contracts/config.schema.json'))
     for group in ['favorites', 'stations']:
@@ -87,7 +98,7 @@ def validate_manifest(data, *, installable=False):
 
 
 def check_links():
-    for path in ROOT.rglob('*.md'):
+    for path in source_files('.md'):
         for target in re.findall(r'\[[^\]]*\]\(([^)\s]+)\)', path.read_text()):
             if target.startswith(('http:', 'https:', '#', '/')): continue
             local = (path.parent / target.split('#')[0]).resolve()
@@ -115,7 +126,7 @@ def check_openapi():
 
 
 def main():
-    for file in ROOT.rglob('*.json'): json.loads(file.read_text())
+    for file in source_files('.json'): json.loads(file.read_text())
     validate_config(read_json('examples/config.example.json'))
     validate_manifest(read_json('examples/update-manifest.example.json'))
     check_links()
@@ -132,6 +143,7 @@ def main():
     node = shutil.which('node')
     if node:
         subprocess.run([node,'--check',str(ROOT/'web/app.js')],check=True)
+        subprocess.run([node,'--check',str(ROOT/'firmware/web/app.js')],check=True)
         print('Web JavaScript syntax: OK', flush=True)
     else:
         print('Node missing: JavaScript syntax check NOT RUN', flush=True)
