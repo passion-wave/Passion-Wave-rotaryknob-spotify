@@ -18,6 +18,8 @@ Stand 2026-09-30. Für den gewünschten Mehrnutzer-Produktpfad wurden öffentlic
 | ADR-10 | Normales Display-Aus statt S3-Deep-Sleep | S3 muss Website/Provider weiterhin bedienen |
 | ADR-11 | Sicherer Verwaltungs-AP als Basis | Komfortables LAN-HTTPS ohne Zertifikatsbetrieb noch offen |
 | ADR-12 | Externer Linkingdienst nur explizite Option | Kann PKCE vereinfachen, erweitert aber Alles-auf-dem-Gerät-Vorgabe |
+| ADR-13 | Sonos zuerst als Connect-Ziel, LAN gesondert prüfen | Lokale Sonos-Route benötigt belegten Zugang/Lizenz; Cloud ist eine abweichende Betriebsoption |
+| ADR-14 | Ein Provider pro Wiedergabesitzung | Keine Doppelsteuerung desselben Sonos-Raums über verschiedene APIs |
 
 ## Quellenindex
 
@@ -54,3 +56,7 @@ Stand 2026-09-30. Für den gewünschten Mehrnutzer-Produktpfad wurden öffentlic
 ## Heute offene Annahmen
 
 Keine Freigabe des Controllerprofils, kein bestätigtes S3-SDK, keine sichere browserübergreifende automatische OAuth-LAN-Rückgabe, keine vermessene Kopfhörerlast, keine kompilierte native Firmware, keine echte Dual-MCU-OTA. Diese Grenzen sind in Tests/Plan verankert und dürfen bei späterer Umsetzung nur durch konkrete Evidenz aufgehoben werden.
+
+## Sonos-Quellen und Abgrenzung
+
+Die [Sonos-Untersuchung](12-SONOS-PRUEFUNG.md) enthält die einzelnen Primärbelege: Spotify-Support, Sonos-Architektur/Terms, Cloud-Autorisierung, Gruppen-/Favoriten-/Stream-API, Subscriptions und Quoten. Insbesondere Cloud-Veröffentlichung und gesonderte LAN-Lizenz nicht verwechseln; Sonos-Favoriten nicht mit Spotify-URIs gleichsetzen. Sämtliche Sonos-Fähigkeiten und die direkte lokale Geräteautorisierung bleiben ungetestet.

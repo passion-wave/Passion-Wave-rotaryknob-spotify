@@ -38,6 +38,14 @@ Befundarten: **automatisiert am Host**, **simuliert**, **auf echter Hardware gem
 | OTA-06 | Browser geschlossen, UART-Chunk doppelt/verloren | Gerätejob deterministisch, keine Doppelaktivierung, Resume geprüft |
 | OTA-07 | Migration + Rückfall | Alte Konfiguration/Secrets bleiben verwendbar |
 | OTA-08 | Unter Sicherheitsversion / widerrufener Schlüssel | Abgelehnt; dokumentierter zulässiger Rettungsweg |
+| SON-01 | Sonos über Connect nach Kaltstart/Standby | Ziel sichtbar/steuerbar oder erklärter fehlender Zustand, keine fremde Ausgabe |
+| SON-02 | Offizielle lokale Sonos-Produktanbindung | LAN-Zugang, Lizenz und sichere Authentifizierung belegt |
+| SON-03 | Gruppe/Koordinator/Raumname ändert sich | Playeranker korrekt aufgelöst, keine still hinzugefügten Räume |
+| SON-04 | Derselbe Raum über Connect und Sonos | Genau eine Befehlsautorität, alte Generationsantworten verworfen |
+| SON-05 | Spotify-/Radiofavorit, Podcast, freie URL | Inhalts-/Queuewirkung und jede Wiedergabefähigkeit separat nachgewiesen |
+| SON-06 | Mehrere Haushalte, Konto getrennt, Favorit entfernt | Keine fremde Referenz, verständliche Wiederverknüpfung |
+| SON-07 | Portable Modelle/WLAN/Bluetooth/Schlaf und ältere Generation | Tatsächliche Modell-/Firmwarematrix, keine pauschale Wake-/S1-Zusage |
+| SON-08 | Falls Cloud gewählt: Refresh/Events/Quota | Kein geteiltes Secret im Gerät; sicherer dauerhafter Weg und appweites Budget |
 | SOAK-01 | 72 h gemischter Betrieb | Keine wachsenden Lecks/Queues, keine verlorene Verwaltung |
 | PILOT-01 | Zehn neue Nutzer | Einrichtung ohne Entwicklerhilfe; Ziel median <3 min und p90 <5 min, erst messen |
 
@@ -50,3 +58,5 @@ Pro Gate: Commit, Build-/SDKversion, Produkt-/Chiprevision, beide Firmwarehashes
 `python3 tools/check.py` führt Tests der Hostmodelle aus und prüft Vertragsbeispiele/Referenzen. Die Modelle erhalten Signatur-/Freigabeevidenz als Parameter, **prüfen diese nicht kryptografisch**. Produktionsadapter müssen diese Evidenz aus verifizierten, nicht vom Browser gesetzten Quellen bilden. Die Webdemo simuliert ebenfalls nur Zustände.
 
 Ein einzelner erfolgreicher Hosttest gilt nie als bestandenes Produktgate. Vor Release sind insbesondere echte HTTPS-/PKCE-Interoperabilität, der SDK-Port, Audioelektrik und Flash-/Bootloaderverhalten erforderlich.
+
+Details und Reihenfolge der Sonos-Gates: [Sonos-Prüfplan](12-SONOS-PRUEFUNG.md). Noch keine Sonos-Hardwareabnahme durchgeführt.

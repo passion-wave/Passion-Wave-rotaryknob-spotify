@@ -74,3 +74,7 @@ Development-Profile liefern Playlistinhalte nur bei Eigentum/Mitarbeit. Die erfo
 PKCE und eSDK-ZeroConf sind verschiedene Pfade; siehe [Onboarding](03-ONBOARDING-WEB.md). Browser-Web-Playback-SDK würde im Telefonbrowser spielen, nicht im ESP32 und nicht an dessen Klinke. Lokale Spotify-Audiowiedergabe benötigt einen separat freigegebenen Empfänger und dessen Audio-/Codec-Ressourcen. [Web Playback SDK](https://developer.spotify.com/documentation/web-playback-sdk)
 
 Die öffentliche eSDK-Speicherempfehlung liegt oberhalb des internen Speichers des classic ESP32; S3-PSRAM hilft nur, wenn das tatsächliche SDK/Port es unterstützt. Erste Integration misst Speicher, Timing und Decoderlast; SDK-Verfügbarkeit bleibt offen. [Technische Anforderungen](https://developer.spotify.com/documentation/commercial-hardware/implementation/requirements/technical)
+
+## Sonos als zusätzliche Ausgabe
+
+Sonos wird zuerst als `spotify_connect`-Ziel getestet. Für diesen Weg bleiben Spotify-Produktgate und Laufzeitrestriktionen bestehen. Ein separater Sonos-Favoritenpfad verwendet künftig eigene Konto-/Inhaltsreferenzen und muss unter seinen tatsächlichen Plattformbedingungen geprüft werden; er ist keine automatische Freigabe der direkten Spotify-API. Architektur und Prüfungen: [Sonos](12-SONOS-PRUEFUNG.md).

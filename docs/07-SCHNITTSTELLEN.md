@@ -55,3 +55,7 @@ OTA-Chunk enthält Offset/Transfer-ID/Länge; Begleitprozessor setzt eigene Boun
 `tools/reference_model.py` enthält abstrahierte Capability-Entscheidung und OTA-Automat. Es erhält **bereits verifizierte** Evidenz aus Testfixtures, kann aber diese Evidenz nicht herstellen. Produktzulassung/Signatur/Bootgesundheit dürfen niemals aus Benutzer-JSON befüllt werden. `snapshot()` modelliert einen Checkpoint im Speicher; der persistente sichere Journaladapter fehlt.
 
 `tools/check.py` nutzt einen bewusst begrenzten Strukturprüfer für die im Repo verwendeten JSON-Schema-Schlüsselwörter und zusätzliche semantische Ablehnungsfälle. Es ist kein allgemein vollständiger JSON-Schema-/OpenAPI-Validator. Vor Codegenerierung/Produktimplementierung einen standardkonformen Validator und HTTP-Vertragstests mit echten Antworten ergänzen; dies ist P3/P6, kein heute erfülltes Gate.
+
+## Sonos: vorgesehene nächste Vertragserweiterung
+
+[Die Architekturprüfung](12-SONOS-PRUEFUNG.md) definiert getrennte Ausgaberouten, Haushalts-/Playeranker, flüchtige Gruppenreferenzen und `sonos_favorite_ref`. Erst nach belegter Schnittstelle wird daraus eine Schema-/API-Version. Sonos über Connect bleibt heute `spotify_connect`; `vendor_radio` ist keine pauschale Sonos-Fähigkeit. Ein künftiger Router bindet genau einen Provider an eine Sitzung und verwirft beim expliziten Routenwechsel alte Generationen. Die bestehenden Modelle und Verträge behaupten noch keinen Sonos-LAN-/Cloud-Adapter.

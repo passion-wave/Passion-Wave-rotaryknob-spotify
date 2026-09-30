@@ -26,6 +26,8 @@ Im Webentwurf sind Suchergebnisse Beispiele. Live-API und Streamprobe sind noch 
 | MP3/AAC-Radiostream | **nicht über Connect** | nach Decoder-/Hardwareprüfung | nur für konkret unterstützte Geräte |
 | HLS/andere Codecs | **nicht über Connect** | zunächst deaktiviert, eigener Decoder-/Speichertest | capabilityabhängig |
 
+Sonos ist jetzt der konkrete Prüfkandidat für einen solchen zusätzlichen Renderer: zunächst vorhandene Sonos-Radiofavoriten, danach eigene Radio-Browser-URLs unter gesondertem API-/Sessionnachweis. Siehe [Sonos-Prüfung](12-SONOS-PRUEFUNG.md). Ein erfolgreicher Spotify-Start auf Sonos belegt keinen Radio-URL-Pfad.
+
 Ein Connect-Lautsprecher kann zusätzlich etwa einen herstellerspezifischen Radioplayer anbieten. Das macht diesen Radioweg nicht zu Spotify Connect. Eine solche Erweiterung wäre bewusst außerhalb des Spotify-Providers, direkt auf dem Gerät und optional; keine HA-/MA-Brücke.
 
 Die Website kann Radioeinträge immer verwalten, zeigt ohne geeigneten Ausgang „Gespeichert – Radioausgang noch nicht verfügbar“. Nicht schweigend Spotify starten oder eine Radio-URL in ein Spotify-URI-Feld einsetzen. Ein reines Spotify-Connect-Produkt ohne weiteren Audioweg kann die gewünschte Radio-Wiedergabe nicht vollständig erfüllen.

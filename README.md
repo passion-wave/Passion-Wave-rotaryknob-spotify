@@ -10,13 +10,16 @@ Ein kommerziell nutzbarer Spotify-Controller für fremde Connect-Lautsprecher is
 
 Das Framework isoliert diesen offenen Punkt in einem Provider-Adapter. Lokale Bedienung, Konfiguration, Transport, Sicherheit und Updates lassen sich unabhängig entwickeln. **Keine Verteilung eines gemeinsamen Developer-API-Projekts als Produkt und kein Client-ID-Splitting zur Umgehung von Limits.**
 
+Repository: [passion-wave/Passion-Wave-rotaryknob-spotify](https://github.com/passion-wave/Passion-Wave-rotaryknob-spotify).
+
 ## Einstieg
 
 1. [Gesamtkonzept](docs/01-GESAMTKONZEPT.md): Produktumfang, Architektur, Entscheidungen.
 2. [Schrittweiser Implementierungsplan](docs/08-IMPLEMENTIERUNGSPLAN.md): Arbeitspakete, Abhängigkeiten, Abnahmen.
 3. [Spotify](docs/02-SPOTIFY.md), [Onboarding & Website](docs/03-ONBOARDING-WEB.md), [Radio & Klinke](docs/04-RADIO-AUDIO.md).
 4. [OTA & Sicherheit](docs/05-OTA-SICHERHEIT.md), [Übernahme aus dem Bestandsprojekt](docs/06-UPSTREAM.md), [Schnittstellen](docs/07-SCHNITTSTELLEN.md), [Testplan](docs/09-ABNAHME.md).
-5. [Entscheidungen und Quellen](docs/10-ENTSCHEIDUNGEN-QUELLEN.md) und [Prüfbericht](docs/11-PRUEFBERICHT.md).
+5. [Sonos-Architektur und Prüfplan](docs/12-SONOS-PRUEFUNG.md): Connect-Ziele, lokale Sonos-Anbindung, Favoriten, Gruppen und Radio.
+6. [Entscheidungen und Quellen](docs/10-ENTSCHEIDUNGEN-QUELLEN.md) und [Prüfbericht](docs/11-PRUEFBERICHT.md).
 
 ## Ausprobieren und prüfen
 
@@ -43,4 +46,4 @@ Die Website ist ein **interaktiver Entwurf mit Beispieldaten**. Sie speichert Ä
 | `tests/` | Ablehnungsfälle, OTA-Ausfall- und Kompatibilitätsregeln |
 | `research/` | Datiertes Audit der vorhandenen Hardware und Primärquellen |
 
-Separate Historie und Versionslinie `0.1.0-framework.1`; keine unveränderte Kopie der HA-Firmware. Wiederverwendung erfolgt gezielt aus dokumentierten Commits mit erhaltenen Lizenzhinweisen. Keine Veröffentlichung, Geräteänderung oder Spotify-Registrierung durch dieses Framework.
+Separate Historie und Versionslinie `0.1.0-framework.1`; keine unveränderte Kopie der HA-Firmware. Wiederverwendung erfolgt gezielt aus dokumentierten Commits mit erhaltenen Lizenzhinweisen. Framework-Quellen werden im verknüpften GitHub-Repository gepflegt. Keine Geräteänderung, Spotify-/Sonos-Registrierung oder ausführbare Firmwareveröffentlichung durch dieses Framework.

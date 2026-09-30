@@ -9,6 +9,7 @@ Ein vorkonfiguriertes Gerät wird mit Strom versorgt, mit dem WLAN und einem Spo
 | Funktion | Ziel | Bedingung |
 | --- | --- | --- |
 | Spotify auf vorhandenem Connect-Lautsprecher | Kernfunktion | Produktgenehmigung und geeigneter offizieller Controller-Zugang müssen zuerst belegt werden |
+| Sonos-Lautsprecher | Zusätzliche Architekturprüfung | Connect-Ziel zuerst; direkte lokale Sonos-Integration unter eigenem Gate, siehe [Sonos](12-SONOS-PRUEFUNG.md) |
 | Play/Pause, Titelwechsel, Lautstärke, Fortschritt, Cover | Kernfunktion | Capability des Zielgeräts und zugelassener Schnittstelle |
 | Freigegebene Playlists und Podcasts | Kernfunktion | Verlinken/aus Spotify übernehmen; keine eigene Spotify-Suche ohne passende Freigabe |
 | Lokale Konfigurationswebsite | Kernfunktion | Alle Einstellungen und Favoriten auf dem Gerät |
@@ -30,7 +31,8 @@ flowchart LR
   D[Touch + EC1] --> S3[ESP32-S3: Produktzustand, LVGL, Website, Provider, OTA]
   S3 <-->|PW-S-Protokoll: COBS / CRC / ACK| E[ESP32: Begleitfunktionen, Mute, Diagnose, Recovery]
   S3 <-->|freigegebener Spotify-Adapter / TLS| SP[Spotify]
-  SP ==>|Spotify-Audio| C[Spotify-Connect-Lautsprecher]
+  SP ==>|Spotify-Audio| C[Spotify-Connect-Lautsprecher einschließlich Sonos-Prüfgeräte]
+  S3 -.->|Sonos LAN: Zugang und Lizenz offen| SN[Sonos-Gruppen / Favoriten / Radio]
   S3 -->|Radio-Suche / HTTPS| RB[Radio Browser]
   S3 -.->|optionale Decoder + I2S| DAC[PCM5100A / analoger Ausgang]
   S3 -->|signierter Download / HTTPS| U[statischer Update-Host]
@@ -45,6 +47,7 @@ Die Verbindung Spotify → Lautsprecher ist der Audioweg. Der Controller leitet 
 | `product_core` | Einziger serialisierter fachlicher Zustand, Konfigurationsrevision, Fehlerzustände | `DeviceState`, `ConfigRevision`, Befehls-ID und Generation |
 | `input_ui` | EC1-Pulserkennung, Touch, sofortige visuelle Rückmeldung, UI-Zustand | kleine gebundene Befehle, keine Netzaufrufe im UI-Thread |
 | `spotify_provider` | Zugelassene Spotify-Identität und Fähigkeiten, Status und Aktionen | abstraktes `MediaProvider`; Produktadapter erst nach Gate G0 |
+| `output_router` / `sonos_provider` | Geplante einzelne Steuerautorität und gesonderte Sonos-Route nach Nachweis | Haushalts-/Playeranker, dynamische Gruppen, getrennte Favoriten-/Radiofähigkeiten; [Prüfung](12-SONOS-PRUEFUNG.md) |
 | `catalog` | Freigegebene Favoriten, Reihenfolge, Paginierung, lokale Bezeichnungen | Playlists, Shows, Episoden, Radioeinträge |
 | `web_admin` | Lokale statische Assets, Konfigurations-API, Sitzungen, Job-Fortschritt | Keine Tokens/Passwörter über GET oder Export |
 | `credentials` | Geräteschlüssel und Provider-Credentials | verschlüsselter nicht exportierbarer Speicher |
@@ -94,3 +97,7 @@ Ein statischer Updatehost und gegebenenfalls eine freigegebene HTTPS-Anmeldeseit
 Erstzulassung mit einem zugelassenen Spotify-Konto, einem Connect-Lautsprecher und wenigen Favoriten, stabile Titel-/Coverwechsel, Neuverbindung nach Stromausfall, vollständig lokale Konfiguration und unterbrochenes Update beider Chips überstanden. Öffentliche Produktreife verlangt zusätzlich mehrere Nutzer, mehrere Lautsprechertypen, Plattform-Onboarding und die Gates im [Implementierungsplan](08-IMPLEMENTIERUNGSPLAN.md).
 
 Normaler Standby schaltet das Display ab und nutzt abgestimmten Modem Sleep. Der S3 muss für Website und Provider erreichbar bleiben; sein bisheriges Deep Sleep wäre jetzt ein ausdrücklich offline gehender Betriebsmodus.
+
+## 7. Sonos-Erweiterung
+
+[Sonos wird in drei getrennten Wegen geprüft](12-SONOS-PRUEFUNG.md): als vorhandenes Spotify-Connect-Ziel, über eine zugelassene lokale Sonos-Integration und als gesonderte Cloud-Alternative. Für den serverlosen Gerätebetrieb ist die lokale Route der bevorzugte zusätzliche Prüfkandidat. Sie hat noch keine zugesagte Vertriebs-/API-Freigabe. Eine Sonos-Cloud-Integration würde einen sicheren wiederkehrenden Authentifizierungsweg benötigen und wird nicht als bereits gelöste rein lokale Erweiterung behandelt.

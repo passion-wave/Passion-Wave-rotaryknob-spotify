@@ -126,3 +126,16 @@ flowchart LR
 ```
 
 Nächster Firmwareauftrag: P2-Board-/Ressourcenspitze auf einem ausdrücklich gewählten Testgerät. Parallel kann der Eigentümer P1 klären. Keine Produkt-Client-ID und keine Firmwareveröffentlichung werden in der Planungsphase angelegt.
+
+## Zusätzlicher Sonos-Prüfzweig S (vor Adapterimplementierung)
+
+Einordnung: [Sonos-Architektur](12-SONOS-PRUEFUNG.md). S1 kann mit P5 laufen, S2 parallel zu P1; keine zusätzliche Firmware-/Backendabhängigkeit wird vorausgesetzt.
+
+1. **S1 Connect-Spike (1–2 Tage nach geeignetem API-Zugang):** vorhandenen Move nach Generation inventarisieren, stationäres Vergleichsgerät, Einzel-/Gruppenziel, Sichtbarkeit, Start/Volume/Metadaten, Standby und Reconnect. Gate S-CONNECT.
+2. **S2 LAN-Produktzugang (externe Dauer offen):** offizielle Lizenz/Zugang, sicheres lokales Pairing, Discovery/Events, Gerätegenerationen und Content-/Radiofähigkeiten bestätigen. Gate S0-LAN.
+3. **S3 Adapterentwurf (1–2 Tage nach S2):** eine Steuerautorität, Playeranker statt dauerhafter Gruppen-ID, haushaltsgebundene Sonos-Favoriten, keine geheimen Musikdienstzugänge auslesen. Schnittstellenänderung gemeinsam versionieren.
+4. **S4 Inhalts-/Radio-Spike (2–4 Tage nach Zugang):** Spotify-Favorit/Podcast, Queuewirkung, vorhandene Radiofavoriten, eigene Radio-Browser-URL getrennt. Cloud-Sessionbedingungen nicht ungeprüft auf LAN übertragen. Gates S-FAVORITE, S-RAD-01/02.
+5. **S5 Gruppen-/Route-/Modelltest (2–3 Tage):** Wechsel während Bedienung, doppelte Sichtbarkeit über Connect/Sonos, mehrere Haushalte, portable Geräte und optionale S1-Kompatibilität. Gates S-GROUP, S-ROUTE, S-MODEL.
+6. **S6 Entscheid:** lokalen Adapter nach erfolgreicher Prüfung in P5/P6 integrieren; bei fehlendem Zugang Connect-Pfad behalten. Cloud nur mit ausdrücklich akzeptiertem sicheren Dauerbetrieb, keine geteilten Firmwaresecrets und kein stiller Serverzwang.
+
+Diese Schätzungen betreffen die Untersuchung, nicht bereits eine vollständige Sonos-Implementierung. Alle Sonos-Gates sind offen; bestehende OTA-/Hardwareabnahmen bleiben erforderlich.

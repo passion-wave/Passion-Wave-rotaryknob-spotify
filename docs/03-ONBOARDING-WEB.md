@@ -66,3 +66,7 @@ Responsive 360-px-Handy bis Desktop, Tastaturbedienung, sichtbarer Fokus, Beschr
 - Mehrere Knobs/Browser: Produkt-ID am Display vergleichen; Sitzung an dieses Gerät binden.
 - Smartphone schläft oder schließt Tab: Update und Verbindungsprüfung laufen auf dem Gerät; Browser liest später Status neu.
 - Eigentümerwechsel: komplette lokale Kontotrennung und neue Verwaltungsschlüssel.
+
+## 6. Sonos-Onboarding als geplante Erweiterung
+
+Die [Sonos-Prüfung](12-SONOS-PRUEFUNG.md) ergänzt eine explizite Ausgaberoute. Spotify Connect nutzt den vorhandenen Verknüpfungsweg; ein freigegebener Sonos-Adapter erhält eigene Haushalts-/Raumwahl und erlaubte Favoriten. Aktuelle Gruppenmitglieder sind sichtbar, bevor die Wiedergabe auf zusätzliche Räume ausgeweitet wird. Solange lokale Authentifizierung/Lizenz ungeklärt sind, zeigt die Website keine funktionierende Sonos-Verknüpfung an. Die Sonos-Cloud-Variante braucht einen eigenen sicheren Authentifizierungs-/Refresh-Entscheid; der einmalige Spotify-PKCE-Callbackentwurf ist hierfür nicht übertragbar.
