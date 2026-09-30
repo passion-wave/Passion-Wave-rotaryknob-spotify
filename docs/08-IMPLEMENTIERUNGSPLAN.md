@@ -2,7 +2,7 @@
 
 Stand: 30. September 2026. Ziel: eigenständiges Gerät für weitere Nutzer mit vertrauter Medienbedienung, Spotify Connect, Wetter inklusive Avatar und Radar, geräteinterner Konfigurationswebsite, Radioverwaltung und gemeinsamem OTA. Kein Home Assistant oder Music Assistant im Betrieb. Wetter ist auf ausdrücklichen Nutzerwunsch Teil des Plans; die frühere Beschränkung auf Musik ohne Wetter ist damit aufgehoben.
 
-**Planungsstatus:** P0 ist als Framework vorhanden. Alle folgenden Firmware-, Hardware-, Provider- und Produktgates sind offen. Die [Featuretabellen](13-FEATURE-PORTIERUNG.md) zeigen pro Funktion Bestand, Problem und kurze Umsetzung. Der [Abnahmekatalog](09-ABNAHME.md) beschreibt die erforderlichen Nachweise. Die [Wetterarchitektur](14-WETTER.md) behandelt direkte Datenquellen, Radar, Speicher und Avatar.
+**Umsetzungsstatus:** P0 ist als Framework vorhanden; native Teilumfänge aus Board/UI, Website, Wetter/Avatar und signierter Updatevorbereitung sind inzwischen implementiert und auf dem Host geprüft. Den aktuellen Code-, Build- und Prüfstand beschreibt [Native Implementierung](16-NATIVE-IMPLEMENTIERUNG.md). Noch kein kompletter Lieferstand L1–L5 ist physisch abgenommen. Die [Featuretabellen](13-FEATURE-PORTIERUNG.md) zeigen pro Funktion Bestand, Problem und kurze Umsetzung. Der [Abnahmekatalog](09-ABNAHME.md) beschreibt die erforderlichen Nachweise. Die [Wetterarchitektur](14-WETTER.md) behandelt direkte Datenquellen, Radar, Speicher und Avatar.
 
 **Bestätigte Produktvorgaben:** Die [neun beantworteten Rückfragen](15-OFFENE-PRODUKTENTSCHEIDUNGEN.md) legen fest: kein eigener externer Anmeldedienst, sichere Website jederzeit im Heim-WLAN, zunächst Radioverwaltung, gebührenfreie Wetterquellen für Deutschland, Radar als Nachlieferung und erreichbarer USB-Normalbetrieb. Der Pilot umfasst zwei RotaryKnobs des bisherigen Projekttyps mit Sonos Roam und Move als Testausgaben. Genaue Revisionen/Generationen, Erweiterungsmenge und Termin sind noch offen.
 
@@ -12,7 +12,7 @@ Referenz ist `Passion-Wave-rotaryknob` Version `3.0.1-beta.16`, Commit `9cc5576c
 
 | Lieferung | Ergebnis | Abnahmegrenze |
 | --- | --- | --- |
-| L0 Framework | Verträge, Modelle, Webdemo, vollständiger Plan | Heutiger Stand; keine lauffähige Firmware |
+| L0 Framework | Verträge, Modelle, Webdemo, vollständiger Plan | Planungsbasis; allein noch keine Gerätefirmware |
 | L1 Hardwareprototyp | Ring, Touch, Haptik, Medien-/Wetter-UI mit markierten Testdaten, lokaler Kern | USB-Laborstand; keine behauptete Onlinefunktion |
 | L2 verwaltbares Gerät | WLAN, sichere Website, Einstellungen/Katalog, Diagnose und qualifiziertes Pair-OTA | Spotify-Anmeldung nur nach passendem Zugang; Wetter kann separat echt laufen |
 | L3 integrierter Pilot: zwei Knobs | Freigegebene Spotify-Steuerung auf Sonos Roam/Move, Playlists/Podcasts nach Fähigkeit, Radioverwaltung, Wetter/Avatar, Website und OTA | Gerätebezogene G0–G5/W1-Nachweise, erster P9-Dauerlauf; keine allgemeine Vertriebsfreigabe |

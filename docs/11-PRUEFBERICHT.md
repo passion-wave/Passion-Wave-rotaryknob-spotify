@@ -2,6 +2,8 @@
 
 Datum: 30. September 2026. Dies ist die Prüfung des Framework-Repositories, nicht des späteren Geräts.
 
+**Historischer Framework-Nachweis:** Die folgenden Abschnitte betreffen die Planungsphase vor der nativen Implementierung. Inzwischen ergänzen reale Firmwarebuilds, Signatur-/Hosttests und Browserprüfungen diesen Stand. Der aktuelle Nachweis einschließlich weiterhin offener physischer Abnahmen steht in [Native Implementierung und Geräteabnahme](16-NATIVE-IMPLEMENTIERUNG.md).
+
 ## Ausgeführt
 
 - `python3 tools/check.py`: **35 Tests bestanden** (23 Referenzmodelltests, 12 Vertragsprüfungen), JSON-Beispiele, zusätzliche Semantik, interne Markdownlinks und OpenAPI-Referenzen geprüft.

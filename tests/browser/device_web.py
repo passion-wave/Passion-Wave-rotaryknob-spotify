@@ -79,8 +79,14 @@ def main():
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.route('**/*', route)
         page.goto('http://192.0.2.1/')
-        page.locator('#wifi-ssid').wait_for()
+        page.locator('#wifi-ssid').wait_for(state='attached')
         page.wait_for_function('!document.querySelector("#wifi-ssid").disabled && !document.querySelector("#wifi-ssid").closest("fieldset").disabled')
+        # The connected-device status intentionally collapses WLAN setup.
+        # Wait for initialization, then open it as a user would; observing the
+        # initial HTML before that response is a race on slower CI runners.
+        assert not page.locator('#wifi-details').evaluate('(element) => element.open')
+        page.locator('#wifi-summary').click()
+        page.locator('#wifi-ssid').wait_for(state='visible')
         assert page.locator('#security-notice').is_hidden()
         page.screenshot(path=str(args.screenshots / 'mobile-overview.png'), full_page=True)
 
