@@ -20,6 +20,10 @@ Stand 2026-09-30. Für den gewünschten Mehrnutzer-Produktpfad wurden öffentlic
 | ADR-12 | Externer Linkingdienst nur explizite Option | Kann PKCE vereinfachen, erweitert aber Alles-auf-dem-Gerät-Vorgabe |
 | ADR-13 | Sonos zuerst als Connect-Ziel, LAN gesondert prüfen | Lokale Sonos-Route benötigt belegten Zugang/Lizenz; Cloud ist eine abweichende Betriebsoption |
 | ADR-14 | Ein Provider pro Wiedergabesitzung | Keine Doppelsteuerung desselben Sonos-Raums über verschiedene APIs |
+| ADR-15 | Wetter ausdrücklich im Portumfang | Direkte S3-Provider ersetzen HA; UI, Wetterfotos und Avatar werden portiert |
+| ADR-16 | Wetter und Radar haben getrennte Datenverträge | Stundenforecast ist kein Nowcast; ETA/Vektor benötigen eigenes Gate |
+| ADR-17 | Komprimierte lokale Wetter-/Avatarassets | Flashbudget mit A/B und Signatur-/Rollbackbindung früh qualifizieren |
+| ADR-18 | Bestand, Anpassung und neue Funktionen getrennt | Quellaudit statt pauschalem Kopierplan; Backendautorität wandert auf S3 |
 
 ## Quellenindex
 
@@ -60,3 +64,9 @@ Keine Freigabe des Controllerprofils, kein bestätigtes S3-SDK, keine sichere br
 ## Sonos-Quellen und Abgrenzung
 
 Die [Sonos-Untersuchung](12-SONOS-PRUEFUNG.md) enthält die einzelnen Primärbelege: Spotify-Support, Sonos-Architektur/Terms, Cloud-Autorisierung, Gruppen-/Favoriten-/Stream-API, Subscriptions und Quoten. Insbesondere Cloud-Veröffentlichung und gesonderte LAN-Lizenz nicht verwechseln; Sonos-Favoriten nicht mit Spotify-URIs gleichsetzen. Sämtliche Sonos-Fähigkeiten und die direkte lokale Geräteautorisierung bleiben ungetestet.
+
+## Wetterquellen und Portplanung
+
+[Wetterarchitektur](14-WETTER.md) enthält die offiziellen Belege zu DWD MOSMIX/WMS/Nutzungsrechten, Open-Meteo Customer API und Intervallen, MET Norway und RainViewer. DWD-Direktzugang ist der erste schlüssellose Spike; Open-Meteo bleibt ein funktionaler Komfortkandidat unter Schlüssel-/Produktgate. Die aktuelle DWD-WMS-Layerprobe ist offen. RainViewer-Transitionangaben haben Vorrang vor älteren FAQ-Versprechen zu Zukunftsradar.
+
+[Featuretabellen](13-FEATURE-PORTIERUNG.md) verankern den lokalen Codeaudit auf `9cc5576`. Quelltext und Modelltests ersetzen weder physische Wetter-/Radarabnahme noch neue Produktfreigaben. Die freien Wetterangebote sind nicht pauschal als unbegrenzte kommerzielle Flottenlösung eingeplant.

@@ -59,3 +59,9 @@ OTA-Chunk enthält Offset/Transfer-ID/Länge; Begleitprozessor setzt eigene Boun
 ## Sonos: vorgesehene nächste Vertragserweiterung
 
 [Die Architekturprüfung](12-SONOS-PRUEFUNG.md) definiert getrennte Ausgaberouten, Haushalts-/Playeranker, flüchtige Gruppenreferenzen und `sonos_favorite_ref`. Erst nach belegter Schnittstelle wird daraus eine Schema-/API-Version. Sonos über Connect bleibt heute `spotify_connect`; `vendor_radio` ist keine pauschale Sonos-Fähigkeit. Ein künftiger Router bindet genau einen Provider an eine Sitzung und verwirft beim expliziten Routenwechsel alte Generationen. Die bestehenden Modelle und Verträge behaupten noch keinen Sonos-LAN-/Cloud-Adapter.
+
+## Vollständiger Port und Wetterverträge: noch zu ergänzen
+
+P3/P6/P10/P11 ergänzen nach [Implementierungsplan](08-IMPLEMENTIERUNGSPLAN.md) fehlende Dim-/Fade-/Auto-Cover-/Haptikparameter, paginierte Track-/Episodenmodelle sowie Wetterkonfiguration, Snapshots und Radarstatus. Heute gibt es dafür weder vollständige Schemafelder noch fertige Endpunkte. Keine Dokumentationszeile schaltet eine Runtimefähigkeit frei.
+
+`WeatherSnapshot` bindet Standortrevision, Quellen-/Modell-/Prüfzeiten, Feldgültigkeit, UTC-Intervalle und Einheiten. Maximal 48 Stunden/5 Tage als Startlimit. Avatar-Kontextfrische, Beobachtungsalter und Forecast-Modellgültigkeit werden getrennt behandelt. `RadarSnapshot` hat Bildzeit, Gebiet/Zoom und gesonderte ETA-/Vektorfähigkeiten. Wetter-API-Keys bleiben im CredentialStore; Exporte enthalten sie nie. Exportierte Koordinaten bewusst anzeigen und im Supportexport optional entfernen. Änderungen gemeinsam mit Standardvalidierung, Beispielen, Migrationen und HTTP-Vertragstests umsetzen.

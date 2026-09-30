@@ -11,3 +11,6 @@ Dieses Repository ist ein eigenständiges Spotify-Edition-Framework. Lies README
 - Noch keine Toolchain freigegeben. Keine Firmware als baubar/flashbar markieren, bevor Board-, SDK-, Speicher- und Recovery-Gates belegt sind.
 - OTA bleibt signiert, kompatibilitätsgeprüft und transaktional über beide Chips. Kein gemeinsames Factory-Passwort, keine Tokens in Exporten oder Logs.
 - Proprietäres SDK darf nur entsprechend Partnervertrag außerhalb öffentlicher Artefakte eingebunden werden. Lizenzhinweise übernommener Quellen erhalten.
+
+- Wetter, Forecast, Wetter-Screensaver, Avatar und Radar sind ausdrücklich im Portumfang. Lies docs/14-WETTER.md; direkte Datenanbieter ersetzen HA. Radar-ETA/-Vektor, kommerzielle Nutzung und Assetbudget bleiben eigene Gates.
+- Vollständige Feature-/Quellzuordnung und Paketplanung: docs/13-FEATURE-PORTIERUNG.md und docs/08-IMPLEMENTIERUNGSPLAN.md. Neue Funktionen nicht als unveränderte Bestandsports ausgeben.

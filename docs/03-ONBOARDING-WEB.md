@@ -10,7 +10,9 @@ Ziel: möglichst wenige Schritte für Kunden, keinerlei Entwicklerkonto, keine m
 4. Gerät bestätigt Verbindung und zeigt Namen/IP; Telefon wieder ins Heimnetz wechseln. Verlauf/Onboarding-Status bleibt auf dem Gerät erhalten, nicht nur in einem verlorenen Mini-Browser.
 5. „Mit Spotify verbinden“ über **freigegebenen** Anmeldeadapter. Vollständiger Systembrowser oder offizielle Spotify-App, nicht Spotify-Passwort in einem Geräteformular.
 6. Verfügbaren Lautsprecher bewusst wählen, Lautstärkefähigkeit anzeigen und kurze Testwiedergabe nach Nutzeraktion. Nichts automatisch in einem anderen Raum starten.
-7. Favoriten freigeben: Spotify-Link übernehmen oder freigegebener Preset-Weg. Reihenfolge und Anzeigenamen festlegen. „Fertig“ zeigt Bedienhilfe am Knob.
+7. Favoriten freigeben: Spotify-Link übernehmen oder freigegebener Preset-Weg. Reihenfolge und Anzeigenamen festlegen.
+8. Wetter optional im Wizard aktivieren: Ort oder Koordinaten und Zeitzone bestätigen, Anbieterhinweis und Avatar-Vorschau anzeigen. Wetter kann später eingerichtet werden; ohne Standort bleibt die Seite erklärt unkonfiguriert.
+9. „Fertig“ zeigt Bedienhilfe am Knob. Keine neue PassionWave-Wetterkonto-Pflicht; mögliche Providerkeys/Verträge werden vor Produktauslieferung geklärt.
 
 Der erste Alltagsschritt ist Drehen/Touch. Hilfe erscheint an Fehlerstellen, nicht als technisches Handbuch. Buttons heißen „Erneut verbinden“, „Anderen Lautsprecher wählen“, „Update wiederholen“.
 
@@ -49,7 +51,8 @@ Kein erfundener Spotify-Device-Code-Flow, kein Client-Secret in Firmware, keine 
 | Einrichtung | Fortschritt, WLAN-Verbindung/Wechsel, Spotify verbinden/trennen, Lautsprecherwahl, Test |
 | Inhalte | Playlist-/Podcast-/Episodenlinks, Freigabe, Reihenfolge, Namen, entfernen, Metadatenstatus; Radio-Suche und eigene URLs |
 | Wiedergabe | bevorzugtes Gerät, manuelle Gerätewahl, Lautstärkeobergrenze, Schrittweite, Shuffle/Repeat soweit unterstützt, Startverhalten ohne Autoplay |
-| Gerät | Name, Sprache, Zeitzone/Zeitstatus, Displayhelligkeit, Nachtgrenze, Display-Aus-Zeit, Haptik, Drehrichtung/Empfindlichkeit, Netzstatus |
+| Gerät | Name, Sprache, Zeitzone/Zeitstatus, Helligkeit, Nachtgrenze, Dim-/Fadezeiten, Display-Aus getrennt nach Playback, Haptik/Effekt, Drehrichtung/Schrittweite, Auto-Cover, Netzstatus |
+| Wetter und Avatar | Aktiv, Standort/Koordinaten, Zeitzone, Anbieter/Quellenzeit, Einheiten, Radarstatus, Attribution, Haarwahl und Morgenautomatik; keine vorgetäuschte Radar-ETA |
 | Updates | installierte/angebotene Produktversion, beide Chips, Kanal stabil/beta, Notizen, signiertes Paket, Prüfung, Start, Fortschritt, Recovery |
 | Erweitert / Hilfe | Konfigurationsexport ohne Geheimnisse, geprüfter Import, Diagnose ohne Tokens, Besitzerwechsel/Factory Reset, Browser-/WLAN-Hilfe |
 
@@ -70,3 +73,9 @@ Responsive 360-px-Handy bis Desktop, Tastaturbedienung, sichtbarer Fokus, Beschr
 ## 6. Sonos-Onboarding als geplante Erweiterung
 
 Die [Sonos-Prüfung](12-SONOS-PRUEFUNG.md) ergänzt eine explizite Ausgaberoute. Spotify Connect nutzt den vorhandenen Verknüpfungsweg; ein freigegebener Sonos-Adapter erhält eigene Haushalts-/Raumwahl und erlaubte Favoriten. Aktuelle Gruppenmitglieder sind sichtbar, bevor die Wiedergabe auf zusätzliche Räume ausgeweitet wird. Solange lokale Authentifizierung/Lizenz ungeklärt sind, zeigt die Website keine funktionierende Sonos-Verknüpfung an. Die Sonos-Cloud-Variante braucht einen eigenen sicheren Authentifizierungs-/Refresh-Entscheid; der einmalige Spotify-PKCE-Callbackentwurf ist hierfür nicht übertragbar.
+
+## 7. Wetterkonfiguration und vollständiger Parameterport
+
+Die Tabellen in [Featureportierung](13-FEATURE-PORTIERUNG.md) sind die Prüfliste für alle übernommenen Parameter. Die heutigen JSON-Verträge enthalten noch nicht sämtliche Display-/Wetteroptionen; P3/P6/P10 erweitern Schema, Defaults, Migration, HTTP-API und UI gemeinsam. Der Morgenavatar übernimmt zunächst Ein/Aus und 06–10 Uhr; frei editierbare Fenster sind eine gesonderte Erweiterung.
+
+Direkt angefragte Wetteranbieter erhalten IP und Standortparameter; Ortssuche ist ein eigener Dienst. Stadt-/Rasterpräzision genügt soweit der Provider unterstützt, keine laufende GPS-Ortung. Providerzugänge liegen getrennt von exportierbaren Einstellungen; Standort im Supportexport optional auslassen. Ein Standortwechsel verwirft alte Forecast-, Radar- und Avatarjobs. Siehe [Wetter](14-WETTER.md).

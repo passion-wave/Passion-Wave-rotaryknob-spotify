@@ -1,6 +1,6 @@
 # Passion Wave RotaryKnob · Spotify Edition
 
-Eigenständiges Entwicklungsrepository für einen RotaryKnob mit geräteinterner Konfigurationswebsite, Spotify-Steuerung, freigegebenen Favoriten und koordiniertem OTA. **Kein Home Assistant, kein Music Assistant, kein dauerhafter externer Steuerungsserver.**
+Eigenständiges Entwicklungsrepository für einen RotaryKnob mit geräteinterner Konfigurationswebsite, Spotify-Steuerung, freigegebenen Favoriten, Wetter-/Radar-/Avatarfunktionen und koordiniertem OTA. **Kein Home Assistant, kein Music Assistant, kein dauerhafter externer Steuerungsserver.**
 
 **Stand: 30. September 2026 · Framework / Architekturentwurf.** Das Ziel ist von Anfang an ein Produkt für weitere Nutzer. Es ist noch keine lauffähige Gerätefirmware und keine freigegebene Spotify-Hardware entstanden.
 
@@ -15,11 +15,13 @@ Repository: [passion-wave/Passion-Wave-rotaryknob-spotify](https://github.com/pa
 ## Einstieg
 
 1. [Gesamtkonzept](docs/01-GESAMTKONZEPT.md): Produktumfang, Architektur, Entscheidungen.
-2. [Schrittweiser Implementierungsplan](docs/08-IMPLEMENTIERUNGSPLAN.md): Arbeitspakete, Abhängigkeiten, Abnahmen.
-3. [Spotify](docs/02-SPOTIFY.md), [Onboarding & Website](docs/03-ONBOARDING-WEB.md), [Radio & Klinke](docs/04-RADIO-AUDIO.md).
-4. [OTA & Sicherheit](docs/05-OTA-SICHERHEIT.md), [Übernahme aus dem Bestandsprojekt](docs/06-UPSTREAM.md), [Schnittstellen](docs/07-SCHNITTSTELLEN.md), [Testplan](docs/09-ABNAHME.md).
-5. [Sonos-Architektur und Prüfplan](docs/12-SONOS-PRUEFUNG.md): Connect-Ziele, lokale Sonos-Anbindung, Favoriten, Gruppen und Radio.
-6. [Entscheidungen und Quellen](docs/10-ENTSCHEIDUNGEN-QUELLEN.md) und [Prüfbericht](docs/11-PRUEFBERICHT.md).
+2. [Vollständiger Implementierungsplan](docs/08-IMPLEMENTIERUNGSPLAN.md): Portierung, Lieferstände, Arbeitspakete, Abhängigkeiten, Aufwand und Abnahmen.
+3. [Featureweise Umsetzungstabellen](docs/13-FEATURE-PORTIERUNG.md): Bestand, Probleme, kurze Lösungen und Abnahme pro Funktion.
+4. [Wetter, Radar und Avatar](docs/14-WETTER.md): direkte Datenquellen und Umsetzung auf dem Gerät.
+5. [Spotify](docs/02-SPOTIFY.md), [Onboarding & Website](docs/03-ONBOARDING-WEB.md), [Radio & Klinke](docs/04-RADIO-AUDIO.md).
+6. [OTA & Sicherheit](docs/05-OTA-SICHERHEIT.md), [Übernahme aus dem Bestandsprojekt](docs/06-UPSTREAM.md), [Schnittstellen](docs/07-SCHNITTSTELLEN.md), [Testplan](docs/09-ABNAHME.md).
+7. [Sonos-Architektur und Prüfplan](docs/12-SONOS-PRUEFUNG.md): Connect-Ziele, lokale Sonos-Anbindung, Favoriten, Gruppen und Radio.
+8. [Entscheidungen und Quellen](docs/10-ENTSCHEIDUNGEN-QUELLEN.md) und [Prüfbericht](docs/11-PRUEFBERICHT.md).
 
 ## Ausprobieren und prüfen
 
@@ -47,3 +49,5 @@ Die Website ist ein **interaktiver Entwurf mit Beispieldaten**. Sie speichert Ä
 | `research/` | Datiertes Audit der vorhandenen Hardware und Primärquellen |
 
 Separate Historie und Versionslinie `0.1.0-framework.1`; keine unveränderte Kopie der HA-Firmware. Wiederverwendung erfolgt gezielt aus dokumentierten Commits mit erhaltenen Lizenzhinweisen. Framework-Quellen werden im verknüpften GitHub-Repository gepflegt. Keine Geräteänderung, Spotify-/Sonos-Registrierung oder ausführbare Firmwareveröffentlichung durch dieses Framework.
+
+Wetter ist ausdrücklich Teil des erweiterten Portierungsplans. Der vorhandene Webentwurf, die JSON-Verträge und Referenzmodelle enthalten dafür noch keine vollständige Implementierung; Standort, Wetterprovider, Radar und Avatarparameter werden in P10/P11 ergänzt.

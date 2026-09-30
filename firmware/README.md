@@ -24,7 +24,9 @@ Der S3 bleibt für Website und Mediensteuerung erreichbar. Display-Abschaltung u
 
 Diese Verzeichnisse und eine scheinbar baubare ESP-IDF-Anwendung werden erst angelegt, wenn passende Abhängigkeiten und Partitionen erprobt sind.
 
-## Harte Gates vor einem Firmware-Build
+## Gestufte Gates für Laborbuild, Pilot und Release
+
+Die Reihenfolge darf keinen Zirkelschluss erzeugen: P2 erstellt zuerst minimale Laborbuilds und synthetische Lastproben. Vollständige Funktions-/OTA-/Mischlastabnahmen folgen an der integrierten Firmware. Kein Laborbuild gilt dadurch als auslieferbar.
 
 1. Tatsächliche Guition-Platinenrevision, Chip-/Flash-/PSRAM-Ausstattung und Pinbelegung bestätigen. Die Audio-Pins aus dem vergleichbaren Waveshare-Schaltplan sind bis dahin Kandidaten.
 2. ESP-IDF-Version, LVGL-Major, Display-/Touch-Treiber und gegebenenfalls zugelassenen Spotify-Adapter gemeinsam auswählen und fixieren. Ein ESP32-Port eines proprietären SDK ist nicht vorausgesetzt.
@@ -50,3 +52,7 @@ Die Provider-Schnittstelle meldet Annahme und Bestätigung getrennt. Jeder Adapt
 Die Rollen werden ausdrücklich übersetzt: Wire-/Manifestwert `controller_s3` entspricht C++ `s3_controller` und Python `s3`; `companion_esp32` entspricht C++ `esp32_companion` und Python `companion`. Enum-Zahlen werden nicht direkt auf den Draht kopiert. Inhalts- und Ausgangstypen folgen dem gemeinsamen Vertrag; `partner_local_spotify` ist ausschließlich reserviert. Kopfhörertauglichkeit bleibt eine separat nachzuweisende Hardwarefähigkeit.
 
 Protokoll- und Konfigurationskompatibilität verwenden wie das Manifest `emitted_protocol` sowie geschlossene Min-/Max-Bereiche. Adapter dürfen nur geordnete, positive, kleine Bereiche innerhalb ihres unterstützten Versionsuniversums ins Python-Referenzmodell übertragen; keine ungeprüfte Expansion beliebiger Werte. Leere IDs, Nullprotokolle, unbekannte Rollen und nicht belegte Fähigkeiten sind ungültig. Release-ID, Imagehash und frische Bootidentität binden Update- und Healthnachweise an die tatsächlich erwarteten Artefakte.
+
+## Wetterport
+
+S3-Komponenten für Wetterprovider/-modell, Avatar-Kontext und direkten Radarabruf werden gemäß [Wetterarchitektur](../docs/14-WETTER.md) ergänzt. Bestehende pure Avatar-/Schedulerregeln sind Portquellen, kein ESPHome-Laufzeitimport. Wetterfotos/Avatar komprimiert signiert ausliefern; A/B, Rollback, Puffer und Mischlast in P2/P7/P10/P11 nachweisen. [Featuretabellen](../docs/13-FEATURE-PORTIERUNG.md) und [Arbeitspakete](../docs/08-IMPLEMENTIERUNGSPLAN.md) legen Umfang und Reihenfolge fest.

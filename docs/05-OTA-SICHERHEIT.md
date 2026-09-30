@@ -87,3 +87,9 @@ Keine automatische Rückstufung unter freigegebene Sicherheitsversion. Fehler-Ro
 - Schlüsselverlust/Revoke, fehlerhafte Uhr, abgelaufene Zertifikate und Rückkehr vom Updatehostausfall gehören in den Testplan.
 
 Die bestehende PassionWave-Releasepraxis liefert Paarversions-, Herkunfts- und Prüfideen; HA-/HACS-Promotion wird nicht in das neue Produkt übernommen. Ein eigenständiger Releasejob baut beide Rollen deterministisch, prüft sie, signiert, erzeugt Herkunftsbeleg und veröffentlicht erst nach Geräteabnahme.
+
+## 7. Wetter-/Avatarassets im Update
+
+Der erweiterte Port übernimmt lokale Wetterfotos und Avatar-JPEGs. Bevorzugt liegen komprimierte Assets im signierten S3-Appimage, damit A/B-Rollback Website, Wetterdarstellung und Code gemeinsam zurücksetzt. P2 muss dafür beide vollständigen Appslots plus Reserve und Staging nachweisen. Die alte RGB565-Einbettung wird nicht unverändert übernommen.
+
+Falls die Größenrechnung separate Assets verlangt, sind Paketversion, Hash/Signatur, Kompatibilität, vollständiges Staging und Rückfall des alten Assetbestands zusätzlich verbindlich. Kein Überschreiben der einzigen aktiven Assetpartition während eines Updates. Das heutige Zwei-Image-Manifest enthält noch keinen solchen Zusatzvertrag; erforderliche Erweiterung gemeinsam mit Schema/Verifier/Tests versionieren. Wetter-/Radarnetzwerk und große Decodejobs ruhen während OTA. Bootgesundheit bleibt von Wetter-/Spotifyinternet unabhängig.

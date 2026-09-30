@@ -1,6 +1,6 @@
 # Gesamtkonzept
 
-Stand 2026-09-30. Verbindlicher Nutzerwunsch: Produkt für weitere Nutzer, Spotify auf Connect-Lautsprechern, Konfiguration im RotaryKnob, optional Klinke, Radio-Liste, OTA; keine HA-/MA-Abhängigkeit. Dieses Dokument beschreibt den Zielzustand. Implementiert sind bisher nur Verträge, Referenzmodelle und Webentwurf.
+Stand 2026-09-30. Verbindlicher Nutzerwunsch: Produkt für weitere Nutzer, Spotify auf Connect-Lautsprechern, Konfiguration im RotaryKnob, optional Klinke, Radio-Liste, OTA sowie inzwischen ausdrücklich Wetter/Vorhersage, Radar und Wetter-Avatar; keine HA-/MA-Abhängigkeit. Dieses Dokument beschreibt den Zielzustand. Implementiert sind bisher nur Verträge, Referenzmodelle und Webentwurf.
 
 ## 1. Produkt und Grenzen
 
@@ -9,6 +9,8 @@ Ein vorkonfiguriertes Gerät wird mit Strom versorgt, mit dem WLAN und einem Spo
 | Funktion | Ziel | Bedingung |
 | --- | --- | --- |
 | Spotify auf vorhandenem Connect-Lautsprecher | Kernfunktion | Produktgenehmigung und geeigneter offizieller Controller-Zugang müssen zuerst belegt werden |
+| Wetter, Vorhersage, Wetterfotos und Avatar | Kernumfang der erweiterten Planung | Direkter S3-Wetterprovider, Standort und Assetbudget; [Wetterarchitektur](14-WETTER.md) |
+| Radar mit drei Zoomstufen, Regenmetadaten | Angefragter Wetterumfang | Bild-/Kartenrechte, Direktverarbeitung und ETA-/Vektordaten separat nachweisen |
 | Sonos-Lautsprecher | Zusätzliche Architekturprüfung | Connect-Ziel zuerst; direkte lokale Sonos-Integration unter eigenem Gate, siehe [Sonos](12-SONOS-PRUEFUNG.md) |
 | Play/Pause, Titelwechsel, Lautstärke, Fortschritt, Cover | Kernfunktion | Capability des Zielgeräts und zugelassener Schnittstelle |
 | Freigegebene Playlists und Podcasts | Kernfunktion | Verlinken/aus Spotify übernehmen; keine eigene Spotify-Suche ohne passende Freigabe |
@@ -34,6 +36,8 @@ flowchart LR
   SP ==>|Spotify-Audio| C[Spotify-Connect-Lautsprecher einschließlich Sonos-Prüfgeräte]
   S3 -.->|Sonos LAN: Zugang und Lizenz offen| SN[Sonos-Gruppen / Favoriten / Radio]
   S3 -->|Radio-Suche / HTTPS| RB[Radio Browser]
+  S3 -->|Wetterdaten / HTTPS| W[Direkter Wetteranbieter]
+  S3 -.->|Radarquelle nach Gate| R[Radarbilder und geprüfte Metadaten]
   S3 -.->|optionale Decoder + I2S| DAC[PCM5100A / analoger Ausgang]
   S3 -->|signierter Download / HTTPS| U[statischer Update-Host]
 ```
@@ -52,7 +56,9 @@ Die Verbindung Spotify → Lautsprecher ist der Audioweg. Der Controller leitet 
 | `web_admin` | Lokale statische Assets, Konfigurations-API, Sitzungen, Job-Fortschritt | Keine Tokens/Passwörter über GET oder Export |
 | `credentials` | Geräteschlüssel und Provider-Credentials | verschlüsselter nicht exportierbarer Speicher |
 | `network` | Ein WLAN-Client auf S3, Setup-AP, Zeit, DNS, mDNS, TLS | `offline`, `connecting`, `online`, `captive_network` |
-| `assets` | Begrenzter Coverdownload und asynchrone Dekodierung | sequenzgebundener flüchtiger Cache |
+| `assets` | Begrenzte Cover-/Wetter-/Avatar-/Radardekodierung mit gemeinsamer Priorisierung | generationstreuer Cache, signierte lokale Assets, begrenzte PSRAM-Puffer |
+| `weather_provider` / `weather_model` | Direkte Wetterabfrage, Standort, Einheiten, UTC-/Tagesaggregation und Frische | Normalisierte Werte, Feldgültigkeit, eigener Provider-/Quellenstatus |
+| `radar_provider` / `avatar_context` | Geprüfte Radarbilder/-metadaten bzw. lokale Outfit-/Morgenregeln | Keine künstliche ETA, keine ungeprüfte Übertragung fremder Intervallsemantik |
 | `uart_peer` | Versionen, Peer-Gesundheit, Mute, Updatechunks | gebundene Frames, Prioritäten, Resume, keine beliebigen Kommandos |
 | `ota_manager` | Eine Transaktion für beide Chips | Journal, Vorprüfung, Signatur, Healthcheck, Recovery |
 | `radio_provider` | Datenbanksuche und URL-Verwaltung; optional Radio-Audio | capability-geprüfter Ausgabepfad |
@@ -61,7 +67,7 @@ Die Verbindung Spotify → Lautsprecher ist der Audioweg. Der Controller leitet 
 
 Zielplattform ist ESP-IDF mit getrennten Anwendungen für S3 und ESP32 und einem gemeinsam getesteten Protokollkern. ESPHome ist keine notwendige Laufzeitabhängigkeit; der bisherige ESPHome-Quellcode dient als nachweisbare Portierungsquelle. Die Übernahme von LVGL-UI und Displayinitialisierung ist ein echtes Arbeitspaket, kein unveränderter Headerimport. Toolchain, LVGL-Major und Displaytreiber werden erst nach Build-/Speicher-Spike gemeinsam fixiert; keine fiktive aktuelle Versionsnummer.
 
-Übernommen werden Bedienverhalten, Display-/Touchparameter, Pulszählung, Haptik, Priorisierung, atomare Medienanzeige, Paginierung und bewährte Fehlerfälle. Entfernt werden HA-Entitäten, Native API, Music-Assistant-Aufrufe, Haus-/Licht-/Wetterdaten und fremde Kundeneinstellungen. Wetter, Timer und Smarthome-Seiten gehören nicht zum Spotify-Produktumfang; Uhr/Standby können lokal bleiben.
+Übernommen werden Bedienverhalten, Display-/Touchparameter, Pulszählung, Haptik, Priorisierung, atomare Medienanzeige, Paginierung und bewährte Fehlerfälle. Entfernt werden HA-Entitäten, Native API, Music-Assistant-Aufrufe, Haus-/Lichtfunktionen und fremde Kundeneinstellungen. Wetter wird ausdrücklich portiert: Darstellung/Avatar lokal, Datenabruf und Radaraufbereitung über neue direkte S3-Adapter. Timer/Wecker, Fotoalbum und übrige Smarthome-Seiten bleiben außerhalb dieser Edition; Uhr und Standby bleiben lokal. [Featuretabellen](13-FEATURE-PORTIERUNG.md) unterscheiden vorhandenes Verhalten, notwendige Anpassungen und neue Funktionen.
 
 ### Bedienung
 
@@ -101,3 +107,9 @@ Normaler Standby schaltet das Display ab und nutzt abgestimmten Modem Sleep. Der
 ## 7. Sonos-Erweiterung
 
 [Sonos wird in drei getrennten Wegen geprüft](12-SONOS-PRUEFUNG.md): als vorhandenes Spotify-Connect-Ziel, über eine zugelassene lokale Sonos-Integration und als gesonderte Cloud-Alternative. Für den serverlosen Gerätebetrieb ist die lokale Route der bevorzugte zusätzliche Prüfkandidat. Sie hat noch keine zugesagte Vertriebs-/API-Freigabe. Eine Sonos-Cloud-Integration würde einen sicheren wiederkehrenden Authentifizierungsweg benötigen und wird nicht als bereits gelöste rein lokale Erweiterung behandelt.
+
+## 8. Wetter als integrierter Funktionsbereich
+
+[Wetter, Radar und Avatar](14-WETTER.md) teilen sich Zeit, Konfiguration, Assets und UI-Scheduler mit Medien, haben aber eigene Provider-/Standortgenerationen. Der S3 fragt Wetterdienste direkt ab; keine lokale Wettervorhersageberechnung und kein eigener HA-/Rendererserver. Standort/Provider/Morgenavatar sind über die Website konfigurierbar. Drei Radar-Standbildzooms werden portiert; ETA/Richtung brauchen gesonderte gültige Metadaten.
+
+Wetterabruf und Decoder werden Medienbefehlen nachgeordnet, bei OTA ausgesetzt und begrenzt gecacht. Die 15 Wetterfotos werden komprimiert statt als rund 4 MB Rohbilder eingeplant. Signierte Firmware und Assets müssen gemeinsam rückrollbar bleiben. Die letzte gesicherte Quelle darf als veraltet angezeigt, niemals durch erfundene Werte ersetzt werden. Die Wettererweiterung ist geplant; aktuelle Verträge und Webdemo sind dafür noch zu erweitern.

@@ -11,7 +11,7 @@ Stand: 30. September 2026. Die Analyse war ausschließlich lesend. Bestehende Qu
 | `/Users/CZ/Projects/rotary_JC3636K518C/weather-avatar-test/Passion-Wave-rotaryknob` | `1846b68609084485e3b3efeb17578de614e294b2` | Neuere Feature-Arbeitskopie, `3.0.1-beta.16`, 28. September; lokale Releaseänderungen vorhanden |
 | `/Users/CZ/Projects/rotary_JC3636K518C/weather-avatar-test/avatar-docs-followup` | `9cc5576c2fd4a9beb56cad24e211957c43aa2c62` | Sauberer Dokumentationsnachfolger, `3.0.1-beta.16`; festgelegter Referenzstand für spätere gezielte Übernahme |
 
-Der letzte Commit ist die Herkunftsreferenz, keine Empfehlung zur vollständigen Übernahme dieses Featurezweigs. Wetter-/Avatar-Code, HA-/MA-Anbindung und Kundenprofile werden ausgeschlossen. Jede spätere Übernahme benennt Datei, Commit, unveränderten oder angepassten Umfang und zugehörige Tests. Bei Abweichungen von den hier zitierten älteren Zeilen ist der festgelegte Commit maßgeblich.
+Der letzte Commit ist die Herkunftsreferenz, keine Empfehlung zur vollständigen Übernahme dieses Featurezweigs. HA-/MA-Anbindung und Kundenprofile werden ausgeschlossen. Auf späteren ausdrücklichen Nutzerwunsch wird Wetter-/Avatarverhalten gezielt portiert; Datenabruf und Radarquelle entstehen auf dem S3 neu, siehe [Wetter](14-WETTER.md). Jede spätere Übernahme benennt Datei, Commit, unveränderten oder angepassten Umfang und zugehörige Tests. Bei Abweichungen von den hier zitierten älteren Zeilen ist der festgelegte Commit maßgeblich.
 
 Die geprüfte Root-Lizenz ist MIT. Bei Übernahme bleiben die ursprünglichen Copyright- und Lizenzhinweise erhalten. Schriftarten, Bilder und eingebundene Bibliotheken behalten ihre eigenen Bedingungen. Ein optionales proprietäres Spotify-SDK unterliegt separat dem Partnervertrag. Keine `secrets.yaml`, realen Gerätekennungen, WLAN-Daten, API-/OTA-Schlüssel oder historischen Kundeneinstellungen importieren.
 
@@ -52,7 +52,7 @@ Die 8 MB PSRAM machen den S3 zum plausiblen Host, beweisen aber keine stabile pa
 | `esphome/dual_mcu_encoder.h` | EC2-Diagnose bei Bedarf | Keine zweite Bedienautorität |
 | `esphome/dual_mcu_link.h` | COBS/CRC, Grenzen, Prioritäten, Sequenzen und fehlerfeste Framing-Ideen | ESPHome-UART-Bindung entfernen, neues Produktprotokoll/Identität; HA-/Wetter-/Lichttypen ausschließen |
 | `esphome/dual_mcu_library_proxy.h` | Paginierung, Generationen, begrenzte Payloads | Bibliothek liegt neu auf S3; keine unnötigen Katalogkopien im ESP32, Spotify-ID/Radio-UUID statt MA-URI |
-| `esphome/dual_mcu_radar_proxy.h` | Nur relevante generische Transfer-/ACK-Ideen | Radar-/Hausdaten nicht übernehmen; OTA braucht eigene authentifizierte Prüfung |
+| `esphome/dual_mcu_radar_proxy.h` | Nur relevante generische Transfer-/ACK-Ideen | Radar direkt auf S3 neu anbinden; Hausdaten entfallen; OTA braucht eigene authentifizierte Prüfung |
 | `esphome/ui_next_framework.h` | Medienseite, Favoritenauswahl, Stile und Dialogverhalten | ESPHome-Fontwrapper auf LVGL abstrahieren, nur Produktseiten übernehmen |
 | `esphome/rotaryknob-s3-ui-core.yaml` | Panelinitialisierung, Gesten, Haptik, optimistische Lautstärke, asynchrone Coveranzeige | Monolith zerlegen; Vollbild-Cover nicht ungeprüft zuschneiden, Spotify-Designregeln beachten |
 | `esphome/responsive_power_policy.h` | Reaktionsfähiger Betrieb und modem-sleep als Zustandspolitik | ESPHome-Abhängigkeit entfernen, Dienste nicht durch normalen Tiefschlaf abschalten |
@@ -88,3 +88,11 @@ Die bisherige ESPHome-OTA-Existenz liefert keinen UART-Updateempfänger. Dieser 
 Ein S3-gesteuerter EN-/BOOT-Zugang zum klassischen ESP32 ist im geprüften Schaltplan nicht nachgewiesen. Ein Begleitprozessor, dessen Anwendung nicht mehr startet, kann daher physischen USB-Zugriff benötigen. Die bekannte USB-C-Orientierung zur Auswahl der beiden Prozessoren bleibt ein dokumentierter Werkstatt-/Recovery-Pfad. Dieses Framework verspricht kein fernbedientes Entsperren beliebig beschädigter Firmware.
 
 Die spätere Abnahme trennt Quellcodebelege, simulierte Tests und echte Gerätebeobachtung. In dieser Vorarbeit wurden ausschließlich Dokumente und Quellcode gelesen, Referenzschaltbilder angesehen und Schnittstellen formuliert.
+
+## 7. Ergänztes Featureaudit einschließlich Wetter
+
+[Featuretabellen und exakte Quellanker](13-FEATURE-PORTIERUNG.md) sind die vollständige Portierungsliste zum Commit `9cc5576`. Neue Befunde: UI Next ist im Rollenprofil aktiv; Playliststart verwendet den Kontext; Herz/Power sind lokale Flags; nur Einzeltracks werden im alten Broker beobachtet bestätigt. Seek, Episodenbrowser und Geräte-/Gruppenverwaltung sind Erweiterungen.
+
+Wetterseite, Screensaver, Outfitresolver, Haarwahl und Morgenzeitplan werden übernommen. HA-Forecastaggregation, Wettersensoren und Radarrenderer werden durch direkte S3-Adapter ersetzt. Der allgemeine alte Forecastparser wird wegen Offset-/Ersatzwertproblemen nicht blind kopiert. Das mitgelieferte HA-Radarbeispiel ist ein fester Ausschnitt, kein vollständiger universeller Drei-Zoom-Renderer.
+
+Gemessene Quelldateigrößen: 15 Wetter-JPEGs zusammen 361.439 Bytes; deren RGB565-Rohdaten wären 4.062.720 Bytes. Avatar dedupliziert laut Manifest 549.141 Bytes; RGB565-Doppelbuffer 541.696 Bytes. Keine Aussage über freien Heap oder fertige neue Firmwaregröße. [Wetterarchitektur](14-WETTER.md).

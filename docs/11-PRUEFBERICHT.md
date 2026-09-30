@@ -23,3 +23,11 @@ Der Schema-Prüfer deckt die hier verwendeten Schlüsselwörter ab, nicht den vo
 ## Ergänzung Sonos / Repositoryanbindung
 
 Die Sonos-Erweiterung betrifft Architektur, Quellen, Onboarding, Inhalts-/Gruppenmodell sowie Implementierungs- und Abnahmeplan. Es wurde kein Sonos-Provider als funktionsfähig implementiert und kein Gerät angesprochen. Die bestehenden 35 Host-/Vertragsprüfungen und Syntax-/Linkprüfungen bleiben der Prüfmaßstab für diesen Dokumentationsstand; sie beweisen keine Sonos-Kompatibilität.
+
+## Vollständige Portplanung mit Wetter
+
+Die Ergänzung inventarisiert Medien/UI/Backend und Wetter einschließlich Radar/Avatar am Quellcommit `9cc5576`. Umsetzungstabellen, Arbeitspakete, Ressourcen-/Quellen-/Produktgates und zusätzliche Soll-Abnahmen sind dokumentiert. Bestehende Quellartefakte wurden nur gelesen; weder Bestandsfirmware noch Geräte verändert.
+
+Es wurden keine Featureimplementierungen, Wetter-/Spotifykonten oder Anbieterabonnements angelegt. Die bestehenden Verträge und Webdemo wurden nicht um vorgetäuschte Wetterfunktionen erweitert. Host-/Syntax-/Linkprüfungen prüfen weiterhin das Framework; die neuen WT-Abnahmen sind offene Sollfälle. Eine grüne CI bestätigt keine Geräte-, Radar-, Partner- oder Produktfreigabe.
+
+Für diesen Dokumentationsstand erneut ausgeführt: `python3 tools/check.py` mit 35 bestandenen Tests sowie C++-/JavaScript-Syntax und internen Links; `git diff --check`. Zusätzlich temporär geprüft: 129 eindeutige Feature-/Abgrenzungs-IDs und sämtliche expliziten Abnahmeverweise auf vorhandene Test-IDs. Fachreview: Reihenfolge, Herkunft, Wetterfrische, Radar-Metadatengate und OTA-Assetbindung konsistent. Keine neuen WT-/Hardwaretests als ausgeführt gewertet.
