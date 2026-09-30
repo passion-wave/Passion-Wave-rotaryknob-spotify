@@ -1,0 +1,48 @@
+{
+  "manifest_version": 1,
+  "product_id": "passion-wave-rotaryknob-spotify",
+  "example_only": true,
+  "release_id": "framework-example",
+  "version": "0.1.0-framework.1",
+  "channel": "beta",
+  "config_schema": 1,
+  "images": [
+    {
+      "role": "companion_esp32",
+      "version": "0.1.0-framework.1",
+      "release_id": "framework-example",
+      "hardware_id": "jc3636k518c-esp32-unverified",
+      "bytes": 1048576,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "url": "https://updates.example.invalid/framework/companion_esp32.signed.bin",
+      "emitted_protocol": 1,
+      "accepted_peer_protocol_min": 1,
+      "accepted_peer_protocol_max": 1,
+      "readable_config_schema_min": 1,
+      "readable_config_schema_max": 1,
+      "security_version": 0,
+      "minimum_bootloader": "0.1.0"
+    },
+    {
+      "role": "controller_s3",
+      "version": "0.1.0-framework.1",
+      "release_id": "framework-example",
+      "hardware_id": "jc3636k518c-s3-unverified",
+      "bytes": 1048576,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "url": "https://updates.example.invalid/framework/controller_s3.signed.bin",
+      "emitted_protocol": 1,
+      "accepted_peer_protocol_min": 1,
+      "accepted_peer_protocol_max": 1,
+      "readable_config_schema_min": 1,
+      "readable_config_schema_max": 1,
+      "security_version": 0,
+      "minimum_bootloader": "0.1.0"
+    }
+  ],
+  "signing": {
+    "key_id": "example-not-trusted",
+    "manifest_signature_url": "https://updates.example.invalid/framework/manifest.sig",
+    "encoding": "detached-over-canonical-manifest-v1"
+  }
+}

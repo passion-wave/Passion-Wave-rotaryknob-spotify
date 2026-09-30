@@ -1,0 +1,1948 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PassionWave Spotify Edition — proposed on-device API",
+    "version": "0.1.0-framework.1",
+    "description": "Design contract only. No production HTTP backend is implemented. All write operations require authenticated protected transport plus Origin/CSRF checks. Approval/capabilities are not user writable."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "security": [
+    {
+      "deviceSession": []
+    }
+  ],
+  "paths": {
+    "/api/v1/status": {
+      "get": {
+        "summary": "Minimal public status; no account or network details",
+        "operationId": "get_status",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/sessions": {
+      "post": {
+        "summary": "Exchange physically initiated one-use possession code; set HttpOnly SameSite cookie",
+        "operationId": "post_sessions",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "pairing_code": {
+                    "type": "string",
+                    "maxLength": 10,
+                    "minLength": 6
+                  }
+                },
+                "required": [
+                  "pairing_code"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/session": {
+      "delete": {
+        "summary": "End current administrator session",
+        "operationId": "delete_session",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        }
+      }
+    },
+    "/api/v1/config": {
+      "get": {
+        "summary": "Read settings and catalogs; no secrets",
+        "operationId": "get_config",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Config"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        }
+      },
+      "put": {
+        "summary": "Atomically validate and replace non-secret configuration",
+        "operationId": "put_config",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Config"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Config"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 32
+            },
+            "description": "ETag revision from GET; mismatch -> 409"
+          }
+        ]
+      }
+    },
+    "/api/v1/wifi/connect": {
+      "post": {
+        "summary": "Connect using write-only credentials; never echo secrets",
+        "operationId": "post_wifi_connect",
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "ssid": {
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 1
+                  },
+                  "password": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "writeOnly": true
+                  },
+                  "hidden": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "ssid",
+                  "password",
+                  "hidden"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/spotify/link": {
+      "post": {
+        "summary": "Start only the approved account-linking adapter; gate G0",
+        "operationId": "post_spotify_link",
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "acknowledge_account_change": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "acknowledge_account_change"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Forget local Spotify credentials after physical reauthorization",
+        "operationId": "delete_spotify_link",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        }
+      }
+    },
+    "/api/v1/outputs": {
+      "get": {
+        "summary": "Runtime provider outputs and verified capabilities",
+        "operationId": "get_outputs",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Output"
+                  },
+                  "maxItems": 32
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        }
+      }
+    },
+    "/api/v1/playback/commands": {
+      "post": {
+        "summary": "Execute allowlisted action, validate favorite and target capabilities",
+        "operationId": "post_playback_commands",
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "command_id": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "action": {
+                    "enum": [
+                      "play_favorite",
+                      "pause",
+                      "resume",
+                      "next",
+                      "previous",
+                      "set_volume",
+                      "seek",
+                      "set_shuffle",
+                      "set_repeat"
+                    ]
+                  },
+                  "target_id": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "favorite_id": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "value": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  }
+                },
+                "required": [
+                  "command_id",
+                  "action",
+                  "target_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/catalog": {
+      "get": {
+        "summary": "Read ordered enabled and disabled favorites",
+        "operationId": "get_catalog",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        }
+      },
+      "put": {
+        "summary": "Replace allowlist; URI-kind and limits validated",
+        "operationId": "put_catalog",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Catalog"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 32
+            },
+            "description": "ETag revision from GET; mismatch -> 409"
+          }
+        ]
+      }
+    },
+    "/api/v1/radio/search": {
+      "get": {
+        "summary": "Search discovered Radio Browser HTTPS mirror; bounded results",
+        "operationId": "get_radio_search",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z0-9_-]+$"
+                      },
+                      "station_uuid": {
+                        "type": "string",
+                        "maxLength": 36
+                      },
+                      "label": {
+                        "type": "string",
+                        "maxLength": 80,
+                        "minLength": 1
+                      },
+                      "url": {
+                        "type": "string",
+                        "maxLength": 2048,
+                        "pattern": "^https?://[^\\s]+$"
+                      },
+                      "resolved_url": {
+                        "type": "string",
+                        "maxLength": 2048,
+                        "pattern": "^https?://[^\\s]+$"
+                      },
+                      "codec": {
+                        "type": "string",
+                        "maxLength": 32
+                      },
+                      "bitrate_kbps": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1024
+                      },
+                      "hls": {
+                        "type": "boolean"
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "last_checked_at": {
+                        "type": "string",
+                        "maxLength": 40
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "station_uuid",
+                      "label",
+                      "url",
+                      "resolved_url",
+                      "codec",
+                      "bitrate_kbps",
+                      "hls",
+                      "enabled",
+                      "last_checked_at"
+                    ]
+                  },
+                  "maxItems": 20
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "minLength": 2
+            }
+          },
+          {
+            "name": "countrycode",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2,
+              "pattern": "^[A-Z]{2}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/radio/probe": {
+      "post": {
+        "summary": "Bounded stream check with DNS / redirect validation",
+        "operationId": "post_radio_probe",
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "pattern": "^https?://[^\\s]+$"
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ota": {
+      "get": {
+        "summary": "Persisted paired update status after browser reconnect",
+        "operationId": "get_ota",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtaState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        }
+      }
+    },
+    "/api/v1/ota/check": {
+      "post": {
+        "summary": "Check trusted channel and signed paired manifest only",
+        "operationId": "post_ota_check",
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "channel": {
+                    "enum": [
+                      "stable",
+                      "beta"
+                    ]
+                  }
+                },
+                "required": [
+                  "channel"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ota/uploads": {
+      "post": {
+        "summary": "Stage signed full bundle with size cap; no raw unsigned binaries",
+        "operationId": "post_ota_uploads",
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "Maximum length negotiated from staging capacity; parser streams with hard bounds."
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ota/install": {
+      "post": {
+        "summary": "Install previously fully validated bundle; idempotent transaction request",
+        "operationId": "post_ota_install",
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtaState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "validated_bundle_id": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "request_id": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  }
+                },
+                "required": [
+                  "validated_bundle_id",
+                  "request_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ota/recover": {
+      "post": {
+        "summary": "Reconcile journal and actual peers before safe retry",
+        "operationId": "post_ota_recover",
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtaState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "transaction_id": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  }
+                },
+                "required": [
+                  "transaction_id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{id}": {
+      "get": {
+        "summary": "Read asynchronous result",
+        "operationId": "get_jobs_id",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/diagnostics": {
+      "get": {
+        "summary": "Bounded redacted diagnostic summary",
+        "operationId": "get_diagnostics",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "product_version": {
+                      "type": "string",
+                      "maxLength": 48
+                    },
+                    "uptime_seconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "error_codes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "maxItems": 32
+                    }
+                  },
+                  "required": [
+                    "product_version",
+                    "uptime_seconds",
+                    "error_codes"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        }
+      }
+    },
+    "/api/v1/factory-reset": {
+      "post": {
+        "summary": "Physically reauthorized owner reset; delete accounts, settings and sessions",
+        "operationId": "post_factory-reset",
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid administrator session"
+          },
+          "403": {
+            "description": "Action not allowed by physical session or trusted product capabilities"
+          },
+          "409": {
+            "description": "Revision conflict or transaction already active"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "501": {
+            "description": "Provider / feature not implemented or not approved"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "confirmation_code": {
+                    "type": "string",
+                    "maxLength": 10,
+                    "minLength": 6,
+                    "writeOnly": true
+                  }
+                },
+                "required": [
+                  "confirmation_code"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "deviceSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "pw_session",
+        "description": "HttpOnly, SameSite=Strict; Secure required for trusted HTTPS. Protected physical-management AP profile separately specified."
+      }
+    },
+    "schemas": {
+      "Config": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "settings": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 48,
+                "minLength": 1
+              },
+              "language": {
+                "enum": [
+                  "de",
+                  "en"
+                ]
+              },
+              "timezone": {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              "brightness_percent": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "night_brightness_percent": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "haptics": {
+                "type": "boolean"
+              },
+              "display_idle_seconds": {
+                "type": "integer",
+                "minimum": 15,
+                "maximum": 3600
+              },
+              "volume_limit_percent": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "volume_step_percent": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10
+              },
+              "rotary_reversed": {
+                "type": "boolean"
+              },
+              "startup_policy": {
+                "const": "paused"
+              },
+              "default_output_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "update_channel": {
+                "enum": [
+                  "stable",
+                  "beta"
+                ]
+              },
+              "admin_access": {
+                "enum": [
+                  "physical_ap",
+                  "trusted_https"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "language",
+              "timezone",
+              "brightness_percent",
+              "night_brightness_percent",
+              "haptics",
+              "display_idle_seconds",
+              "volume_limit_percent",
+              "volume_step_percent",
+              "rotary_reversed",
+              "startup_policy",
+              "default_output_id",
+              "update_channel",
+              "admin_access"
+            ]
+          },
+          "catalog": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "favorites": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z0-9_-]+$"
+                    },
+                    "kind": {
+                      "enum": [
+                        "spotify_playlist",
+                        "spotify_show",
+                        "spotify_episode"
+                      ]
+                    },
+                    "label": {
+                      "type": "string",
+                      "maxLength": 80,
+                      "minLength": 1
+                    },
+                    "spotify_uri": {
+                      "type": "string",
+                      "maxLength": 80,
+                      "pattern": "^spotify:(playlist|show|episode):[A-Za-z0-9]{22}$"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "label",
+                    "spotify_uri",
+                    "enabled"
+                  ]
+                },
+                "maxItems": 64
+              },
+              "stations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z0-9_-]+$"
+                    },
+                    "station_uuid": {
+                      "type": "string",
+                      "maxLength": 36
+                    },
+                    "label": {
+                      "type": "string",
+                      "maxLength": 80,
+                      "minLength": 1
+                    },
+                    "url": {
+                      "type": "string",
+                      "maxLength": 2048,
+                      "pattern": "^https?://[^\\s]+$"
+                    },
+                    "resolved_url": {
+                      "type": "string",
+                      "maxLength": 2048,
+                      "pattern": "^https?://[^\\s]+$"
+                    },
+                    "codec": {
+                      "type": "string",
+                      "maxLength": 32
+                    },
+                    "bitrate_kbps": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1024
+                    },
+                    "hls": {
+                      "type": "boolean"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "last_checked_at": {
+                      "type": "string",
+                      "maxLength": 40
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "station_uuid",
+                    "label",
+                    "url",
+                    "resolved_url",
+                    "codec",
+                    "bitrate_kbps",
+                    "hls",
+                    "enabled",
+                    "last_checked_at"
+                  ]
+                },
+                "maxItems": 64
+              }
+            },
+            "required": [
+              "favorites",
+              "stations"
+            ]
+          }
+        },
+        "required": [
+          "schema_version",
+          "revision",
+          "settings",
+          "catalog"
+        ],
+        "title": "Public non-secret device configuration",
+        "description": "No credentials, deployment permissions or provider approval flags. Semantic URI-kind and unique-ID checks are additionally required."
+      },
+      "Catalog": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "favorites": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9_-]+$"
+                },
+                "kind": {
+                  "enum": [
+                    "spotify_playlist",
+                    "spotify_show",
+                    "spotify_episode"
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 80,
+                  "minLength": 1
+                },
+                "spotify_uri": {
+                  "type": "string",
+                  "maxLength": 80,
+                  "pattern": "^spotify:(playlist|show|episode):[A-Za-z0-9]{22}$"
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "label",
+                "spotify_uri",
+                "enabled"
+              ]
+            },
+            "maxItems": 64
+          },
+          "stations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9_-]+$"
+                },
+                "station_uuid": {
+                  "type": "string",
+                  "maxLength": 36
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 80,
+                  "minLength": 1
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 2048,
+                  "pattern": "^https?://[^\\s]+$"
+                },
+                "resolved_url": {
+                  "type": "string",
+                  "maxLength": 2048,
+                  "pattern": "^https?://[^\\s]+$"
+                },
+                "codec": {
+                  "type": "string",
+                  "maxLength": 32
+                },
+                "bitrate_kbps": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1024
+                },
+                "hls": {
+                  "type": "boolean"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "last_checked_at": {
+                  "type": "string",
+                  "maxLength": 40
+                }
+              },
+              "required": [
+                "id",
+                "station_uuid",
+                "label",
+                "url",
+                "resolved_url",
+                "codec",
+                "bitrate_kbps",
+                "hls",
+                "enabled",
+                "last_checked_at"
+              ]
+            },
+            "maxItems": 64
+          }
+        },
+        "required": [
+          "favorites",
+          "stations"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "retry_after_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "Job": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "kind": {
+            "enum": [
+              "wifi",
+              "account_link",
+              "ota_check",
+              "ota_install",
+              "radio_probe",
+              "playback",
+              "factory_reset"
+            ]
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "needs_action"
+            ]
+          },
+          "phase": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "progress_percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "phase",
+          "progress_percent",
+          "error"
+        ]
+      },
+      "Status": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "product_id": {
+            "const": "passion-wave-rotaryknob-spotify"
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 48
+          },
+          "mode": {
+            "enum": [
+              "setup",
+              "ready",
+              "recovery"
+            ]
+          },
+          "spotify_adapter_available": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "product_id",
+          "version",
+          "mode",
+          "spotify_adapter_available"
+        ]
+      },
+      "Output": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "kind": {
+            "enum": [
+              "spotify_connect",
+              "local_line_out",
+              "vendor_radio",
+              "partner_local_spotify"
+            ]
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 48
+            },
+            "maxItems": 32
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "kind",
+          "available",
+          "capabilities"
+        ]
+      },
+      "OtaState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "phase": {
+            "enum": [
+              "idle",
+              "preflight",
+              "stage_companion",
+              "verify_companion",
+              "stage_s3",
+              "verify_s3",
+              "complete",
+              "recovery",
+              "failed"
+            ]
+          },
+          "current_version": {
+            "type": "string",
+            "maxLength": 48
+          },
+          "target_version": {
+            "type": "string",
+            "maxLength": 48
+          },
+          "progress_percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "can_cancel": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "transaction_id",
+          "phase",
+          "current_version",
+          "target_version",
+          "progress_percent",
+          "can_cancel",
+          "error"
+        ]
+      }
+    }
+  }
+}

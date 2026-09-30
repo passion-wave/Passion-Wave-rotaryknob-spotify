@@ -1,0 +1,13 @@
+name: Framework checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  contracts-and-models:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Check examples, models, docs, C++ interfaces and JavaScript
+        run: python3 tools/check.py

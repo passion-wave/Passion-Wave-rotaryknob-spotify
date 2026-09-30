@@ -1,0 +1,181 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "manifest_version": {
+      "const": 1
+    },
+    "product_id": {
+      "const": "passion-wave-rotaryknob-spotify"
+    },
+    "example_only": {
+      "type": "boolean"
+    },
+    "release_id": {
+      "type": "string",
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 48,
+      "minLength": 1,
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[A-Za-z0-9.-]+)?$"
+    },
+    "channel": {
+      "enum": [
+        "stable",
+        "beta"
+      ]
+    },
+    "config_schema": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "images": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "companion_esp32",
+              "controller_s3"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 48,
+            "minLength": 1,
+            "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[A-Za-z0-9.-]+)?$"
+          },
+          "release_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "hardware_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 16777216
+          },
+          "sha256": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "pattern": "^https?://[^\\s]+$"
+          },
+          "emitted_protocol": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "accepted_peer_protocol_min": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "accepted_peer_protocol_max": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "readable_config_schema_min": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "readable_config_schema_max": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "security_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "minimum_bootloader": {
+            "type": "string",
+            "maxLength": 48,
+            "minLength": 1,
+            "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[A-Za-z0-9.-]+)?$"
+          }
+        },
+        "required": [
+          "role",
+          "version",
+          "release_id",
+          "hardware_id",
+          "bytes",
+          "sha256",
+          "url",
+          "emitted_protocol",
+          "accepted_peer_protocol_min",
+          "accepted_peer_protocol_max",
+          "readable_config_schema_min",
+          "readable_config_schema_max",
+          "security_version",
+          "minimum_bootloader"
+        ]
+      }
+    },
+    "signing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key_id": {
+          "type": "string",
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "manifest_signature_url": {
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^https?://[^\\s]+$"
+        },
+        "encoding": {
+          "const": "detached-over-canonical-manifest-v1"
+        }
+      },
+      "required": [
+        "key_id",
+        "manifest_signature_url",
+        "encoding"
+      ]
+    }
+  },
+  "required": [
+    "manifest_version",
+    "product_id",
+    "example_only",
+    "release_id",
+    "version",
+    "channel",
+    "config_schema",
+    "images",
+    "signing"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:passion-wave:spotify:ota:1",
+  "title": "Draft paired update manifest",
+  "description": "Structural draft, not a cryptographic verifier. Release requires exactly one image per role, same release/version, authenticated manifest and signed images. Algorithm/canonicalization freeze is gate G5."
+}

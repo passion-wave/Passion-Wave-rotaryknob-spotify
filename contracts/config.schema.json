@@ -1,0 +1,231 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 48,
+          "minLength": 1
+        },
+        "language": {
+          "enum": [
+            "de",
+            "en"
+          ]
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 80,
+          "minLength": 1
+        },
+        "brightness_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "night_brightness_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "haptics": {
+          "type": "boolean"
+        },
+        "display_idle_seconds": {
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 3600
+        },
+        "volume_limit_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "volume_step_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "rotary_reversed": {
+          "type": "boolean"
+        },
+        "startup_policy": {
+          "const": "paused"
+        },
+        "default_output_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "update_channel": {
+          "enum": [
+            "stable",
+            "beta"
+          ]
+        },
+        "admin_access": {
+          "enum": [
+            "physical_ap",
+            "trusted_https"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "language",
+        "timezone",
+        "brightness_percent",
+        "night_brightness_percent",
+        "haptics",
+        "display_idle_seconds",
+        "volume_limit_percent",
+        "volume_step_percent",
+        "rotary_reversed",
+        "startup_policy",
+        "default_output_id",
+        "update_channel",
+        "admin_access"
+      ]
+    },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "favorites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              "kind": {
+                "enum": [
+                  "spotify_playlist",
+                  "spotify_show",
+                  "spotify_episode"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              "spotify_uri": {
+                "type": "string",
+                "maxLength": 80,
+                "pattern": "^spotify:(playlist|show|episode):[A-Za-z0-9]{22}$"
+              },
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "label",
+              "spotify_uri",
+              "enabled"
+            ]
+          },
+          "maxItems": 64
+        },
+        "stations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              "station_uuid": {
+                "type": "string",
+                "maxLength": 36
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 2048,
+                "pattern": "^https?://[^\\s]+$"
+              },
+              "resolved_url": {
+                "type": "string",
+                "maxLength": 2048,
+                "pattern": "^https?://[^\\s]+$"
+              },
+              "codec": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "bitrate_kbps": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1024
+              },
+              "hls": {
+                "type": "boolean"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "last_checked_at": {
+                "type": "string",
+                "maxLength": 40
+              }
+            },
+            "required": [
+              "id",
+              "station_uuid",
+              "label",
+              "url",
+              "resolved_url",
+              "codec",
+              "bitrate_kbps",
+              "hls",
+              "enabled",
+              "last_checked_at"
+            ]
+          },
+          "maxItems": 64
+        }
+      },
+      "required": [
+        "favorites",
+        "stations"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "revision",
+    "settings",
+    "catalog"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:passion-wave:spotify:config:1",
+  "title": "Public non-secret device configuration",
+  "description": "No credentials, deployment permissions or provider approval flags. Semantic URI-kind and unique-ID checks are additionally required."
+}

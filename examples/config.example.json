@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "revision": 0,
+  "settings": {
+    "name": "Passion Wave Wohnzimmer",
+    "language": "de",
+    "timezone": "Europe/Berlin",
+    "brightness_percent": 65,
+    "night_brightness_percent": 20,
+    "haptics": true,
+    "display_idle_seconds": 60,
+    "volume_limit_percent": 60,
+    "volume_step_percent": 2,
+    "rotary_reversed": false,
+    "startup_policy": "paused",
+    "default_output_id": "",
+    "update_channel": "stable",
+    "admin_access": "physical_ap"
+  },
+  "catalog": {
+    "favorites": [
+      {
+        "id": "favorite-demo",
+        "kind": "spotify_playlist",
+        "label": "Beispielplaylist – Link ersetzen",
+        "spotify_uri": "spotify:playlist:0000000000000000000000",
+        "enabled": false
+      }
+    ],
+    "stations": [
+      {
+        "id": "radio-demo",
+        "station_uuid": "",
+        "label": "Beispielsender – URL ersetzen",
+        "url": "https://streams.example.invalid/radio.mp3",
+        "resolved_url": "https://streams.example.invalid/radio.mp3",
+        "codec": "MP3",
+        "bitrate_kbps": 128,
+        "hls": false,
+        "enabled": false,
+        "last_checked_at": ""
+      }
+    ]
+  }
+}

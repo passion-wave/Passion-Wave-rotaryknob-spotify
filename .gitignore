@@ -1,0 +1,13 @@
+.DS_Store
+__pycache__/
+*.pyc
+build/
+.env
+.env.*
+!.env.example
+secrets*
+*.pem
+*.key
+sdk-private/
+*.bin
+artifacts/
