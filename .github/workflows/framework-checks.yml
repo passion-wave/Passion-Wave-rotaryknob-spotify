@@ -74,6 +74,7 @@ jobs:
         run: |
           "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/device_web.py \
             --screenshots "$RUNNER_TEMP/pw-browser-artifacts"
+          "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/compressed_web.py
       - name: USB login helper with simulated device and Spotify
         run: |
           "$RUNNER_TEMP/pw-browser-env/bin/python" -m unittest discover -s tools/spotify_setup/tests -p 'test_*.py'

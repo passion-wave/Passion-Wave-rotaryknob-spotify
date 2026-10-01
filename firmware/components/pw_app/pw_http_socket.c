@@ -2,10 +2,18 @@
 #include "pw_http_socket.h"
 #ifndef ESP_PLATFORM
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
+#else
+#include "lwip/tcp.h"
 #endif
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+
+bool pw_http_socket_low_latency(int socket_fd) {
+    const int enabled = 1;
+    return setsockopt(socket_fd, IPPROTO_TCP, TCP_NODELAY, &enabled, sizeof enabled) == 0;
+}
 
 bool pw_http_sockaddr_ipv4(const struct sockaddr *address, socklen_t length,
                           struct in_addr *ipv4) {

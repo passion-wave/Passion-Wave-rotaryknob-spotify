@@ -56,12 +56,12 @@ static int64_t session_until;
 static pw_weather_snapshot_t weather_copy;
 /* HTTP server owns this copy. Never place a multi-KiB device list on its stack. */
 static pw_spotify_snapshot_t spotify_http;
-extern const uint8_t page_start[] asm("_binary_index_html_start");
-extern const uint8_t page_end[] asm("_binary_index_html_end");
-extern const uint8_t js_start[] asm("_binary_app_js_start");
-extern const uint8_t js_end[] asm("_binary_app_js_end");
-extern const uint8_t css_start[] asm("_binary_style_css_start");
-extern const uint8_t css_end[] asm("_binary_style_css_end");
+extern const uint8_t page_start[] asm("_binary_index_html_gz_start");
+extern const uint8_t page_end[] asm("_binary_index_html_gz_end");
+extern const uint8_t js_start[] asm("_binary_app_js_gz_start");
+extern const uint8_t js_end[] asm("_binary_app_js_gz_end");
+extern const uint8_t css_start[] asm("_binary_style_css_gz_start");
+extern const uint8_t css_end[] asm("_binary_style_css_gz_end");
 extern const uint8_t places_start[] asm("_binary_places_de_json_gz_start");
 extern const uint8_t places_end[] asm("_binary_places_de_json_gz_end");
 static void take(void) {
@@ -364,6 +364,8 @@ static bool host_valid(httpd_req_t *r) {
            pw_http_host_matches_ipv4(host, &local);
 }
 static void headers(httpd_req_t *r) {
+    /* IDF's built-in 404 response can reset NODELAY on a keep-alive socket. */
+    (void)pw_http_socket_low_latency(httpd_req_to_sockfd(r));
     httpd_resp_set_hdr(r, "Cache-Control", "no-store");
     httpd_resp_set_hdr(r, "X-Content-Type-Options", "nosniff");
     httpd_resp_set_hdr(r, "Referrer-Policy", "no-referrer");
@@ -1196,21 +1198,36 @@ static esp_err_t asset_handler(httpd_req_t *r) {
     headers(r);
     const uint8_t *start = page_start, *end = page_end;
     const char *type = "text/html; charset=utf-8";
+    const char *asset_name = "index.html";
     if (!strcmp(r->uri, "/app.js")) {
         start = js_start;
         end = js_end;
         type = "text/javascript; charset=utf-8";
+        asset_name = "app.js";
     } else if (!strcmp(r->uri, "/style.css")) {
         start = css_start;
         end = css_end;
         type = "text/css; charset=utf-8";
+        asset_name = "style.css";
     } else if (!strcmp(r->uri, "/places-de.json")) {
-        httpd_resp_set_type(r, "application/json; charset=utf-8");
-        httpd_resp_set_hdr(r, "Content-Encoding", "gzip");
-        return httpd_resp_send(r, (const char *)places_start, places_end - places_start);
+        start = places_start;
+        end = places_end;
+        type = "application/json; charset=utf-8";
+        asset_name = "places-de.json";
     }
     httpd_resp_set_type(r, type);
-    return httpd_resp_send(r, (const char *)start, end - start - 1);
+    httpd_resp_set_hdr(r, "Content-Encoding", "gzip");
+    const int64_t began = esp_timer_get_time();
+    const esp_err_t result = httpd_resp_send(r, (const char *)start, end - start);
+    /* Static asset name only: never log queries, cookies or user settings. */
+    ESP_LOGI(TAG, "Web asset %s: %u bytes, %lld ms, %s", asset_name,
+             (unsigned)(end - start), (esp_timer_get_time() - began) / 1000,
+             esp_err_to_name(result));
+    return result;
+}
+static esp_err_t http_socket_open(httpd_handle_t handle, int socket_fd) {
+    (void)handle;
+    return pw_http_socket_low_latency(socket_fd) ? ESP_OK : ESP_FAIL;
 }
 static void register_uri(const char *uri, httpd_method_t method,
                          esp_err_t (*handler)(httpd_req_t *)) {
@@ -1491,7 +1508,10 @@ esp_err_t pw_app_init(void) {
     httpd_config_t hc = HTTPD_DEFAULT_CONFIG();
     hc.max_uri_handlers = 24;
     hc.stack_size = 12288;
-    hc.max_open_sockets = 4;
+    /* A mobile browser can keep six HTTP/1.1 connections. Reserve separate
+     * lwIP capacity for HTTPD control/listener, DNS, NTP and provider clients. */
+    hc.max_open_sockets = 6;
+    hc.open_fn = http_socket_open;
     hc.lru_purge_enable = true;
     hc.recv_wait_timeout = 5;
     hc.send_wait_timeout = 5;

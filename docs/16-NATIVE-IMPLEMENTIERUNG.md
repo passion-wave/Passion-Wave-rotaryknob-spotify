@@ -1,6 +1,6 @@
 # Native Implementierung und Geräteabnahme
 
-Stand 01.10.2026, Entwicklungsstand `0.1.0-dev.5`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
+Stand 01.10.2026, Entwicklungsstand `0.1.0-dev.6`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
 
 ## Reale Implementierung
 
@@ -123,7 +123,7 @@ Setupfenster. Spotify meldete korrekt `unlinked`. Diese kurzen Beobachtungen
 sind kein Dauerlauf; lesbares Display, Touchbedienung, WLAN-Einrichtung und
 hörbare Wiedergabe brauchen weiterhin eine physische Bestätigung.
 
-Alle drei aktuellen Artefakte tragen nach erneuter Konfiguration **dev.4**:
+Alle drei damals gebauten Artefakte tragen nach erneuter Konfiguration **dev.4**:
 Standard-S3 **2.775.264 Byte**, Labor-S3 **2.786.528 Byte**, Companion
 **278.064 Byte**. Beim Test fiel auf, dass ein bestehender Buildordner Änderungen
 an der gemeinsamen VERSION-Datei zuvor nicht automatisch übernommen hatte.
@@ -172,7 +172,7 @@ verpflichtend. Native IPv6, verkürzte Adressen, fremde Hosts und andere Ports
 werden nicht durch diese Korrektur freigegeben. Alle JSON-Ausgabepfade deklarieren
 zusätzlich UTF-8, auch für die direkte Fehlerseitenanzeige. Die gemeldeten
 verunstalteten Umlaute entsprechen einer falschen Interpretation korrekt
-gesendeter UTF-8-Quellbytes; der verwendete Handy-Browser wurde nicht instrumentiert.
+kodierter UTF-8-Quellbytes; der verwendete Handy-Browser wurde nicht instrumentiert.
 
 **209 native HTTP-Adress-/Hostprüfungen mit ASan/UBSan bestanden**, darunter eine
 echte reine Loopback-Verbindung von IPv4 zu einem IPv6-Dualstack-Socket. Sie zeigt
@@ -192,3 +192,53 @@ geändert. Nach dem Neustart muss das Handy den neu erzeugten AP-QR-Code verwend
 noch vom Nutzer bzw. am Gerät zu bestätigen.** Ein bestandener Hosttest ersetzt
 diese Rückmeldung nicht. Der vorherige Commit `85bb206` hatte vor dieser Korrektur
 zwei vollständig erfolgreiche GitHub-Läufe; sie belegten diesen Gerätefehler nicht.
+
+
+## Langsamer Safari-Seitenaufbau / dev.6 am 01.10.2026
+
+Der Nutzer bestätigte den Aufruf mit iPhone/Safari im PassionWave-WLAN: Nach
+dev.5 kam die Website an, aber extrem langsam und mit unvollständiger Gestaltung.
+Das ist noch keine erfolgreiche Webabnahme. Im ausgelesenen S3-Log standen
+HTTP-Sendezeitüberschreitungen (`errno 11`) und abgebrochene Verbindungen
+(`errno 104`). Der beim Öffnen der USB-Diagnose beobachtete Neustart trug den
+Grund `USB_UART_CHIP_RESET`; dieser Mitschnitt zeigte keine Firmware-Panic.
+Die Ursache des schlechten Funk-/Browsertransports ist damit noch nicht
+abschließend isoliert.
+
+dev.6 verkleinert HTML, CSS und JavaScript durch deterministische Kompression
+beim Build von **88.893 auf 24.560 Byte (−72,4 Prozent)**. Der S3 liefert fertige
+Binär-gzip-Dateien mit ihrem ursprünglichen MIME-Typ und exakter Länge; er
+komprimiert nicht während der Anfrage. Externe Dateien und Fonts gibt es nicht.
+Die große Ortsdatenbank wird weiterhin erst bei der Wetterseite/-suche geladen.
+`TCP_NODELAY` vermeidet zusätzliche Wartezeiten zwischen den vielen kleinen
+HTTPD-Header-Sendungen. Sechs HTTP-Verbindungen statt vier und 16 globale
+lwIP-Sockets lassen Platz für den Browser sowie DNS/NTP/Provider. Sendezeitlimit,
+Host-/AP-/Sitzungsregeln und CSP bleiben erhalten. Die Firmware protokolliert
+pro statischer Webdatei nur Namen, komprimierte Bytezahl, Dauer und Sendestatus.
+Keine Cookies, URLs mit Suchparametern, Zugangsdaten oder Benutzereinstellungen.
+
+WLAN-Stromsparmodus wird nicht als Ursache dieses AP-Fehlers behauptet oder
+auf Verdacht verändert: Das [gepinnt dokumentierte Modem-Sleep-Verhalten](https://docs.espressif.com/projects/esp-idf/en/v5.4.3/esp32s3/api-guides/wifi.html#esp32-s3-wi-fi-power-saving-mode)
+betrifft verbundene Stationen im reinen STA-Modus.
+
+Prüfungen: **216 native Socket-/Hostprüfungen** mit ASan/UBSan einschließlich
+realem TCP_NODELAY-Abgleich; **51 Frameworktests**, davon fünf Kompressions-/
+Rebuild-/Fehlerfalltests. Echte temporäre Loopback-HTTP-Tests mit **Chromium und
+WebKit** bestätigen vollständige Gzip-Dekodierung, MIME/nosniff/CSP, CSS,
+JavaScript und mobiles Layout. Die dortigen API-Antworten sind simuliert.
+Alle drei Profile bauen mit dev.6; die Gzip-Bytefolgen und exakten Start-/Endsymbole
+wurden in den finalen Standard-/Labor-ELFs und App-Binaries abgeglichen.
+**Ein schneller, vollständiger Safari-Aufruf am realen Gerät bleibt zu messen
+und vom Nutzer zu bestätigen.**
+
+
+Das S3-Laborimage wurde anschließend als Appupdate mit erhaltenen Einstellungen
+und Schlüsseln geschrieben und vollständig gegen den Flash verifiziert:
+**2.722.640 Byte**, SHA-256
+`f9cf610fac19c3836d525a6908b2a21d14ccf51a1f1ef3323764c5b3e8109723`.
+Board und lokale Dienste starteten; echtes USB-HELLO bestätigte dev.6 mit offenem
+Setupfenster. Die Originalbackup-Prüfsumme wurde vor dem Schreiben erneut
+abgeglichen. Keine eFuses oder Companion-Firmware geändert. Eine offen gehaltene
+USB-Diagnose erfasst jetzt die Webdatei-Übertragungen beim angefragten
+Safari-Retest. Beim Wechsel zwischen USB-Programmen wurde auf diesem Rechner ein Reset
+beobachtet; deshalb bleibt die Verbindung während dieser Probe geöffnet.
