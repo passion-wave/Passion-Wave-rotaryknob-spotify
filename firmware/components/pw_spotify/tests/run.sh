@@ -24,7 +24,7 @@ cc=${CC:-cc}
   -DMBEDTLS_CONFIG_FILE='"mbedtls_config.h"' -I"$build_dir" -I"$mbed_dir/include" -I"$mbed_dir/library" \
   -c "$mbed_dir/library/platform_util.c" -o "$build_dir/platform_util.o"
 "$cc" -std=c11 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer \
-  -DMBEDTLS_CONFIG_FILE='"mbedtls_config.h"' -I"$build_dir" -I"$component_dir/tests/stubs" -I"$component_dir/include" -I"$component_dir" -I"$json_dir" -I"$mbed_dir/include" \
+  -D_POSIX_C_SOURCE=200809L -DMBEDTLS_CONFIG_FILE='"mbedtls_config.h"' -I"$build_dir" -I"$component_dir/tests/stubs" -I"$component_dir/include" -I"$component_dir" -I"$json_dir" -I"$mbed_dir/include" \
   "$component_dir/pw_spotify_model.c" "$component_dir/tests/test_model.c" \
   "$build_dir/cJSON.o" "$build_dir/sha256.o" "$build_dir/base64.o" "$build_dir/platform_util.o" \
   -lm -o "$build_dir/test_model"
