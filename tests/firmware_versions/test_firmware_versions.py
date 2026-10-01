@@ -65,6 +65,27 @@ class FirmwareVersionTests(unittest.TestCase):
         self.process.assert_not_called()
         self.assertIn('CMake project_version', self.stderr.getvalue())
 
+    def test_esptool_4_10_raw_nul_padding_from_actual_image_info(self):
+        # Matches actual esptool 4.10.0 image_info output on the built S3 image:
+        # decoded fixed-width fields, not a Python b'...' representation.
+        self.result.stdout = ('esptool.py v4.10.0\nProject name: ' +
+                              'passionwave_spotify'.ljust(32, '\x00') +
+                              '\nApp version: ' + '0.1.0-dev.4'.ljust(32, '\x00') + '\n')
+        self.assertEqual(self.run_check(), 0)
+        self.result.stdout = self.result.stdout.replace('0.1.0-dev.4', '0.1.0-dev.1')
+        self.assertEqual(self.run_check(), 1)
+        self.assertIn('binary App version', self.stderr.getvalue())
+
+    def test_nul_compatibility_does_not_accept_modified_names_or_versions(self):
+        original = self.result.stdout
+        for original_value in ('passionwave_spotify', '0.1.0-dev.4'):
+            for modified in (original_value + ' ', ' ' + original_value,
+                             original_value + '\x00extra', original_value + '\\x00',
+                             "b'" + original_value + "'", '\x00' * 32):
+                with self.subTest(value=modified):
+                    self.result.stdout = original.replace(original_value, modified)
+                    self.assertEqual(self.run_check(), 1)
+
     def test_stale_actual_binary_rejected_even_with_current_cmake_metadata(self):
         self.result.stdout = self.result.stdout.replace('0.1.0-dev.4', '0.1.0-dev.1')
         self.assertEqual(self.run_check(), 1)

@@ -21,7 +21,14 @@ def image_field(output: str, name: str) -> str:
     values = [line[len(prefix):] for line in output.splitlines() if line.startswith(prefix)]
     if len(values) != 1 or not values[0]:
         raise VersionError(f'esptool returned missing or ambiguous {name}')
-    return values[0]
+    # esptool 4.10.0 prints the 32-byte app descriptor strings with raw trailing
+    # NUL padding; 4.12.0 sanitizes it. Reproduced with both official versions on
+    # our actual app images. Remove only that padding, not spaces/embedded NULs
+    # or Python bytes-literal syntax; the caller still compares exact values.
+    value = values[0].rstrip('\x00')
+    if not value:
+        raise VersionError(f'esptool returned empty {name}')
+    return value
 
 
 def check_build(build_dir: Path, expected: str) -> tuple[str, str]:

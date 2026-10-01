@@ -129,9 +129,14 @@ an der gemeinsamen VERSION-Datei zuvor nicht automatisch übernommen hatte.
 Beide CMake-Projekte führen sie jetzt ausdrücklich als Konfigurationsabhängigkeit.
 `tools/check_firmware_versions.py` prüft zusätzlich die Version/Projektidentität
 aller drei tatsächlichen App-Binaries mit `esptool image_info` gegen Root-VERSION
-und CMake-Metadaten; dieser Lauf bestand. Zehn Hosttests sichern insbesondere
+und CMake-Metadaten; dieser Lauf bestand. Zwölf Hosttests sichern insbesondere
 veraltete Metadaten, abweichende Images und fehlende Artefakte ab. CI führt die
 Prüfung nach jedem Build aus.
+Der erste CI-Lauf mit esptool 4.10.0 fand einen Unterschied zum lokalen 4.12.0:
+ältere `image_info`-Ausgaben enthalten abschließende NUL-Paddingbytes in den
+Textfeldern. Die Auswertung entfernt nur dieses Padding. Beide Toolversionen
+bestanden danach den Vergleich aller drei realen Binaries; abweichende Versionen,
+eingebettete NUL-Zeichen und zusätzlicher Text bleiben Fehler.
 Die früher genannten Dateigrößen allein belegten keine aktualisierte eingebettete
 Versionsnummer.
 
