@@ -242,3 +242,22 @@ abgeglichen. Keine eFuses oder Companion-Firmware geändert. Eine offen gehalten
 USB-Diagnose erfasst jetzt die Webdatei-Übertragungen beim angefragten
 Safari-Retest. Beim Wechsel zwischen USB-Programmen wurde auf diesem Rechner ein Reset
 beobachtet; deshalb bleibt die Verbindung während dieser Probe geöffnet.
+
+
+### Gesicherter Abendstand / Fortsetzung am 02.10.2026
+
+Auf Nutzerwunsch endet die Gerätearbeit hier bis morgen früh. dev.6 bleibt auf
+dem S3 installiert; Quellstand `4db058d` ist im verbundenen Repository und
+Entwurfs-PR gesichert. Die USB-Diagnose wurde geordnet beendet und ihre Protokolle
+privat neben dem verifizierten Image abgelegt. Bis zum Ende der Aufzeichnung
+wurden **keine neuen Webdatei-Abrufe** beobachtet; daher liegt noch kein gemessener
+Safari-Ladezeitnachweis für dev.6 vor. Der lokale Spotify-Helfer ist ebenfalls
+beendet. Es läuft kein Flash-/Updatevorgang; das Gerät darf vom USB getrennt werden.
+
+Fortsetzung: Einrichtung am Knob bei Bedarf durch drei Sekunden Berühren erneut
+öffnen, aktuellen WLAN-QR-Code verwenden und `http://192.168.4.1/` mit iPhone/Safari
+aufrufen. Zuerst vollständigen, schnellen Seitenaufbau und erfolgreiche
+WLAN-Einrichtung bestätigen. Anschließend lokalen USB-Helfer wieder starten,
+echtes Spotify-OAuth und danach gezielte Roam-/Move-Wiedergabe prüfen. Ein Start
+für morgen wurde nicht automatisch terminiert. Die vollständige Feature- und
+Produktabnahme bleibt offen.
