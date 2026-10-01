@@ -38,6 +38,7 @@ jobs:
             -o /tmp/pw-protocol-tests
           /tmp/pw-protocol-tests
           sh tests/app_native/run.sh
+          sh tests/http_native/run.sh
           sh tests/storage_native/run.sh
           sh tests/weather_native/run.sh
           sh tests/setup_native/run.sh

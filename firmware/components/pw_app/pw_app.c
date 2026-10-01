@@ -23,6 +23,7 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 #include "pw_board.h"
+#include "pw_http_socket.h"
 #include "pw_protocol.h"
 #include "pw_storage.h"
 #include "pw_spotify.h"
@@ -331,13 +332,9 @@ static void network_event(void *arg, esp_event_base_t base, int32_t id, void *da
 }
 /* The AP endpoint is reachable via its own local socket address, not a forged Host/IP header. */
 static bool is_ap_request(httpd_req_t *r) {
-    struct sockaddr_in local = {0}, remote = {0};
-    socklen_t n = sizeof local;
+    struct in_addr local = {0}, remote = {0};
     int fd = httpd_req_to_sockfd(r);
-    if (getsockname(fd, (struct sockaddr *)&local, &n))
-        return false;
-    n = sizeof remote;
-    if (getpeername(fd, (struct sockaddr *)&remote, &n))
+    if (!pw_http_socket_ipv4(fd, false, &local) || !pw_http_socket_ipv4(fd, true, &remote))
         return false;
     esp_netif_ip_info_t ip;
     if (esp_netif_get_ip_info(ap_if, &ip) != ESP_OK)
@@ -345,9 +342,8 @@ static bool is_ap_request(httpd_req_t *r) {
     take();
     bool opened = view.setup_open && setup_until > esp_timer_get_time();
     give();
-    if (!opened || local.sin_family != AF_INET || remote.sin_family != AF_INET ||
-        local.sin_addr.s_addr != ip.ip.addr ||
-        (remote.sin_addr.s_addr & ip.netmask.addr) != (ip.ip.addr & ip.netmask.addr))
+    if (!opened || local.s_addr != ip.ip.addr ||
+        (remote.s_addr & ip.netmask.addr) != (ip.ip.addr & ip.netmask.addr))
         return false;
     wifi_sta_list_t associated = {0};
     wifi_sta_mac_ip_list_t mapped = {0};
@@ -355,7 +351,7 @@ static bool is_ap_request(httpd_req_t *r) {
         esp_wifi_ap_get_sta_list_with_ip(&associated, &mapped) != ESP_OK)
         return false;
     for (int i = 0; i < mapped.num; i++)
-        if (mapped.sta[i].ip.addr == remote.sin_addr.s_addr)
+        if (mapped.sta[i].ip.addr == remote.s_addr)
             return true;
     return false;
 }
@@ -363,15 +359,9 @@ static bool host_valid(httpd_req_t *r) {
     char host[80] = {0};
     if (httpd_req_get_hdr_value_str(r, "Host", host, sizeof host) != ESP_OK)
         return false;
-    struct sockaddr_in local = {0};
-    socklen_t n = sizeof local;
-    if (getsockname(httpd_req_to_sockfd(r), (struct sockaddr *)&local, &n))
-        return false;
-    char ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &local.sin_addr, ip, sizeof ip);
-    char withport[64];
-    snprintf(withport, sizeof withport, "%s:80", ip);
-    return !strcmp(host, ip) || !strcmp(host, withport);
+    struct in_addr local = {0};
+    return pw_http_socket_ipv4(httpd_req_to_sockfd(r), false, &local) &&
+           pw_http_host_matches_ipv4(host, &local);
 }
 static void headers(httpd_req_t *r) {
     httpd_resp_set_hdr(r, "Cache-Control", "no-store");
@@ -385,7 +375,7 @@ static void headers(httpd_req_t *r) {
 static esp_err_t memory_error(httpd_req_t *r) {
     headers(r);
     httpd_resp_set_status(r, "503 Service Unavailable");
-    httpd_resp_set_type(r, "application/json");
+    httpd_resp_set_type(r, "application/json; charset=utf-8");
     return httpd_resp_send(r,
                            "{\"error\":{\"code\":\"memory\",\"message\":\"Speicher belegt. Bitte "
                            "erneut versuchen.\"}}",
@@ -405,7 +395,7 @@ static esp_err_t json_response(httpd_req_t *r, cJSON *j) {
     if (!s)
         return memory_error(r);
     headers(r);
-    httpd_resp_set_type(r, "application/json");
+    httpd_resp_set_type(r, "application/json; charset=utf-8");
     esp_err_t e = httpd_resp_send(r, s, HTTPD_RESP_USE_STRLEN);
     free(s);
     return e;
@@ -414,7 +404,7 @@ static esp_err_t revision_response(httpd_req_t *r, uint32_t revision) {
     char body[64];
     snprintf(body, sizeof body, "{\"config_revision\":%lu}", (unsigned long)revision);
     headers(r);
-    httpd_resp_set_type(r, "application/json");
+    httpd_resp_set_type(r, "application/json; charset=utf-8");
     return httpd_resp_send(r, body, HTTPD_RESP_USE_STRLEN);
 }
 static esp_err_t error(httpd_req_t *r, const char *status, const char *code, const char *message) {
@@ -850,7 +840,7 @@ static esp_err_t wifi_handler(httpd_req_t *r) {
     delete_sensitive_json(j);
     httpd_resp_set_status(r, "202 Accepted");
     headers(r);
-    httpd_resp_set_type(r, "application/json");
+    httpd_resp_set_type(r, "application/json; charset=utf-8");
     return httpd_resp_send(r, "{\"state\":\"connecting\"}", HTTPD_RESP_USE_STRLEN);
 }
 static esp_err_t settings_handler(httpd_req_t *r) {
@@ -1159,7 +1149,7 @@ static void update_reply(void *context, bool accepted, const char *reason) {
     if (accepted) {
         httpd_resp_set_status(request, "202 Accepted");
         headers(request);
-        httpd_resp_set_type(request, "application/json");
+        httpd_resp_set_type(request, "application/json; charset=utf-8");
         httpd_resp_send(request, "{\"state\":\"local_ready\",\"status_url\":\"/api/v1/updates\"}",
                         HTTPD_RESP_USE_STRLEN);
     } else {

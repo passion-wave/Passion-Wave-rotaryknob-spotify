@@ -1,6 +1,6 @@
 # Native Implementierung und Geräteabnahme
 
-Stand 01.10.2026, Entwicklungsstand `0.1.0-dev.4`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
+Stand 01.10.2026, Entwicklungsstand `0.1.0-dev.5`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
 
 ## Reale Implementierung
 
@@ -40,6 +40,7 @@ idf.py -C firmware/s3 -B build/s3-lab-usb -D SDKCONFIG="$PWD/build/s3-lab-usb/sd
 python tools/check_firmware_versions.py build/companion build/s3 build/s3-lab-usb
 python3 tools/check.py
 sh tests/app_native/run.sh
+sh tests/http_native/run.sh
 sh tests/storage_native/run.sh
 sh tests/weather_native/run.sh
 sh tests/setup_native/run.sh
@@ -153,3 +154,41 @@ WLAN-Verbindung bestätigt. Davor führt er zum WLAN-QR-Code am Display. Fällt 
 aus, erscheint auch bei noch gespeicherter Spotify-Verknüpfung keine grüne
 Bereitschaftsanzeige. Beide Übergänge und der anschließende OAuth-Ablauf wurden
 im isolierten Chromium mit simulierten Netzwerkzuständen geprüft.
+
+## Gerätewebsite-Korrektur dev.5 am 01.10.2026
+
+Der Nutzer erreichte `http://192.168.4.1/`, erhielt aber `400` / Fehlercode `host`
+statt der Konfigurationsseite. Ursache im tatsächlich konfigurierten IDF 5.4.3:
+HTTPD öffnet bei aktivem IPv6 einen Dualstack-Listener; lwIP liefert dessen IPv4-
+Verbindungen bei `getsockname`/`getpeername` als `::ffff:a.b.c.d`. Der bisherige
+`sockaddr_in`-Puffer war zu klein und las statt der IPv4-Adresse das IPv6-Flowfeld.
+Zusätzlich lehnte die AP-Prüfung die unerwartete Adressfamilie ab.
+
+`pw_http_socket.c` liest jetzt beide Endpunkte vollständig in `sockaddr_storage`
+und akzeptiert ausschließlich IPv4 oder echte IPv4-Mapped-IPv6-Adressen. Der Host
+muss weiterhin zur tatsächlichen lokalen Adresse passen. Setupfenster, lokale
+AP-Adresse, Subnetz, assoziierter DHCP-Client, Sitzung, Origin und CSRF bleiben
+verpflichtend. Native IPv6, verkürzte Adressen, fremde Hosts und andere Ports
+werden nicht durch diese Korrektur freigegeben. Alle JSON-Ausgabepfade deklarieren
+zusätzlich UTF-8, auch für die direkte Fehlerseitenanzeige. Die gemeldeten
+verunstalteten Umlaute entsprechen einer falschen Interpretation korrekt
+gesendeter UTF-8-Quellbytes; der verwendete Handy-Browser wurde nicht instrumentiert.
+
+**209 native HTTP-Adress-/Hostprüfungen mit ASan/UBSan bestanden**, darunter eine
+echte reine Loopback-Verbindung von IPv4 zu einem IPv6-Dualstack-Socket. Sie zeigt
+den abgeschnittenen alten Puffer und prüft die tatsächlichen neuen Sockethelfer.
+Außerdem bestanden erneut 156 Konfigurationsprüfungen und 46 Framework-/Vertrag-
+tests. Alle drei Profile gebaut und tatsächliche Binaryversionen mit dev.5
+abgeglichen: Standard-S3 **2.775.456 Byte**, Labor-S3 **2.786.720 Byte**, Companion
+**278.064 Byte**. Der neue Sockettest ist Teil der nativen CI.
+
+Das S3-Laborimage wurde bei erhaltenen Einstellungen/Schlüsseln geschrieben und
+gegen den Flash verifiziert: SHA-256
+`125533d6a1fbb239fba75ead6c715cce83fea93e95e4f0b80b3d55801bac85a6`.
+Start erreichte Board-/lokale Dienste und `app_main`; echtes USB-HELLO bestätigte
+dev.5 mit offenem Setupfenster. Das Originalbackup blieb erhalten, keine eFuses
+geändert. Nach dem Neustart muss das Handy den neu erzeugten AP-QR-Code verwenden.
+**Erneuter Webaufruf, schreibende WLAN-Einrichtung und Spotify-Anmeldung sind
+noch vom Nutzer bzw. am Gerät zu bestätigen.** Ein bestandener Hosttest ersetzt
+diese Rückmeldung nicht. Der vorherige Commit `85bb206` hatte vor dieser Korrektur
+zwei vollständig erfolgreiche GitHub-Läufe; sie belegten diesen Gerätefehler nicht.
