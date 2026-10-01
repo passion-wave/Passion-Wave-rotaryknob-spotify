@@ -31,7 +31,7 @@ function render(state) {
   $('cancel').disabled = busy;
   $('choose').disabled = busy || state.pending;
   $('status').textContent = state.error ? state.message : !state.setup_open ? 'Einrichtung am Knob öffnen' : !state.lab_enabled ? 'Spotify ist noch nicht freigeschaltet' : ready ? 'Spotify ist auf deinem Knob verbunden' : state.pending ? 'Anmeldung bei Spotify läuft …' : state.authorization_status === 'failed' ? 'Neue Anmeldung nicht bestätigt' : labels[spotify.state] || (spotify.linked ? 'Spotify ist verknüpft · Verbindung wird geprüft' : 'Bereit für deine Spotify-Anmeldung');
-  $('detail').textContent = ready ? 'Der Knob ist bereit. Wähle einen Spotify Connect-Lautsprecher auf dem Gerät.' : labels[spotify.state] || 'RotaryKnob per USB anschließen. Die Einrichtung öffnest du mit 3 Sekunden Druck auf den Drehknopf.';
+  $('detail').textContent = ready ? 'Der Knob ist bereit. Wähle einen Spotify Connect-Lautsprecher auf dem Gerät.' : labels[spotify.state] || (state.setup_open ? 'USB verbunden. Richte zuerst über den QR-Code am Display dein Heim-WLAN ein. Danach hier Spotify verbinden.' : 'RotaryKnob per USB anschließen. Das Display 3 Sekunden berühren, um die Einrichtung zu öffnen.');
   const ports = state.ports || [];
   $('ports').hidden = ports.length < 2 && state.error !== 'select_port';
   const previous = $('port').value;

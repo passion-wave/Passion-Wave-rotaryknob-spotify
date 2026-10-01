@@ -201,7 +201,7 @@ class SerialTests(unittest.TestCase):
     def test_framing_correlated_id_discards_logs_and_does_not_reset(self):
         def response(request):
             ignored = helper.PREFIX + json.dumps({"id": request["id"] - 1, "ok": True}).encode() + b"\n"
-            actual = helper.PREFIX + json.dumps({"id": request["id"], "ok": True, "role": "controller_s3"}).encode() + b"\n"
+            actual = helper.PREFIX + json.dumps({"id": request["id"], "ok": True, "role": "controller_s3", "hardware": helper.HARDWARE, "version": "test-fixture", "lab_enabled": True, "setup_open": True}).encode() + b"\n"
             return b"private firmware log ignored\n" + ignored + actual
         device = self.make_device(response)
         self.assertEqual(device.request("hello")["role"], "controller_s3")
@@ -224,7 +224,7 @@ class SerialTests(unittest.TestCase):
             device.request("hello")
         self.assertEqual(error.exception.code, "usb_timeout")
         device = self.make_device(lambda request: b"X" * 9000 + b"\n" + helper.PREFIX +
-                                  json.dumps({"id": request["id"], "ok": True}).encode() + b"\n")
+                                  json.dumps({"id": request["id"], "ok": True, "role": "controller_s3", "hardware": helper.HARDWARE, "version": "test-fixture", "lab_enabled": True, "setup_open": True}).encode() + b"\n")
         self.assertTrue(device.request("hello")["ok"])
 
     def test_duplicate_json_key_rejected(self):

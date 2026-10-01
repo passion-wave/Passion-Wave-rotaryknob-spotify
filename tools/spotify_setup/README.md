@@ -6,11 +6,7 @@ Tokenablage, Erneuerung und Spotify-API liegen ausschließlich auf dem S3. Ein
 PassionWave-Cloudservice wird nicht verwendet.
 
 **Entwicklungsstand:** echter lokaler HTTP-/USB-Helfer mit isolierten Tests, noch
-keine bestätigte Geräteanmeldung. Die derzeit fest eingetragene App-ID ist kein
-Nachweis eines registrierten Loopback-Redirects, freigeschalteter Testnutzer oder
-einer Spotify-Produktfreigabe. Die passende App und ihr Redirect müssen zuerst
-qualifiziert sein. Keine neuen Nutzungsbedingungen werden durch dieses Werkzeug
-angenommen und keine Spotify-App angelegt.
+keine bestätigte Geräteanmeldung. Die öffentliche App-ID verweist auf die nach ausdrücklicher Nutzerfreigabe am 01.10.2026 angelegte „PassionWave RotaryKnob Lab“-App. Development Mode und `http://127.0.0.1:8766/callback` wurden im Dashboard bestätigt. Testkontonutzung, echte Verknüpfung und Produktfreigabe sind dadurch noch nicht abgenommen. Die öffentlichen Profildaten stehen in [spotify-lab.json](../../profiles/spotify-lab.json); `tools/check.py` prüft ihre Übereinstimmung mit Firmware und Helfer. Dieses Werkzeug legt selbst keine Spotify-App an und akzeptiert keine Bedingungen.
 
 ## Start
 
@@ -23,6 +19,8 @@ python3 -m venv /tmp/pw-spotify-setup-env
 /tmp/pw-spotify-setup-env/bin/python tools/spotify_setup/helper.py
 ```
 
+Der identifizierte S3 erscheint unter macOS beispielsweise als `/dev/cu.usbmodem1101` mit VID/PID `303a:1001`; Portnummern können sich ändern. Der CH340-`usbserial`-Anschluss gehört bei diesem Gerät zum anderen Chip.
+
 Unter Windows kann das virtuelle Environment an einem lokalen Ort angelegt und
 dessen `Scripts\python.exe` verwendet werden. Windows-USB-/Treiberverhalten ist
 noch nicht physisch qualifiziert. Die Laufzeitabhängigkeit ist `pyserial==3.5`;
@@ -32,7 +30,8 @@ HTTP-Server und Sicherheit verwenden die Python-Standardbibliothek.
    über den USB-Stecker erreichbar sein und die passende Laborfirmware ausführen.
 2. Der Helfer öffnet `http://127.0.0.1:8766/` im normalen Systembrowser. Bei mehreren
    USB-Kandidaten den Anschluss ausdrücklich auswählen. Es wird kein Chip geflasht.
-3. Den Knob drei Sekunden gedrückt halten, um die physische Einrichtung zu öffnen.
+3. Das Display drei Sekunden berühren, um die physische Einrichtung zu öffnen.
+   Beim ersten Start über den QR-Code am Display das Heim-WLAN einrichten.
    Der Knob benötigt sein eingerichtetes WLAN und eine gültige Uhrzeit für TLS.
 4. **Mit Spotify verbinden** wählen und direkt bei Spotify anmelden. Der Helfer
    fragt weder Kennwort noch API-Schlüssel ab. Spotify Premium und passende
@@ -65,7 +64,7 @@ Adresse oder einen anderen OAuth-Redirect aus.
 
 ## Fester USB-Vertrag
 
-UART0: eine UTF-8-JSON-Zeile, Prefix `PWSET1 `, abschließendes Newline; höchstens
+Nativer USB-Serial/JTAG-Anschluss des S3: eine UTF-8-JSON-Zeile, Prefix `PWSET1 `, abschließendes Newline; höchstens
 8 KiB pro empfangener Zeile. Nicht passende Firmwarelogs werden verworfen und
 weder angezeigt noch gespeichert. Anfragen haben eine positive ganzzahlige `id`
 und eine der Methoden `hello`, `status`, `authorize`, `callback`, `cancel`.

@@ -7,8 +7,8 @@ esp_err_t pw_setup_usb_init(void) {
 }
 #else
 #include "cJSON.h"
-#include "driver/uart.h"
-#include "driver/uart_vfs.h"
+#include "driver/usb_serial_jtag.h"
+#include "driver/usb_serial_jtag_vfs.h"
 #include "esp_app_desc.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -23,9 +23,13 @@ esp_err_t pw_setup_usb_init(void) {
 
 _Static_assert(PW_SETUP_CODE_BYTES == PW_SPOTIFY_AUTH_CODE_BYTES, "OAuth code limit mismatch");
 _Static_assert(PW_SETUP_STATE_BYTES == PW_SPOTIFY_AUTH_STATE_BYTES, "OAuth state limit mismatch");
-#if !CONFIG_ESP_CONSOLE_UART_DEFAULT || CONFIG_ESP_CONSOLE_UART_NUM != 0
-#error "USB lab setup requires the qualified UART0 console profile"
+#if !CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG || !CONFIG_VFS_SUPPORT_IO || \
+    CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG
+#error "USB lab setup requires the native USB Serial/JTAG primary console and VFS"
 #endif
+
+#define TX_DEADLINE_US (2LL * 1000000)
+#define RX_DEADLINE_US (5LL * 1000000)
 
 static TaskHandle_t task;
 static char *input_line;
@@ -53,6 +57,28 @@ static const char *error_code(esp_err_t err) {
         return "busy";
     return "device_error";
 }
+static void send_frame(const char *wire, size_t size) {
+    if (!size || size > PW_SETUP_LINE_BYTES)
+        return;
+    const int64_t deadline = esp_timer_get_time() + TX_DEADLINE_US;
+    while (esp_timer_get_time() < deadline) {
+        /* IDF 5.4.3 copies a whole frame into its byte ring, or returns zero.
+         * The VFS console uses this same driver, so its per-character writes
+         * cannot be inserted inside this enqueue. Never split/retry a frame
+         * after any bytes were accepted. A leading LF separates a partial log. */
+        int sent = usb_serial_jtag_write_bytes(wire, size, 0);
+        if (sent > 0) {
+            int64_t remaining = deadline - esp_timer_get_time();
+            if (remaining > 0)
+                (void)usb_serial_jtag_wait_tx_done(
+                    (TickType_t)(remaining / (portTICK_PERIOD_MS * 1000LL)));
+            return;
+        }
+        /* Avoid the driver's separate mutex + ring waits each consuming a
+         * full timeout. Disconnected/full USB cannot block this task forever. */
+        vTaskDelay(1);
+    }
+}
 static void send_response(cJSON *root, uint32_t id) {
     char *json = root ? cJSON_PrintUnformatted(root) : NULL;
     cJSON_Delete(root);
@@ -61,26 +87,27 @@ static void send_response(cJSON *root, uint32_t id) {
     char *wire = NULL;
     size_t wire_size = 0;
     if (size && size < PW_SETUP_LINE_BYTES - sizeof(PW_SETUP_PREFIX) - 1) {
-        wire_size = sizeof(PW_SETUP_PREFIX) - 1 + size + 1;
+        wire_size = sizeof(PW_SETUP_PREFIX) - 1 + size + 2;
         wire = malloc(wire_size + 1);
         if (wire)
-            snprintf(wire, wire_size + 1, PW_SETUP_PREFIX "%s\n", json);
+            snprintf(wire, wire_size + 1, "\n" PW_SETUP_PREFIX "%s\n", json);
     }
     if (json) {
         mbedtls_platform_zeroize(json, size);
         cJSON_free(json);
     }
     if (wire) {
-        uart_write_bytes(UART_NUM_0, wire, wire_size);
+        send_frame(wire, wire_size);
         mbedtls_platform_zeroize(wire, wire_size);
         free(wire);
     } else {
         int n = snprintf(fallback, sizeof fallback,
-                         PW_SETUP_PREFIX "{\"id\":%lu,\"ok\":false,\"error\":\"busy\"}\n",
+                         "\n" PW_SETUP_PREFIX "{\"id\":%lu,\"ok\":false,\"error\":\"busy\"}\n",
                          (unsigned long)id);
         if (n > 0 && n < (int)sizeof fallback)
-            uart_write_bytes(UART_NUM_0, fallback, n);
+            send_frame(fallback, (size_t)n);
     }
+    mbedtls_platform_zeroize(fallback, sizeof fallback);
 }
 static cJSON *response_base(uint32_t id, bool ok) {
     cJSON *root = cJSON_CreateObject();
@@ -186,13 +213,20 @@ static void worker(void *unused) {
     size_t used = 0;
     bool overflow = false;
     int64_t last_byte = 0;
+    int64_t frame_started = 0;
     for (;;) {
-        int got = uart_read_bytes(UART_NUM_0, chunk, sizeof chunk, pdMS_TO_TICKS(100));
+        int got = usb_serial_jtag_read_bytes(chunk, sizeof chunk, pdMS_TO_TICKS(100));
         int64_t now = esp_timer_get_time();
-        if (used && now - last_byte > 5LL * 1000000) {
+        if ((used || overflow) && now - last_byte >= RX_DEADLINE_US) {
             mbedtls_platform_zeroize(input_line, used);
             used = 0;
             overflow = false;
+        } else if (used && now - frame_started >= RX_DEADLINE_US) {
+            /* A drip-fed/overlong frame stays discarded until LF or an idle
+             * gap. Its tail must never become a fresh command accidentally. */
+            mbedtls_platform_zeroize(input_line, used);
+            used = 0;
+            overflow = true;
         }
         for (int i = 0; i < got; i++) {
             unsigned char c = chunk[i];
@@ -208,9 +242,11 @@ static void worker(void *unused) {
                 used = 0;
                 overflow = false;
             } else if (!overflow) {
-                if (used + 1 < PW_SETUP_LINE_BYTES)
+                if (used + 1 < PW_SETUP_LINE_BYTES) {
+                    if (!used)
+                        frame_started = now;
                     input_line[used++] = (char)c;
-                else
+                } else
                     overflow = true;
             }
         }
@@ -224,27 +260,23 @@ static void worker(void *unused) {
 esp_err_t pw_setup_usb_init(void) {
     if (task)
         return ESP_OK;
-    if (uart_is_driver_installed(UART_NUM_0))
+    if (usb_serial_jtag_is_driver_installed())
         return ESP_ERR_INVALID_STATE;
     input_line = calloc(1, PW_SETUP_LINE_BYTES);
     request = calloc(1, sizeof *request);
     snapshot = calloc(1, sizeof *snapshot);
     if (!input_line || !request || !snapshot)
         goto allocation_failed;
-    uart_config_t config = {.baud_rate = 115200,
-                            .data_bits = UART_DATA_8_BITS,
-                            .parity = UART_PARITY_DISABLE,
-                            .stop_bits = UART_STOP_BITS_1,
-                            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-                            .source_clk = UART_SCLK_DEFAULT};
-    esp_err_t err = uart_param_config(UART_NUM_0, &config);
+    usb_serial_jtag_driver_config_t config = {.tx_buffer_size = PW_SETUP_LINE_BYTES,
+                                             .rx_buffer_size = PW_SETUP_LINE_BYTES};
+    /* Hardware USB uses its existing PHY/pins; never configure UART0/UART1. */
+    esp_err_t err = usb_serial_jtag_driver_install(&config);
     if (err != ESP_OK)
         goto init_failed;
-    /* Keep ROM/default console pins. In particular never reconfigure UART1. */
-    err = uart_driver_install(UART_NUM_0, PW_SETUP_LINE_BYTES, 0, 0, NULL, 0);
-    if (err != ESP_OK)
-        goto init_failed;
-    uart_vfs_dev_use_driver(UART_NUM_0);
+    /* Startup already registered this VFS. Route stdout/stderr through the
+     * installed driver, not the default polled FIFO path. Only this task reads
+     * USB: a concurrent stdin/REPL reader would steal setup bytes. */
+    usb_serial_jtag_vfs_use_driver();
     if (xTaskCreate(worker, "pw_usb_setup", 6144, NULL, 3, &task) != pdPASS) {
         /* Keep the installed console driver usable; do not point VFS at a freed driver. */
         err = ESP_ERR_NO_MEM;

@@ -16,13 +16,25 @@ if str(ROOT) not in sys.path:
 
 
 def validate(value, schema, location='$'):
-    """Validate exactly the vocabulary used by the two standalone schemas."""
-    known = {'$schema','$id','title','description','type','const','enum','properties','required','additionalProperties','items','minItems','maxItems','minLength','maxLength','pattern','minimum','maximum','writeOnly'}
+    """Validate the bounded schema vocabulary used by our contract tests."""
+    known = {'$schema','$id','title','description','type','const','enum','properties','required','additionalProperties','items','minItems','maxItems','minLength','maxLength','pattern','minimum','maximum','writeOnly','oneOf'}
     unknown = set(schema) - known
     if unknown:
         raise ValueError(f'Unsupported schema keywords: {sorted(unknown)}')
     def fail(message):
         raise ValueError(f'{location}: {message}')
+    if 'oneOf' in schema:
+        matches = 0
+        for branch in schema['oneOf']:
+            try:
+                validate(value, branch, location)
+            except ValueError as error:
+                if str(error).startswith('Unsupported schema keywords:'):
+                    raise
+            else:
+                matches += 1
+        if matches != 1:
+            fail('expected exactly one schema branch')
     types = {'object': lambda x: type(x) is dict, 'array': lambda x: type(x) is list,
              'string': lambda x: type(x) is str, 'integer': lambda x: type(x) is int,
              'boolean': lambda x: type(x) is bool, 'null': lambda x: x is None}
@@ -125,12 +137,36 @@ def check_openapi():
     if len(ids) != len(set(ids)): raise ValueError('duplicate operation IDs')
 
 
+def check_spotify_profile():
+    """Public app metadata must match both independently shipped endpoints."""
+    from tools.spotify_setup import helper
+    profile = read_json('profiles/spotify-lab.json')
+    keys = {'schema_version', 'profile', 'app_name', 'client_id', 'redirect_uri', 'scopes',
+            'mode', 'product_approved', 'dashboard_url', 'dashboard_verified_at',
+            'refresh_token_lifetime_days'}
+    if set(profile) != keys:
+        raise ValueError('unexpected Spotify profile fields; keep it public and bounded')
+    if (profile['schema_version'] != 1 or profile['profile'] != 'spotify-lab' or
+            profile['mode'] != 'development' or profile['product_approved'] is not False or
+            not re.fullmatch(r'[0-9a-f]{32}', profile['client_id'])):
+        raise ValueError('invalid Spotify laboratory profile')
+    header = (ROOT/'firmware/components/pw_spotify/include/pw_spotify.h').read_text()
+    for macro, key in [('PW_SPOTIFY_CLIENT_ID', 'client_id'), ('PW_SPOTIFY_REDIRECT_URI', 'redirect_uri')]:
+        match = re.search(r'^#define ' + macro + r' "([^"\n]+)"$', header, re.M)
+        if not match or match[1] != profile[key]:
+            raise ValueError(f'Spotify firmware/profile mismatch: {key}')
+    if (helper.CLIENT_ID != profile['client_id'] or helper.REDIRECT != profile['redirect_uri'] or
+            helper.SCOPES != set(profile['scopes'])):
+        raise ValueError('Spotify USB helper/profile mismatch')
+
+
 def main():
     for file in source_files('.json'): json.loads(file.read_text())
     validate_config(read_json('examples/config.example.json'))
     validate_manifest(read_json('examples/update-manifest.example.json'))
     check_links()
     check_openapi()
+    check_spotify_profile()
     print('JSON examples, semantic contracts, API refs and document links: OK', flush=True)
     result = unittest.TextTestRunner(verbosity=1).run(unittest.defaultTestLoader.discover(str(ROOT/'tests')))
     if not result.wasSuccessful(): return 1

@@ -20,7 +20,7 @@ import webbrowser
 HOST = "127.0.0.1:8766"
 ORIGIN = "http://" + HOST
 REDIRECT = ORIGIN + "/callback"
-CLIENT_ID = "2dadee96887f4e238fdd24342b82d99c"
+CLIENT_ID = "b785d8a5f5c840e9bc33e168c53098ca"
 SCOPES = {"user-read-playback-state", "user-modify-playback-state"}
 HARDWARE = "JC3636K518C_I_YR1"
 PREFIX = b"PWSET1 "
@@ -35,7 +35,7 @@ ERRORS = {
     "usb_timeout": "Keine Antwort vom Display-Chip. USB-Verbindung und Firmware prüfen.",
     "usb_protocol": "Die Geräteantwort passt nicht zu diesem Einrichtungshelfer.",
     "wrong_chip": "Der Display-Chip ist nicht verbunden. USB-Stecker um 180° drehen und erneut prüfen.",
-    "setup_closed": "Den Drehknopf 3 Sekunden gedrückt halten, um die Einrichtung zu öffnen.",
+    "setup_closed": "Das Display 3 Sekunden berühren, um die Einrichtung zu öffnen.",
     "lab_disabled": "Spotify ist in dieser Gerätefirmware noch nicht freigeschaltet.",
     "auth_url": "Das Gerät hat keine gültige Spotify-Anmeldung bereitgestellt.",
     "auth_busy": "Eine Anmeldung läuft bereits. Zuerst abbrechen oder abschließen.",
@@ -209,6 +209,7 @@ class SerialDevice:
                     raise SetupError("usb_protocol")
                 if not response["ok"]:
                     raise SetupError(response.get("error", "device_rejected"))
+                validate_usb_response(method, response)
                 return response
             raise SetupError("usb_timeout")
         except (OSError, self.serial_module.SerialException):
@@ -221,9 +222,49 @@ def device_identity(response):
         raise SetupError("wrong_chip")
     if (type(response.get("setup_open")) is not bool or
             type(response.get("lab_enabled")) is not bool or
-            not isinstance(response.get("version"), str) or len(response["version"]) > 64):
+            not isinstance(response.get("version"), str) or
+            not re.fullmatch(r"[!-~]{1,31}", response["version"])):
         raise SetupError("usb_protocol")
     return {key: response[key] for key in ("role", "hardware", "version", "lab_enabled", "setup_open")}
+
+
+def validate_usb_response(method, response):
+    """Bind a positive correlated ACK to its actual request method, not just ok."""
+    identity_fields = {"role", "hardware", "version", "lab_enabled", "setup_open"}
+    fields = {"id", "ok"}
+    if method in {"hello", "status"}:
+        device_identity(response)
+        fields |= identity_fields
+    if method == "status":
+        fields.add("spotify")
+        spotify = response.get("spotify")
+        expected = {"linked", "state", "error", "connected", "session", "authorization_id", "http_status"}
+        states = {"disabled", "unlinked", "waiting_network", "waiting_clock", "authorizing", "ready",
+                  "reauth_required", "rate_limited", "error", "suspended", "disconnecting"}
+        errors = {"none", "storage", "network", "auth", "forbidden", "no_device", "rate_limit",
+                  "response", "memory", "stale", "unsupported"}
+        if (not isinstance(spotify, dict) or set(spotify) != expected or
+                any(type(spotify.get(k)) is not bool for k in ("linked", "connected")) or
+                not isinstance(spotify.get("state"), str) or spotify["state"] not in states or
+                not isinstance(spotify.get("error"), str) or spotify["error"] not in errors or
+                type(spotify.get("session")) is not int or not 0 <= spotify["session"] <= 0xffffffff or
+                type(spotify.get("http_status")) is not int or not 0 <= spotify["http_status"] <= 599 or
+                not isinstance(spotify.get("authorization_id"), str) or
+                not re.fullmatch(r"(?:[0-9a-f]{48})?", spotify["authorization_id"])):
+            raise SetupError("usb_protocol")
+    elif method == "authorize":
+        fields |= {"authorization_url", "expires_in_seconds"}
+        if type(response.get("expires_in_seconds")) is not int or response["expires_in_seconds"] != AUTH_TTL:
+            raise SetupError("usb_protocol")
+        validate_authorization_url(response.get("authorization_url"))
+    elif method == "callback":
+        fields.add("accepted")
+        if response.get("accepted") is not True:
+            raise SetupError("usb_protocol")
+    elif method not in {"hello", "cancel"}:
+        raise SetupError("usb_protocol")
+    if set(response) != fields:
+        raise SetupError("usb_protocol")
 
 
 @dataclass

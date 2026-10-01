@@ -554,7 +554,11 @@ static void response_free(response_t *r) {
 static void report_response(const response_t *r) {
     lock();
     if (r->epoch == service.epoch) {
-        service.snapshot.http_status = r->status;
+        /* IDF reports -1 when header reception fails before a status line.
+         * Keep raw transport diagnostics internal; the USB/API contract uses
+         * zero for unknown and real HTTP codes only, never a wrapped uint16_t. */
+        service.snapshot.http_status =
+            r->status >= 100 && r->status <= 599 ? (uint16_t)r->status : 0;
         if (service.storage_bad) {
             service.snapshot.error = PW_SPOTIFY_ERROR_STORAGE;
         } else if (r->status == 429) {

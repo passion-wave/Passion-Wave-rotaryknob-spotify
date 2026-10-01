@@ -20,6 +20,13 @@ wait for queues. It leaves the backlight at zero. The application submits an
 initial complete frame, waits for that completion outside its input path, then
 calls `pw_board_set_brightness()`.
 
+Immediate backlight updates use IDF's thread-safe `ledc_set_duty_and_update()`.
+In IDF 5.4.3 this also requires the LEDC fade service. Board initialization
+installs that service and initializes the channel at zero duty before app/UI
+tasks can request brightness concurrently. No fade animation is started; the
+service supplies the channel lock. Failed board initialization stops the
+backlight and releases only the fade service installed by this component.
+
 `pw_board_draw_bitmap()` submits a tightly packed native-endian RGB565 region.
 Right/bottom bounds are exclusive, so a full image uses `(0, 0, 360, 360)`.
 The caller retains the pixel storage, unchanged, until its completion callback.

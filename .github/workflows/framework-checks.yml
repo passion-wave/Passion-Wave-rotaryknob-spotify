@@ -10,7 +10,10 @@ jobs:
         with:
           persist-credentials: false
       - name: Check examples, models, docs, C++ interfaces and JavaScript
-        run: python3 tools/check.py
+        run: |
+          python3 tools/check.py
+          python3 -m unittest discover -s tests/backup_device -v
+          python3 -m unittest discover -s tests/firmware_versions -v
   native-and-firmware:
     runs-on: ubuntu-24.04
     container: espressif/idf:v5.4.3
@@ -38,6 +41,7 @@ jobs:
           sh tests/storage_native/run.sh
           sh tests/weather_native/run.sh
           sh tests/setup_native/run.sh
+          python3 -m unittest discover -s tests/contracts -p 'test_*.py' -v
           sh firmware/components/pw_spotify/tests/run.sh
           python tests/update_native/run.py
           python tests/companion_update_native/run.py
@@ -51,6 +55,7 @@ jobs:
           idf.py -C firmware/s3 -B build/s3 -D SDKCONFIG="$PWD/build/s3/sdkconfig" build
           idf.py -C firmware/s3 -B build/s3-lab -D SDKCONFIG="$PWD/build/s3-lab/sdkconfig" \
             -D 'SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.spotify-lab' build
+          python tools/check_firmware_versions.py build/companion build/s3 build/s3-lab
           python firmware/components/pw_assets/tests/run_host.py \
             --lvgl firmware/s3/managed_components/lvgl__lvgl --cc cc
   device-website:

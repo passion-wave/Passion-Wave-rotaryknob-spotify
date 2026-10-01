@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:passion-wave:usb-setup:v1:request",
+  "title": "PWSET1 request JSON payload — contract 1.0.0",
+  "description": "JSON payload only, without PWSET1 prefix/newline. Duplicate keys, exact byte bounds and authorization state are checked separately.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "method"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "method": {
+          "enum": [
+            "hello",
+            "status",
+            "authorize",
+            "cancel"
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "method",
+        "code",
+        "state"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "method": {
+          "const": "callback"
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^[!-~]+$",
+          "writeOnly": true
+        },
+        "state": {
+          "type": "string",
+          "minLength": 48,
+          "maxLength": 48,
+          "pattern": "^[0-9a-f]{48}$"
+        }
+      }
+    }
+  ]
+}

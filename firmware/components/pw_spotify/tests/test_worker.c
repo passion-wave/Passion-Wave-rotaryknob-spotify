@@ -36,7 +36,7 @@ static const char *token_ok =
 typedef struct {
     int status;
     const char *body, *retry;
-    bool timeout;
+    bool timeout, header_timeout;
     void (*hook)(void);
 } fixture_t;
 static fixture_t responses[8];
@@ -169,6 +169,10 @@ int esp_http_client_write(esp_http_client_handle_t h, const char *p, int n) {
 }
 int64_t esp_http_client_fetch_headers(esp_http_client_handle_t h) {
     fixture_t *r = &responses[h->index];
+    /* IDF sets response status to -1 before reading the first header. A
+     * timeout here differs from failure to establish the connection. */
+    if (r->header_timeout)
+        return -1;
     if (r->hook)
         r->hook();
     if (r->retry) {
@@ -351,6 +355,42 @@ static void test_refresh_rate_limit_and_invalidation(void) {
     CHECK(service.snapshot.error == PW_SPOTIFY_ERROR_STORAGE);
     CHECK(!tokens.refresh[0]);
 }
+static void test_header_timeout_and_public_http_status(void) {
+    reset();
+    account();
+    service.snapshot.playback_known = true;
+    service.snapshot.playing = true;
+    strcpy(service.snapshot.active_device_id, "speaker-1");
+    state_locked();
+    pending_t p = play(PW_SPOTIFY_NEXT);
+    fixture(-1, NULL);
+    responses[0].header_timeout = true;
+    execute(&p, service.epoch);
+    static pw_spotify_snapshot_t exposed;
+    pw_spotify_get_snapshot(&exposed);
+    CHECK(http_count == 1); /* No replay after an uncertain Next request. */
+    CHECK(strstr(calls[0].url, "/v1/me/player/next?device_id=speaker-1"));
+    CHECK(exposed.http_status == 0); /* Unknown status, never uint16_t(-1). */
+    CHECK(exposed.error == PW_SPOTIFY_ERROR_NETWORK);
+    CHECK(exposed.last_command_state == PW_SPOTIFY_COMMAND_UNCERTAIN);
+    CHECK(exposed.linked && !strcmp(tokens.refresh, "old-refresh"));
+
+    const int invalid[] = {-1, 0, 99, 600, 65535};
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
+        response_t r = {.status = invalid[i], .transport = ESP_FAIL, .epoch = service.epoch};
+        report_response(&r);
+        pw_spotify_get_snapshot(&exposed);
+        CHECK(exposed.http_status == 0);
+    }
+    const int valid[] = {100, 200, 204, 401, 429, 599};
+    for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
+        response_t r = {.status = valid[i], .transport = ESP_OK, .retry_after = 30,
+                        .epoch = service.epoch};
+        report_response(&r);
+        pw_spotify_get_snapshot(&exposed);
+        CHECK(exposed.http_status == valid[i]);
+    }
+}
 static void test_auth_persistence_cancellation_and_failed_relink(void) {
     char state[PW_SPOTIFY_AUTH_STATE_BYTES], verifier[65];
     pw_spotify_auth_start_t start;
@@ -402,6 +442,7 @@ static void test_auth_persistence_cancellation_and_failed_relink(void) {
 int main(void) {
     test_targets_and_uncertain_commands();
     test_refresh_rate_limit_and_invalidation();
+    test_header_timeout_and_public_http_status();
     test_auth_persistence_cancellation_and_failed_relink();
     printf("Spotify worker: %u assertions passed; actual provider, simulated IDF HTTP/NVS/tasks\n",
            checks);

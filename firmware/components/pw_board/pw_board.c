@@ -54,7 +54,7 @@ static int previous_counts[2];
 static uint8_t requested_effect;
 static bool effect_pending;
 static TaskHandle_t display_task_handle, input_task_handle;
-static bool spi_initialized, ledc_initialized;
+static bool spi_initialized, ledc_initialized, ledc_fade_installed;
 
 typedef struct {
     int x0, y0, x1, y1;
@@ -98,6 +98,13 @@ static esp_err_t init_display(void) {
     };
     ESP_RETURN_ON_ERROR(ledc_channel_config(&channel), TAG, "backlight channel");
     ledc_initialized = true;
+    // IDF 5.4.3's thread-safe duty API requires the fade service even for an
+    // immediate update. Initialize its per-channel lock now, before app/UI
+    // tasks can concurrently request brightness; leave the backlight dark.
+    ESP_RETURN_ON_ERROR(ledc_fade_func_install(0), TAG, "backlight duty service");
+    ledc_fade_installed = true;
+    ESP_RETURN_ON_ERROR(ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0, 0),
+                        TAG, "backlight duty initialization");
     spi_bus_config_t bus = {
         .sclk_io_num = PIN_LCD_CLK, .data0_io_num = PIN_LCD_D0,
         .data1_io_num = PIN_LCD_D1, .data2_io_num = PIN_LCD_D2,
@@ -350,6 +357,7 @@ static void cleanup_failed_init(void) {
     if (panel_io) { esp_lcd_panel_io_del(panel_io); panel_io = NULL; }
     if (spi_initialized) { spi_bus_free(SPI2_HOST); spi_initialized = false; }
     if (ledc_initialized) ledc_stop(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
+    if (ledc_fade_installed) { ledc_fade_func_uninstall(); ledc_fade_installed = false; }
     for (unsigned i = 0; i < 2; ++i) {
         if (counters[i]) { pcnt_unit_stop(counters[i]); pcnt_unit_disable(counters[i]); }
         if (channels[i]) { pcnt_del_channel(channels[i]); channels[i] = NULL; }
