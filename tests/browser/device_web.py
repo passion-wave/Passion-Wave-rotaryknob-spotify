@@ -35,8 +35,22 @@ def main():
     args = parser.parse_args()
     args.screenshots.mkdir(parents=True, exist_ok=True)
     state = copy.deepcopy(BASE)
-    writes, errors = [], []
+    writes, errors, spotify_calls = [], [], []
+    spotify = {
+        'enabled': True, 'linked': True, 'product_approved': False, 'state': 'ready', 'error': 'none',
+        'session': 19, 'selection_generation': 3, 'revision': 7, 'last_request_id': 0, 'last_command_state': 'none',
+        'selected': {'id': 'fixture-roam', 'name': 'Sonos Roam', 'present': True, 'restricted': False, 'supports_volume': True, 'volume_known': True, 'volume_percent': 35},
+        'playback': {'known': True, 'is_playing': False, 'title': 'Nur eine Browserfixture', 'artist': 'Simulierter Interpret', 'device_id': 'fixture-roam', 'device_name': 'Sonos Roam', 'position_known': True, 'position_ms': 60000, 'duration_ms': 180000},
+        'actions': {'play': True, 'pause': True, 'previous': True, 'next': True, 'volume': True},
+    }
+    spotify_devices = [
+        {'id': 'fixture-roam', 'name': 'Sonos Roam', 'restricted': False, 'supports_volume': True},
+        {'id': 'fixture-move', 'name': 'Sonos Move', 'restricted': False, 'supports_volume': False},
+        {'id': 'fixture-restricted', 'name': 'Nicht steuerbar', 'restricted': True, 'supports_volume': False},
+    ]
     conflict = False
+    hold_snapshots = False
+    held_snapshots = []
 
     def route(request):
         nonlocal state
@@ -52,6 +66,34 @@ def main():
             response = {'csrf': 'browser-fixture-only', 'secure_write': state['secure_write']}
         elif path == '/api/v1/status':
             response = state
+        elif path == '/api/v1/spotify/snapshot':
+            assert state['secure_write'], 'Private Spotify endpoint requested from LAN-only fixture'
+            response = spotify
+            if hold_snapshots:
+                held_snapshots.append((request, json.dumps(response)))
+                return
+        elif path == '/api/v1/spotify/devices':
+            assert state['secure_write'], 'Private device list requested from LAN-only fixture'
+            response = {'session': spotify['session'], 'devices': spotify_devices, 'truncated': False}
+        elif path.startswith('/api/v1/spotify/') and req.method == 'POST':
+            assert state['secure_write'] and req.headers.get('x-csrf-token') == 'browser-fixture-only'
+            assert req.headers.get('if-match') == str(state['config_revision'])
+            body = req.post_data_json
+            spotify_calls.append((path, body))
+            if path.endswith('/select'):
+                assert body['session'] == spotify['session']
+                device = next(d for d in spotify_devices if d['id'] == body['device_id'])
+                spotify['selected'] = {**device, 'present': True, 'volume_known': device['supports_volume'], 'volume_percent': 35}
+                spotify['selection_generation'] += 1
+                spotify['actions']['volume'] = device['supports_volume']
+            elif path.endswith('/action') and body['action'] != 'refresh':
+                assert body['device_id'] == spotify['selected']['id']
+                assert body['session'] == spotify['session']
+                assert body['selection_generation'] == spotify['selection_generation']
+                assert 'uri' not in body and 'token' not in body
+                spotify['last_command_state'] = 'uncertain' if body['action'] == 'next' else 'accepted'
+                # Accepted is deliberately not an observed playback state change.
+            response, status = {'accepted': True, 'request_id': len(spotify_calls)}, 202
         elif path == '/api/v1/settings' and req.method == 'PATCH':
             assert req.headers.get('x-csrf-token') == 'browser-fixture-only'
             writes.append(req.post_data_json)
@@ -113,19 +155,83 @@ def main():
         assert page.locator('#device-name').input_value() == 'Mein neuer Name'
         assert state['settings']['name'] == 'PassionWave'
 
+        # Lab capability exposes a real picker/player; all backend replies here remain simulated.
+        conflict = False
+        state['capabilities']['spotify'] = True
+        state['catalog']['favorites'] = [
+            {'id': 'saved-playlist', 'kind': 'spotify_playlist', 'name': 'Meine Playlist', 'uri': 'spotify:playlist:0123456789012345678901', 'enabled': True},
+            {'id': 'saved-show', 'kind': 'spotify_show', 'name': 'Mein Podcast', 'uri': 'spotify:show:0123456789012345678901', 'enabled': True},
+            {'id': 'disabled-playlist', 'kind': 'spotify_playlist', 'name': 'Ausgeblendet', 'uri': 'spotify:playlist:1123456789012345678901', 'enabled': False},
+        ]
+        page.reload()
+        page.locator('[data-page="overview"]').click()
+        page.locator('#music-player').wait_for(state='visible')
+        page.wait_for_function('document.querySelector("#spotify-title").textContent === "Nur eine Browserfixture"')
+        assert page.locator('#spotify-play').inner_text() == 'Abspielen'
+        page.locator('#spotify-play').click()
+        page.wait_for_function('!document.querySelector("#spotify-play").disabled')
+        assert spotify_calls[-1][1]['action'] == 'play' and spotify_calls[-1][1]['device_id'] == 'fixture-roam'
+        assert page.locator('#spotify-play').inner_text() == 'Abspielen', '202 must not fake playing'
+        count = len(spotify_calls)
+        # Keep a read from before selection in flight. It must not restore the
+        # old target or re-enable Play while the new target is still unconfirmed.
+        hold_snapshots = True
+        page.locator('#spotify-refresh').click()
+        page.wait_for_function('!document.querySelector("#spotify-device").disabled')
+        page.wait_for_timeout(100)
+        assert held_snapshots
+        count = len(spotify_calls)
+        page.locator('#spotify-device').select_option('fixture-move')
+        page.wait_for_function('document.querySelector("#spotify-play").disabled')
+        page.wait_for_timeout(100)
+        assert page.locator('#spotify-play').is_disabled()
+        assert len(spotify_calls) == count + 1 and spotify_calls[-1][0].endswith('/select')
+        hold_snapshots = False
+        for held, old_response in held_snapshots:
+            held.fulfill(status=200, body=old_response, content_type='application/json')
+        held_snapshots.clear()
+        page.wait_for_function('!document.querySelector("#spotify-device").disabled')
+        assert len(spotify_calls) == count + 1 and spotify_calls[-1][0].endswith('/select'), 'Selection must not transfer/play'
+        assert page.locator('#spotify-volume-field').is_hidden(), 'Unsupported target must hide volume'
+        assert page.locator('#spotify-device option[value="fixture-restricted"]').is_disabled()
+        page.locator('#spotify-play').click()
+        page.wait_for_function('!document.querySelector("#spotify-play").disabled')
+        assert spotify_calls[-1][1]['device_id'] == 'fixture-move'
+        assert spotify_calls[-1][1]['selection_generation'] == 4
+        assert page.locator('#spotify-play').inner_text() == 'Abspielen'
+        spotify['playback'].update(is_playing=True, device_id='fixture-move', device_name='Sonos Move')
+        page.locator('#spotify-refresh').click()
+        page.wait_for_function('document.querySelector("#spotify-play").textContent === "Pause"')
+        page.locator('#spotify-next').click()
+        page.wait_for_function('document.querySelector("#spotify-state").textContent.includes("Bestätigung fehlt")')
+        count = sum(body.get('action') == 'next' for _, body in spotify_calls)
+        page.wait_for_timeout(3300)
+        assert sum(body.get('action') == 'next' for _, body in spotify_calls) == count, 'Uncertain skip must not retry'
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.screenshot(path=str(args.screenshots / 'mobile-spotify-lab.png'), full_page=True)
+        page.locator('[data-page="content"]').click()
+        assert page.locator('[data-spotify-favorite="saved-show"]').is_disabled()
+        assert page.locator('[data-spotify-favorite="disabled-playlist"]').is_disabled()
+        page.locator('[data-spotify-favorite="saved-playlist"]').click()
+        page.wait_for_function('!document.querySelector("[data-spotify-favorite=saved-playlist]").disabled')
+        assert spotify_calls[-1][1]['favorite_id'] == 'saved-playlist' and 'uri' not in spotify_calls[-1][1]
+        page.screenshot(path=str(args.screenshots / 'mobile-spotify-favorites.png'), full_page=True)
+
         # A subsequent LAN-only session must not retain editable protected fields.
         state = copy.deepcopy(BASE)
         state['secure_write'] = False
+        state['capabilities']['spotify'] = True
         for key in ['settings', 'catalog', 'weather', 'config_revision']:
             state.pop(key)
         page.reload()
         page.locator('#security-notice').wait_for(state='visible')
+        assert page.locator('#music-player').is_hidden()
         assert page.locator('#device-name').is_disabled()
         assert page.locator('#wifi-ssid').is_disabled()
         assert not page.evaluate('Object.keys(localStorage).length || Object.keys(sessionStorage).length')
         assert not errors, errors
         browser.close()
-    print('Browser fixtures: mobile layouts, local place selection, CSRF/revision requests, conflict preservation and read-only session: PASS')
+    print('Browser fixtures: mobile layouts, local place selection, CSRF/revision requests, conflict preservation, Spotify explicit targets/no optimistic playback/no skip retry and read-only session: PASS')
     print('No physical device or real backend acceptance claimed.')
 
 

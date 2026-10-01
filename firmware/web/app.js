@@ -2,8 +2,9 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const API = "/api/v1";
-  const state = { status: null, session: null, busy: false, catalog: { favorites: [], stations: [] }, catalogDirty: false, catalogRevision: null, formRevision: {}, initialized: false, online: false, polling: false, wifiPending: false, wifiTarget: "", conflict: false, places: null, placesLoading: null, selectedPlace: null, update: null, updatePolling: false, updateUploading: false };
+  const state = { status: null, session: null, busy: false, catalog: { favorites: [], stations: [] }, catalogDirty: false, catalogRevision: null, formRevision: {}, initialized: false, online: false, polling: false, wifiPending: false, wifiTarget: "", conflict: false, places: null, placesLoading: null, selectedPlace: null, update: null, updatePolling: false, updateUploading: false, spotify: null, spotifyDevices: [], spotifyPolling: false, spotifyDeviceSignature: null };
   const kinds = { spotify_playlist: "Playlist", spotify_show: "Podcast", spotify_episode: "Episode" };
+  let spotifyReadEpoch = 0, spotifyChanging = false;
   const text = (id, value) => { $(id).textContent = value; };
   const canWrite = () => state.online && state.status?.secure_write !== false && state.session?.secure_write === true && typeof state.session.csrf === "string" && state.session.csrf.length > 0;
   const cloneCatalog = (catalog) => ({ favorites: (catalog?.favorites || []).map((x) => ({ id: x.id, kind: x.kind, name: x.name, uri: x.uri, enabled: x.enabled === true })), stations: (catalog?.stations || []).map((x) => ({ id: x.id, name: x.name, url: x.url, enabled: x.enabled === true })) });
@@ -21,6 +22,7 @@
     $("discard-catalog").disabled = !state.catalogDirty || state.busy;
     $("security-notice").hidden = !state.online || canWrite();
     $("update-fields").disabled = blocked || state.update?.upload_enabled !== true || state.update?.busy === true;
+    spotifyControls();
   }
   function errorText(error) {
     state.conflict = error.code === "conflict" || error.status === 409 || error.status === 412;
@@ -168,6 +170,7 @@
     text("device-wifi", network.ssid || (connected ? "Verbunden" : "Nicht verbunden"));
     text("footer-device", status.settings?.name || status.device?.name || "Lokale Gerätewebsite");
     renderWeather(status);
+    renderSpotify();
     if (!state.initialized) { $("wifi-details").open = !connected; }
     if (state.wifiPending && connected && !network.connecting && network.ssid === state.wifiTarget) {
       state.wifiPending = false;
@@ -188,6 +191,7 @@
       state.status = status; state.online = true;
       $("connection-notice").hidden = true;
       renderStatus(status);
+      refreshSpotify();
       if (!$("page-device").hidden) refreshUpdates();
     } catch (error) {
       state.online = false;
@@ -396,6 +400,127 @@
   });
   setInterval(() => { if (!document.hidden && !$("page-device").hidden && canWrite()) refreshUpdates(); }, 2000);
 
+  function spotifyOn() { return state.status?.capabilities?.spotify === true && canWrite(); }
+  function spotifyTarget() {
+    const s = state.spotify;
+    return s && s.selected?.id ? { session: s.session, selection_generation: s.selection_generation, device_id: s.selected.id } : null;
+  }
+  function spotifyPlayingHere() { const s = state.spotify; return s?.playback?.known === true && s.playback.is_playing === true && s.playback.device_id === s.selected?.id; }
+  function spotifyControls() {
+    const s = state.spotify, blocked = !spotifyOn() || state.busy || spotifyChanging || !s?.linked;
+    const target = !blocked && s.selected?.present === true && !s.selected.restricted;
+    $("spotify-device").disabled = blocked || !state.spotifyDevices.length;
+    $("spotify-refresh").disabled = !spotifyOn() || state.busy || spotifyChanging;
+    $("spotify-play").disabled = !target || (spotifyPlayingHere() ? s.actions?.pause !== true : s.actions?.play !== true);
+    $("spotify-previous").disabled = !target || s.actions?.previous !== true;
+    $("spotify-next").disabled = !target || s.actions?.next !== true;
+    $("spotify-volume").disabled = !target || s.actions?.volume !== true || !s.selected?.volume_known;
+    $("spotify-disconnect").disabled = blocked;
+    document.querySelectorAll("[data-spotify-favorite]").forEach((button) => {
+      button.disabled = !target || s.actions?.play !== true || state.catalogDirty || button.dataset.spotifyKind !== "spotify_playlist" || button.dataset.spotifyEnabled !== "true";
+    });
+  }
+  function renderSpotify() {
+    const available = state.status?.capabilities?.spotify === true;
+    const on = spotifyOn(), s = state.spotify;
+    $("music-unavailable").hidden = on;
+    $("music-player").hidden = !on;
+    if (!on) {
+      text("music-unavailable-title", available ? "Deine Musik ist geschützt." : "Musik kommt als Nächstes.");
+      text("music-unavailable-copy", available ? "Öffne die geschützte Einrichtung am RotaryKnob, um Spotify und deine Ausgabe zu bedienen." : "Die Spotify-Verbindung ist in dieser Geräteversion noch nicht verfügbar. Deine Playlists und Podcasts kannst du bereits vorbereiten.");
+    }
+    text("content-playback-hint", on ? "Gespeicherte, freigegebene Playlists kannst du direkt auf deiner gewählten Ausgabe starten. Podcasts und Episoden bleiben in dieser Laborversion vorbereitet." : "Wiedergabe ist hier noch nicht verfügbar. Deine Auswahl wird auf dem RotaryKnob gespeichert.");
+    const messages = { disabled: "Spotify ist in diesem Geräteprofil noch nicht verfügbar.", unlinked: "Verbinde Spotify einmal über die USB-Einrichtung.", waiting_network: "Der Knob wartet auf dein WLAN.", waiting_clock: "Die Uhrzeit wird eingestellt.", authorizing: "Spotify-Anmeldung wird abgeschlossen …", ready: "Wähle deine Ausgabe und starte deine Musik.", reauth_required: "Bitte verbinde Spotify über USB erneut.", rate_limited: "Spotify braucht kurz eine Pause. Wir warten automatisch.", error: "Spotify ist gerade nicht erreichbar.", suspended: "Spotify pausiert während der Updatevorbereitung.", disconnecting: "Spotify-Verbindung wird entfernt …" };
+    let status = messages[s?.state] || "Spotify wird geprüft …";
+    if (s?.state === "ready" && s.selected?.id && !s.selected.present) status = "Deine Ausgabe ist nicht erreichbar. Öffne sie in Spotify oder wähle eine andere.";
+    if (s?.error === "forbidden") status = "Spotify erlaubt diese Aktion nicht. Premium, Testkontofreigabe und Ausgabegerät prüfen.";
+    if (s?.last_command_state === "queued") status = "Anfrage wird an Spotify gesendet …";
+    if (s?.last_command_state === "uncertain") status = "Die Bestätigung fehlt. Prüfe die Wiedergabe, bevor du erneut drückst.";
+    if (s?.last_command_state === "rejected") status = "Spotify hat die letzte Aktion nicht ausgeführt.";
+    if (s?.last_command_state === "stale") status = "Die Ausgabe hat sich geändert. Bitte erneut wählen.";
+    text("spotify-state", status);
+    const picker = $("spotify-device"), selected = s?.selected?.id || "";
+    const signature = JSON.stringify([selected, state.spotifyDevices.map((d) => [d.id, d.name, d.restricted])]);
+    if (signature !== state.spotifyDeviceSignature) {
+      state.spotifyDeviceSignature = signature; picker.replaceChildren();
+      const placeholder = document.createElement("option"); placeholder.value = ""; placeholder.textContent = "Ausgabe wählen"; picker.append(placeholder);
+      if (selected && !state.spotifyDevices.some((d) => d.id === selected)) { const option = document.createElement("option"); option.value = selected; option.textContent = (s.selected.name || "Bisherige Ausgabe") + " · nicht verfügbar"; option.disabled = true; picker.append(option); }
+      state.spotifyDevices.forEach((device) => { const option = document.createElement("option"); option.value = device.id; option.textContent = device.name + (device.restricted ? " · eingeschränkt" : ""); option.disabled = device.restricted || !device.id; picker.append(option); });
+      picker.value = selected;
+    }
+    text("spotify-device-hint", state.spotifyDevices.length ? "Die Auswahl allein startet oder verschiebt keine Musik." : "Kein Gerät gefunden? Aktiviere den Lautsprecher in der Spotify-App und aktualisiere danach.");
+    const p = s?.playback;
+    text("spotify-title", p?.known ? p.title || "Wiedergabe ohne Titelangabe" : "Noch keine Wiedergabe bestätigt");
+    text("spotify-artist", p?.known ? p.artist || "" : "");
+    text("spotify-playing-device", p?.known ? (p.is_playing ? "Spielt" : "Pausiert") + (p.device_name ? " · " + p.device_name : "") : "");
+    text("spotify-play", spotifyPlayingHere() ? "Pause" : "Abspielen");
+    const progress = $("spotify-progress");
+    progress.hidden = !p?.known || !p.position_known || !(p.duration_ms > 0);
+    if (!progress.hidden) { progress.max = p.duration_ms; progress.value = Math.max(0, Math.min(p.duration_ms, p.position_ms)); }
+    $("spotify-volume-field").hidden = s?.selected?.supports_volume !== true;
+    if (s?.selected?.volume_known && document.activeElement !== $("spotify-volume")) {
+      $("spotify-volume").value = s.selected.volume_percent;
+      text("spotify-volume-output", s.selected.volume_percent + " %");
+    }
+    spotifyControls();
+  }
+  async function refreshSpotify(afterMutation = false) {
+    if (state.spotifyPolling) { await state.spotifyPolling; if (!afterMutation) return; }
+    if (!spotifyOn()) { state.spotify = null; state.spotifyDevices = []; renderSpotify(); return; }
+    const epoch = spotifyReadEpoch;
+    const operation = (async () => {
+    try {
+      const [snapshot, devices] = await Promise.all([request("/spotify/snapshot"), request("/spotify/devices")]);
+      if (typeof snapshot?.state !== "string" || !Array.isArray(devices?.devices)) throw new Error("Invalid Spotify status");
+      if (!spotifyOn() || epoch !== spotifyReadEpoch) return;
+      state.spotify = snapshot;
+      state.spotifyDevices = devices.session === snapshot.session ? devices.devices.slice(0, 16).filter((d) => typeof d.id === "string" && typeof d.name === "string") : [];
+      renderSpotify();
+    } catch (error) {
+      if (epoch !== spotifyReadEpoch) return;
+      state.spotify = null; state.spotifyDevices = [];
+      text("spotify-message", errorText(error));
+      if (error.status === 401 || error.status === 403) { try { await refreshSession(); } catch {} }
+      renderSpotify();
+    }
+    })();
+    state.spotifyPolling = operation;
+    await operation;
+    if (state.spotifyPolling === operation) state.spotifyPolling = null;
+  }
+  async function spotifyAction(action, extra = {}) {
+    if (spotifyChanging) return;
+    const target = spotifyTarget();
+    if (action !== "refresh" && !target) { text("spotify-message", "Wähle zuerst deine Ausgabe."); return; }
+    try {
+      await mutate("/spotify/action", "POST", action === "refresh" ? { action } : { action, ...target, ...extra }, state.status?.config_revision);
+      text("spotify-message", action === "refresh" ? "Aktuelle Geräte werden angefragt." : "Anfrage gesendet. Der angezeigte Zustand folgt der Bestätigung von Spotify.");
+      await refreshSpotify();
+    } catch (error) { text("spotify-message", error.code === "spotify_changed" ? "Die Ausgabe hat sich geändert. Bitte erneut wählen." : errorText(error)); await refreshSpotify(); }
+  }
+  $("spotify-device").addEventListener("change", async () => {
+    const id = $("spotify-device").value;
+    if (!id || !state.spotify || spotifyChanging) return;
+    spotifyChanging = true; spotifyReadEpoch++; spotifyControls();
+    try {
+      await mutate("/spotify/select", "POST", { device_id: id, session: state.spotify.session }, state.status?.config_revision);
+      text("spotify-message", "Ausgabe gewählt. Abspielen startet Musik auf diesem Gerät.");
+      await refreshSpotify(true);
+    } catch (error) { text("spotify-message", error.code === "spotify_changed" ? "Die Geräteliste hat sich geändert. Bitte erneut wählen." : errorText(error)); state.spotifyDeviceSignature = null; await refreshSpotify(true); }
+    finally { spotifyChanging = false; renderSpotify(); }
+  });
+  $("spotify-play").addEventListener("click", () => spotifyAction(spotifyPlayingHere() ? "pause" : "play"));
+  $("spotify-previous").addEventListener("click", () => spotifyAction("previous"));
+  $("spotify-next").addEventListener("click", () => spotifyAction("next"));
+  $("spotify-refresh").addEventListener("click", () => spotifyAction("refresh"));
+  $("spotify-volume").addEventListener("input", () => text("spotify-volume-output", $("spotify-volume").value + " %"));
+  $("spotify-volume").addEventListener("change", () => spotifyAction("volume", { volume_percent: Number($("spotify-volume").value) }));
+  $("spotify-disconnect").addEventListener("click", async () => {
+    try { await mutate("/spotify/disconnect", "POST", {}, state.status?.config_revision); text("spotify-message", "Spotify wird vom Knob getrennt."); await refreshSpotify(); }
+    catch (error) { text("spotify-message", errorText(error)); }
+  });
+  setInterval(() => { if (!document.hidden && !state.busy && spotifyOn()) refreshSpotify(); }, 3000);
+
   function spotifyLink(value) {
     let match = /^spotify:(playlist|show|episode):([A-Za-z0-9]{22})$/.exec(value.trim());
     if (!match) {
@@ -441,6 +566,12 @@
         const enabled = document.createElement("input"); enabled.type = "checkbox"; enabled.checked = item.enabled; enabled.dataset.writeButton = ""; enabled.disabled = !canWrite() || state.busy; enabled.setAttribute("aria-label", item.name + " auf dem Knob anzeigen");
         const enabledText = document.createElement("span"); enabledText.textContent = "Anzeigen"; enabledLabel.append(enabled, enabledText);
         enabled.addEventListener("change", () => { item.enabled = enabled.checked; markCatalogDirty(); });
+        if (group === "favorites" && state.status?.capabilities?.spotify === true) {
+          const play = document.createElement("button"); play.type = "button"; play.className = "icon-button catalog-play"; play.textContent = "▶";
+          play.setAttribute("aria-label", item.name + " abspielen"); play.dataset.spotifyFavorite = item.id; play.dataset.spotifyKind = item.kind; play.dataset.spotifyEnabled = String(item.enabled === true);
+          play.title = item.kind === "spotify_playlist" ? "Gespeicherte Playlist auf gewählter Ausgabe starten" : "Podcasts und Episoden sind für diesen Laborpfad noch nicht freigegeben";
+          play.addEventListener("click", () => spotifyAction("favorite", { favorite_id: item.id })); actions.append(play);
+        }
         actions.append(enabledLabel, catalogButton(item.name + " nach oben", "↑", () => { [items[index - 1], items[index]] = [items[index], items[index - 1]]; markCatalogDirty(); }, index === 0), catalogButton(item.name + " nach unten", "↓", () => { [items[index + 1], items[index]] = [items[index], items[index + 1]]; markCatalogDirty(); }, index === items.length - 1), catalogButton(item.name + " entfernen", "×", () => { items.splice(index, 1); markCatalogDirty(); }, false, "remove"));
         row.append(symbol, description, actions); container.append(row);
       });

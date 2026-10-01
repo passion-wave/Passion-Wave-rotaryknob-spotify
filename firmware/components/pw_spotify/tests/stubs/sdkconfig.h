@@ -1,0 +1,1 @@
+#define CONFIG_PW_SPOTIFY_LAB 1

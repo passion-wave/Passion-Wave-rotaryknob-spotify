@@ -24,7 +24,7 @@ jobs:
         run: |
           apt-get update -qq
           apt-get install -y --no-install-recommends build-essential zlib1g-dev
-      - name: Protocol, settings, weather and real OTA signatures
+      - name: Protocol, settings, weather, Spotify and real OTA signatures
         shell: bash
         run: |
           set -euo pipefail
@@ -37,6 +37,8 @@ jobs:
           sh tests/app_native/run.sh
           sh tests/storage_native/run.sh
           sh tests/weather_native/run.sh
+          sh tests/setup_native/run.sh
+          sh firmware/components/pw_spotify/tests/run.sh
           python tests/update_native/run.py
           python tests/companion_update_native/run.py
           python tests/update_service_native/run.py
@@ -46,7 +48,9 @@ jobs:
           set -euo pipefail
           . /opt/esp/idf/export.sh
           idf.py -C firmware/companion -B build/companion build
-          idf.py -C firmware/s3 -B build/s3 build
+          idf.py -C firmware/s3 -B build/s3 -D SDKCONFIG="$PWD/build/s3/sdkconfig" build
+          idf.py -C firmware/s3 -B build/s3-lab -D SDKCONFIG="$PWD/build/s3-lab/sdkconfig" \
+            -D 'SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.spotify-lab' build
           python firmware/components/pw_assets/tests/run_host.py \
             --lvgl firmware/s3/managed_components/lvgl__lvgl --cc cc
   device-website:
@@ -64,3 +68,8 @@ jobs:
         run: |
           "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/device_web.py \
             --screenshots "$RUNNER_TEMP/pw-browser-artifacts"
+      - name: USB login helper with simulated device and Spotify
+        run: |
+          "$RUNNER_TEMP/pw-browser-env/bin/python" -m unittest discover -s tools/spotify_setup/tests -p 'test_*.py'
+          "$RUNNER_TEMP/pw-browser-env/bin/python" tools/spotify_setup/tests/browser_check.py \
+            --screenshots "$RUNNER_TEMP/pw-login-artifacts"

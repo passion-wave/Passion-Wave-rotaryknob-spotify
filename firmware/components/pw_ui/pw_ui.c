@@ -5,6 +5,7 @@
 #include "pw_board.h"
 #include "pw_weather.h"
 #include "pw_assets.h"
+#include "pw_spotify.h"
 #include <math.h>
 #include <limits.h>
 #include <stdio.h>
@@ -72,6 +73,25 @@ static void open_visual(visual_t kind, bool automatic);
 static void close_visual(void);
 static void refresh_visual(void);
 static void service_visual(void);
+static pw_spotify_snapshot_t spotify_view; /* Several KiB: never a task-stack copy. */
+static lv_obj_t *music_title, *music_artist, *music_state, *music_output, *music_favorites;
+static lv_obj_t *music_controls[3], *music_progress;
+typedef enum { PICKER_NONE, PICKER_DEVICES, PICKER_FAVORITES } picker_t;
+static picker_t picker_kind;
+static lv_obj_t *picker_panel, *picker_title, *picker_hint, *picker_rows[3], *picker_prev, *picker_next;
+static char picker_ids[3][PW_SPOTIFY_DEVICE_ID_BYTES];
+static pw_app_favorite_t picker_favorites[3];
+static size_t picker_offset, picker_total;
+static uint32_t picker_session, picker_revision;
+static pw_spotify_command_t picker_target;
+static int volume_target = -1;
+static uint32_t volume_session, volume_generation;
+static int64_t volume_requested_at, music_notice_until;
+static int64_t picker_refresh_at;
+static char music_notice[96];
+static void refresh_music(void);
+static void refresh_picker(void);
+static void close_picker(void);
 
 static uint32_t tick_ms(void) { return (uint32_t)(esp_timer_get_time() / 1000); }
 
@@ -154,6 +174,214 @@ static void visual_clicked(lv_event_t *event) {
     open_visual((visual_t)(uintptr_t)lv_event_get_user_data(event), false);
 }
 
+static void enabled_button(lv_obj_t *button, bool enabled) {
+    if (enabled) lv_obj_remove_state(button, LV_STATE_DISABLED);
+    else lv_obj_add_state(button, LV_STATE_DISABLED);
+    lv_obj_set_style_opa(button, enabled ? LV_OPA_COVER : LV_OPA_40, 0);
+}
+static void bounded_button_label(lv_obj_t *button, int width, const lv_font_t *font) {
+    lv_obj_t *label = lv_obj_get_child(button, 0);
+    lv_obj_set_width(label, width);
+    lv_obj_set_style_text_font(label, font, 0);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
+    lv_obj_set_height(label, font->line_height);
+    lv_obj_center(label);
+}
+static void music_feedback(const char *message) {
+    snprintf(music_notice, sizeof music_notice, "%s", message);
+    music_notice_until = esp_timer_get_time() + 3500000;
+}
+static void command_feedback(esp_err_t result) {
+    if (result == ESP_OK) { acknowledge(); music_feedback("Anfrage gesendet …"); }
+    else if (result == ESP_ERR_NOT_SUPPORTED) music_feedback("Aktion noch nicht verfügbar");
+    else if (result == ESP_ERR_INVALID_STATE) music_feedback("Ausgabe bitte erneut wählen");
+    else music_feedback("Spotify gerade nicht bereit");
+}
+static pw_spotify_command_t music_command(pw_spotify_command_kind_t kind) {
+    pw_spotify_command_t command = {.kind = kind, .session = spotify_view.session,
+                                    .selection_generation = spotify_view.selection_generation};
+    snprintf(command.device_id, sizeof command.device_id, "%s", spotify_view.selected_device_id);
+    return command;
+}
+static bool playing_here(void) {
+    return spotify_view.playback_known && spotify_view.playing &&
+           spotify_view.selected_device_id[0] &&
+           !strcmp(spotify_view.active_device_id, spotify_view.selected_device_id);
+}
+static void playback_clicked(lv_event_t *event) {
+    const uintptr_t action = (uintptr_t)lv_event_get_user_data(event);
+    pw_spotify_command_t command = music_command(action == 0 ? PW_SPOTIFY_PREVIOUS :
+        action == 2 ? PW_SPOTIFY_NEXT : playing_here() ? PW_SPOTIFY_PAUSE : PW_SPOTIFY_PLAY);
+    uint32_t request_id;
+    command_feedback(pw_spotify_submit(&command, &request_id));
+    refresh_music();
+}
+static void close_picker(void) {
+    picker_kind = PICKER_NONE;
+    lv_obj_add_flag(picker_panel, LV_OBJ_FLAG_HIDDEN);
+    memset(picker_ids, 0, sizeof picker_ids);
+    memset(picker_favorites, 0, sizeof picker_favorites);
+}
+static void picker_close_clicked(lv_event_t *event) { (void)event; acknowledge(); close_picker(); }
+static void picker_refresh_clicked(lv_event_t *event) {
+    (void)event; acknowledge();
+    if (picker_kind == PICKER_DEVICES) {
+        (void)pw_spotify_refresh();
+        picker_refresh_at = esp_timer_get_time() + 2000000;
+        label_text(picker_hint, "Geräte werden angefragt …");
+    } else refresh_picker();
+}
+static void picker_page_clicked(lv_event_t *event) {
+    if ((uintptr_t)lv_event_get_user_data(event)) {
+        if (picker_offset + 3 < picker_total) picker_offset += 3;
+    } else if (picker_offset >= 3) picker_offset -= 3;
+    acknowledge(); refresh_picker();
+}
+static void picker_row_clicked(lv_event_t *event) {
+    unsigned row = (unsigned)(uintptr_t)lv_event_get_user_data(event);
+    if (row >= 3 || !picker_ids[row][0]) return;
+    esp_err_t result;
+    if (picker_kind == PICKER_DEVICES) result = pw_spotify_select_device(picker_ids[row], picker_session);
+    else {
+        uint32_t request_id;
+        result = pw_app_play_favorite(picker_ids[row], picker_revision, &picker_target, &request_id);
+    }
+    command_feedback(result);
+    if (result == ESP_OK) {
+        if (picker_kind == PICKER_DEVICES) music_feedback("Ausgabe gewählt · Play zum Start");
+        close_picker();
+    }
+    refresh_music();
+}
+static void refresh_picker(void) {
+    if (picker_kind == PICKER_NONE) return;
+    memset(picker_ids, 0, sizeof picker_ids);
+    if (picker_kind == PICKER_DEVICES) {
+        picker_total = spotify_view.device_count < PW_SPOTIFY_MAX_DEVICES ? spotify_view.device_count : PW_SPOTIFY_MAX_DEVICES;
+        label_text(picker_title, "Deine Ausgabe");
+    } else {
+        memset(picker_favorites, 0, sizeof picker_favorites);
+        picker_total = pw_app_get_favorites(picker_offset, picker_favorites, 3, &picker_revision);
+        label_text(picker_title, "Deine Favoriten");
+    }
+    for (unsigned row = 0; row < 3; ++row) {
+        if (picker_offset + row >= picker_total) { lv_obj_add_flag(picker_rows[row], LV_OBJ_FLAG_HIDDEN); continue; }
+        lv_obj_remove_flag(picker_rows[row], LV_OBJ_FLAG_HIDDEN);
+        bool allowed;
+        char label[180];
+        if (picker_kind == PICKER_DEVICES) {
+            const pw_spotify_device_t *device = &spotify_view.devices[picker_offset + row];
+            snprintf(picker_ids[row], sizeof picker_ids[row], "%s", device->id);
+            snprintf(label, sizeof label, "%s%s", device->restricted ? "Gesperrt: " : "", device->name);
+            allowed = device->id[0] && !device->restricted;
+        } else {
+            memcpy(picker_ids[row], picker_favorites[row].id, sizeof picker_favorites[row].id);
+            picker_ids[row][sizeof picker_favorites[row].id - 1] = 0;
+            snprintf(label, sizeof label, "%s%s", picker_favorites[row].playable ? "" : "Später: ", picker_favorites[row].name);
+            allowed = picker_favorites[row].playable && spotify_view.can_play;
+        }
+        label_text(lv_obj_get_child(picker_rows[row], 0), label);
+        enabled_button(picker_rows[row], allowed);
+    }
+    char hint[96];
+    if (!picker_total) snprintf(hint, sizeof hint, "%s", picker_kind == PICKER_DEVICES ? "Lautsprecher in Spotify öffnen" : "Auf der Webseite hinzufügen");
+    else snprintf(hint, sizeof hint, "%u–%u von %u", (unsigned)picker_offset + 1,
+                  (unsigned)((picker_offset + 3 < picker_total) ? picker_offset + 3 : picker_total), (unsigned)picker_total);
+    label_text(picker_hint, hint);
+    enabled_button(picker_prev, picker_offset >= 3);
+    enabled_button(picker_next, picker_offset + 3 < picker_total);
+}
+static void picker_open_clicked(lv_event_t *event) {
+    acknowledge(); close_visual();
+    picker_kind = (picker_t)(uintptr_t)lv_event_get_user_data(event);
+    picker_offset = 0;
+    picker_session = spotify_view.session;
+    picker_target = music_command(PW_SPOTIFY_PLAY);
+    refresh_picker();
+    lv_obj_remove_flag(picker_panel, LV_OBJ_FLAG_HIDDEN);
+    if (picker_kind == PICKER_DEVICES) {
+        (void)pw_spotify_refresh();
+        picker_refresh_at = esp_timer_get_time() + 2000000;
+    }
+}
+static const char *spotify_state_text(void) {
+    switch (spotify_view.state) {
+        case PW_SPOTIFY_DISABLED: return "Noch nicht verfügbar";
+        case PW_SPOTIFY_UNLINKED: return "Spotify per USB verbinden";
+        case PW_SPOTIFY_WAITING_NETWORK: return "WLAN verbinden";
+        case PW_SPOTIFY_WAITING_CLOCK: return "Uhrzeit wird eingestellt …";
+        case PW_SPOTIFY_AUTHORIZING: return "Spotify wird verbunden …";
+        case PW_SPOTIFY_REAUTH_REQUIRED: return "Spotify erneut verbinden";
+        case PW_SPOTIFY_RATE_LIMITED: return "Spotify braucht kurz Pause";
+        case PW_SPOTIFY_SUSPENDED: return "Update wird vorbereitet";
+        case PW_SPOTIFY_DISCONNECTING: return "Spotify wird getrennt …";
+        case PW_SPOTIFY_ERROR: return "Spotify gerade nicht bereit";
+        case PW_SPOTIFY_READY: break;
+    }
+    if (!spotify_view.selected_device_id[0]) return "Ausgabe wählen";
+    if (!spotify_view.selected_present) return "Ausgabe nicht erreichbar";
+    if (spotify_view.selected_restricted) return "Ausgabe eingeschränkt";
+    if (spotify_view.last_command_state == PW_SPOTIFY_COMMAND_QUEUED) return "Anfrage wird gesendet …";
+    if (spotify_view.last_command_state == PW_SPOTIFY_COMMAND_UNCERTAIN) return "Bestätigung fehlt · bitte prüfen";
+    if (spotify_view.last_command_state == PW_SPOTIFY_COMMAND_REJECTED) return "Aktion wurde abgelehnt";
+    if (spotify_view.last_command_state == PW_SPOTIFY_COMMAND_STALE) return "Ausgabe bitte erneut wählen";
+    if (!spotify_view.playback_known) return "Noch keine Wiedergabe bestätigt";
+    if (strcmp(spotify_view.active_device_id, spotify_view.selected_device_id)) return "Spielt auf anderer Ausgabe";
+    return spotify_view.playing ? "Spielt" : "Pausiert";
+}
+static void refresh_music(void) {
+    pw_spotify_get_snapshot(&spotify_view);
+    label_text(lv_obj_get_child(music_output, 0), spotify_view.selected_device_name[0] ? spotify_view.selected_device_name : "Ausgabe wählen");
+    const bool linked = spotify_view.enabled && spotify_view.linked;
+    label_text(music_title, spotify_view.playback_known && spotify_view.title[0] ? spotify_view.title :
+               !spotify_view.enabled ? "Spotify" : linked ? "Deine Musik" : "Spotify verbinden");
+    label_text(music_artist, spotify_view.playback_known ? spotify_view.artist : !spotify_view.enabled ? "Produktfreigabe noch offen" : "Labor · Einrichtung über USB");
+    label_text(music_state, esp_timer_get_time() < music_notice_until ? music_notice : spotify_state_text());
+    enabled_button(music_output, linked);
+    enabled_button(music_favorites, linked && spotify_view.selected_present);
+    enabled_button(music_controls[0], linked && spotify_view.can_previous);
+    enabled_button(music_controls[1], linked && (playing_here() ? spotify_view.can_pause : spotify_view.can_play));
+    enabled_button(music_controls[2], linked && spotify_view.can_next);
+    label_text(lv_obj_get_child(music_controls[1], 0), playing_here() ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
+    if (spotify_view.playback_known && spotify_view.position_known && spotify_view.duration_ms) {
+        lv_obj_remove_flag(music_progress, LV_OBJ_FLAG_HIDDEN);
+        uint32_t permille = (uint32_t)((uint64_t)spotify_view.position_ms * 1000 / spotify_view.duration_ms);
+        lv_bar_set_value(music_progress, permille > 1000 ? 1000 : permille, LV_ANIM_OFF);
+    } else lv_obj_add_flag(music_progress, LV_OBJ_FLAG_HIDDEN);
+    if (volume_target >= 0 && (spotify_view.session != volume_session ||
+        spotify_view.selection_generation != volume_generation || !spotify_view.can_volume ||
+        (spotify_view.selected_volume_known && spotify_view.selected_volume == volume_target) ||
+        esp_timer_get_time() - volume_requested_at > 3000000)) volume_target = -1;
+    if (picker_kind != PICKER_NONE && (app_view.setup_open || !linked || picker_session != spotify_view.session)) close_picker();
+    if (picker_kind == PICKER_DEVICES && picker_refresh_at && esp_timer_get_time() >= picker_refresh_at &&
+        !input.touch_pressed && esp_timer_get_time() - last_activity > 750000) {
+        /* Never rebind a row under a touching finger or its pending click event. */
+        picker_refresh_at = 0;
+        refresh_picker();
+    }
+}
+static void music_rotate(int delta) {
+    if (!spotify_view.can_volume || !spotify_view.selected_volume_known) {
+        music_feedback("Lautstärke am Lautsprecher ändern"); return;
+    }
+    if (volume_target < 0 || volume_session != spotify_view.session || volume_generation != spotify_view.selection_generation)
+        volume_target = spotify_view.selected_volume;
+    if (delta > 100) delta = 100;
+    if (delta < -100) delta = -100;
+    volume_target += delta;
+    if (volume_target < 0) volume_target = 0;
+    if (volume_target > 100) volume_target = 100;
+    pw_spotify_command_t command = music_command(PW_SPOTIFY_VOLUME);
+    command.volume = (uint8_t)volume_target;
+    uint32_t request_id;
+    esp_err_t result = pw_spotify_submit(&command, &request_id);
+    if (result == ESP_OK) {
+        acknowledge(); volume_session = command.session; volume_generation = command.selection_generation;
+        volume_requested_at = esp_timer_get_time();
+        char notice[64]; snprintf(notice, sizeof notice, "%d %% angefragt", volume_target); music_feedback(notice);
+    } else { volume_target = -1; command_feedback(result); }
+}
 static void draw_complete(void *context, esp_err_t result) {
     (void)context;
     // Board display worker never enters LVGL. There is exactly one outstanding
@@ -206,11 +434,25 @@ static void create_ui(void) {
     lv_obj_set_style_bg_color(screen, lv_color_hex(COLOR_BG), 0);
     lv_obj_remove_flag(screen, LV_OBJ_FLAG_SCROLLABLE);
     for (int i = 0; i < 3; ++i) pages[i] = make_panel(screen);
-    make_label(pages[PAGE_MUSIC], 50, 70, 260, &pw_font_de_32, COLOR_TEXT, "Spotify");
-    make_label(pages[PAGE_MUSIC], 40, 135, 280, &pw_font_de_24, COLOR_AQUA, "Noch nicht verfügbar");
-    make_label(pages[PAGE_MUSIC], 48, 181, 264, &pw_font_de_18, COLOR_MUTED,
-               "Die Spotify-Anbindung\nwird noch vorbereitet.");
-    make_label(pages[PAGE_MUSIC], 65, 235, 230, &pw_font_de_18, COLOR_MUTED, "Entwicklungsstand");
+    make_label(pages[PAGE_MUSIC], 70, 48, 120, &pw_font_de_18, COLOR_TEXT, "Spotify");
+    music_favorites = make_button(pages[PAGE_MUSIC], 193, 43, 104, 32, "Favoriten", picker_open_clicked, (void *)(uintptr_t)PICKER_FAVORITES);
+    bounded_button_label(music_favorites, 94, &pw_font_de_14);
+    music_output = make_button(pages[PAGE_MUSIC], 60, 80, 240, 34, "Ausgabe wählen", picker_open_clicked, (void *)(uintptr_t)PICKER_DEVICES);
+    bounded_button_label(music_output, 222, &pw_font_de_14);
+    music_title = make_label(pages[PAGE_MUSIC], 40, 122, 280, &pw_font_de_24, COLOR_TEXT, "Spotify");
+    lv_obj_set_height(music_title, 54); lv_label_set_long_mode(music_title, LV_LABEL_LONG_DOT);
+    music_artist = make_label(pages[PAGE_MUSIC], 40, 180, 280, &pw_font_de_14, COLOR_MUTED, "");
+    lv_obj_set_height(music_artist, 17); lv_label_set_long_mode(music_artist, LV_LABEL_LONG_DOT);
+    music_state = make_label(pages[PAGE_MUSIC], 33, 203, 294, &pw_font_de_14, COLOR_AQUA, "Noch nicht verfügbar");
+    lv_obj_set_height(music_state, 18); lv_label_set_long_mode(music_state, LV_LABEL_LONG_DOT);
+    music_progress = lv_bar_create(pages[PAGE_MUSIC]);
+    lv_obj_set_pos(music_progress, 70, 221); lv_obj_set_size(music_progress, 220, 3);
+    lv_bar_set_range(music_progress, 0, 1000);
+    lv_obj_set_style_bg_color(music_progress, lv_color_hex(COLOR_AQUA), LV_PART_INDICATOR);
+    lv_obj_add_flag(music_progress, LV_OBJ_FLAG_HIDDEN);
+    music_controls[0] = make_button(pages[PAGE_MUSIC], 65, 231, 58, 38, LV_SYMBOL_PREV, playback_clicked, (void *)0);
+    music_controls[1] = make_button(pages[PAGE_MUSIC], 133, 231, 94, 38, LV_SYMBOL_PLAY, playback_clicked, (void *)1);
+    music_controls[2] = make_button(pages[PAGE_MUSIC], 237, 231, 58, 38, LV_SYMBOL_NEXT, playback_clicked, (void *)2);
 
     make_label(pages[PAGE_WEATHER], 85, 54, 190, &pw_font_de_24, COLOR_TEXT, "Wetter");
     lv_obj_t *outfit_button = make_button(pages[PAGE_WEATHER], 30, 94, 62, 38, "Outfit", visual_clicked, (void *)(uintptr_t)VISUAL_AVATAR);
@@ -239,6 +481,20 @@ static void create_ui(void) {
     lv_obj_set_style_bg_opa(feedback_label, LV_OPA_COVER, 0);
     // Feedback only shown when needed; starts above normal content.
     lv_obj_add_flag(feedback_label, LV_OBJ_FLAG_HIDDEN);
+
+    picker_panel = make_panel(screen);
+    picker_title = make_label(picker_panel, 60, 51, 224, &pw_font_de_24, COLOR_TEXT, "Deine Ausgabe");
+    make_button(picker_panel, 279, 70, 36, 34, LV_SYMBOL_CLOSE, picker_close_clicked, NULL);
+    for (unsigned i = 0; i < 3; ++i) {
+        picker_rows[i] = make_button(picker_panel, 52, 112 + i * 47, 256, 42, "", picker_row_clicked, (void *)(uintptr_t)i);
+        bounded_button_label(picker_rows[i], 238, &pw_font_de_18);
+    }
+    picker_hint = make_label(picker_panel, 42, 258, 276, &pw_font_de_14, COLOR_MUTED, "");
+    picker_prev = make_button(picker_panel, 86, 283, 58, 36, LV_SYMBOL_LEFT, picker_page_clicked, (void *)0);
+    lv_obj_t *picker_refresh = make_button(picker_panel, 153, 283, 54, 36, "Neu", picker_refresh_clicked, NULL);
+    bounded_button_label(picker_refresh, 44, &pw_font_de_14);
+    picker_next = make_button(picker_panel, 216, 283, 58, 36, LV_SYMBOL_RIGHT, picker_page_clicked, (void *)1);
+    lv_obj_add_flag(picker_panel, LV_OBJ_FLAG_HIDDEN);
 
     visual_panel = make_panel(screen);
     visual_image = lv_image_create(visual_panel);
@@ -477,7 +733,7 @@ static void visual_schedule(int64_t now) {
     struct tm local = {0};
     const bool valid_time = epoch > 1700000000 && localtime_r(&epoch, &local) != NULL;
     const bool morning = app_view.avatar_enabled && valid_time && local.tm_hour >= 6 && local.tm_hour < 10;
-    if (app_view.setup_open) { close_visual(); return; }
+    if (app_view.setup_open || picker_kind != PICKER_NONE) { close_visual(); return; }
     if (active_visual == VISUAL_AVATAR && visual_automatic && !morning) close_visual();
     if (active_visual == VISUAL_PHOTO && visual_automatic && strcmp(app_view.screensaver_mode, "weather_photo")) close_visual();
     if (morning && now - last_activity >= 30000000 &&
@@ -599,6 +855,7 @@ static void refresh_view(void) {
     snprintf(text, sizeof(text), "Helligkeit %u %%", app_view.brightness);
     label_text(brightness_label, text);
     refresh_weather();
+    refresh_music();
     refresh_setup();
     refresh_visual();
 }
@@ -640,7 +897,8 @@ static void process_input(int64_t now) {
     if (input.rotation_delta) {
         last_activity = now;
         if (active_visual == VISUAL_PHOTO && visual_automatic) close_visual();
-        else if (!display_dark && !setup_visible && active_visual == VISUAL_NONE && active_page == PAGE_DEVICE) {
+        else if (!display_dark && !setup_visible && active_visual == VISUAL_NONE && picker_kind == PICKER_NONE && active_page == PAGE_MUSIC) music_rotate(input.rotation_delta);
+        else if (!display_dark && !setup_visible && active_visual == VISUAL_NONE && picker_kind == PICKER_NONE && active_page == PAGE_DEVICE) {
             // Limit the value passed to application arithmetic; the app clamps
             // the brightness range and coalesces persistent writes.
             const int delta = input.rotation_delta > 100 ? 100 : input.rotation_delta < -100 ? -100 : input.rotation_delta;
@@ -698,7 +956,8 @@ static void ui_worker(void *context) {
     assets_available = pw_assets_init() == ESP_OK;
     create_ui();
     refresh_view();
-    if (app_view.weather_enabled) show_page(PAGE_WEATHER);
+    if (spotify_view.enabled && spotify_view.linked) show_page(PAGE_MUSIC);
+    else if (app_view.weather_enabled) show_page(PAGE_WEATHER);
     last_activity = esp_timer_get_time();
     startup_result = ESP_OK;
     xSemaphoreGive(ui_started);

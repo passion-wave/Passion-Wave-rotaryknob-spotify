@@ -2,13 +2,15 @@
 
 Eigenständiges Entwicklungsrepository für einen RotaryKnob mit geräteinterner Konfigurationswebsite, Spotify-Steuerung, freigegebenen Favoriten, Wetter-/Radar-/Avatarfunktionen und koordiniertem OTA. **Kein Home Assistant, kein Music Assistant, kein dauerhafter externer Steuerungsserver und kein eigener externer Anmeldedienst.**
 
-**Stand: 30. September 2026 · Native Firmware in Implementierung (`0.1.0-dev.1`).** Beide ESP-IDF-Projekte lassen sich bauen; Website, Boardtreiber, Wetter und Updateprüfung haben ausführbare Implementierungen. Geräteabnahme, vollständige Pair-OTA-Koordination und Spotify-Produktfreigabe sind noch offen. Das Ziel bleibt ein Produkt für weitere Nutzer. [Konkreter Implementierungs- und Prüfstand](docs/16-NATIVE-IMPLEMENTIERUNG.md).
+**Stand: 1. Oktober 2026 · Native Firmware in Implementierung (`0.1.0-dev.2`).** Beide ESP-IDF-Projekte sowie ein getrenntes S3-Spotify-Laborprofil lassen sich bauen. Das Laborprofil ergänzt direkte Spotify-API-Steuerung, Lautsprecherauswahl, Playliststart und einen lokalen USB-Anmeldehelfer. Website, Boardtreiber, Wetter und Updateprüfung haben ausführbare Implementierungen. Geräteabnahme, vollständige Pair-OTA-Koordination und Spotify-Produktfreigabe sind noch offen. Das Ziel bleibt ein Produkt für weitere Nutzer. [Konkreter Implementierungs- und Prüfstand](docs/16-NATIVE-IMPLEMENTIERUNG.md).
 
 Die erste Version umfasst Spotify Connect, Wettervorhersage, Wetterbilder und Avatar für Deutschland, Radioverwaltung, sichere Konfiguration jederzeit im Heim-WLAN und Pair-OTA. Radar und Radioausgabe folgen später. Der überwiegend per USB versorgte Pilot startet mit zwei RotaryKnobs; vorhandene Sonos Roam und Move sind die ersten Connect-Prüfgeräte. Wetter-/Radaranbieter dürfen keine laufenden Gebühren erfordern. Die [bestätigten Produktvorgaben](docs/15-OFFENE-PRODUKTENTSCHEIDUNGEN.md) ersetzen keine technische Abnahme: insbesondere Spotify-Anmeldung ohne eigenen Hilfsdienst und sicherer Heimnetz-Webzugriff bleiben nachzuweisen.
 
 ## Zentrale Entscheidung
 
 Ein kommerziell nutzbarer Spotify-Controller für fremde Connect-Lautsprecher ist auf Grundlage der öffentlichen Dokumentation **noch nicht freigegeben oder als Produkt nachgewiesen**. Die Hardware-FAQ verweist auf das Embedded SDK; dieses darf nicht einfach als Ersatz für die Web API eines Ferncontrollers angenommen werden. Vor der Live-Integration braucht es die schriftliche Klärung des konkreten Produkttyps, der Bedienrechte, Favoriten und Plattformunterstützung. Siehe [Machbarkeit und Produktfreigabe](docs/02-SPOTIFY.md).
+
+Der Produktbuild hält Spotify deaktiviert. Nur das explizite Laborprofil enthält den direkten Web-API-Provider; eine echte Anmeldung und hörbare Wiedergabe wurden noch nicht bestätigt. Der [USB-Anmeldehelfer](tools/spotify_setup/README.md) benötigt noch eine passend registrierte Spotify-App und ist kein fertiges Kunden-Onboarding.
 
 Das Framework isoliert diesen offenen Punkt in einem Provider-Adapter. Lokale Bedienung, Konfiguration, Transport, Sicherheit und Updates lassen sich unabhängig entwickeln. **Keine Verteilung eines gemeinsamen Developer-API-Projekts als Produkt und kein Client-ID-Splitting zur Umgehung von Limits.**
 
@@ -55,6 +57,6 @@ Diese Vorschau zeigt weiterhin den **interaktiven Entwurf mit Beispieldaten** au
 | `tests/` | Ablehnungsfälle, OTA-Ausfall- und Kompatibilitätsregeln |
 | `research/` | Datiertes Audit der vorhandenen Hardware und Primärquellen |
 
-Separate Historie und Versionslinie `0.1.0-dev.1`; keine unveränderte Kopie der HA-Firmware. Wiederverwendung erfolgt gezielt aus dokumentierten Commits mit erhaltenen Lizenzhinweisen. Quellen werden im verknüpften GitHub-Repository gepflegt. Es ist noch keine Produktfirmware veröffentlicht; Spotify-/Sonos-Registrierungen und Freigaben sind durch diesen Code nicht erfolgt.
+Separate Historie und Versionslinie `0.1.0-dev.2`; keine unveränderte Kopie der HA-Firmware. Wiederverwendung erfolgt gezielt aus dokumentierten Commits mit erhaltenen Lizenzhinweisen. Quellen werden im verknüpften GitHub-Repository gepflegt. Es ist noch keine Produktfirmware veröffentlicht; Spotify-/Sonos-Registrierungen und Freigaben sind durch diesen Code nicht erfolgt.
 
 Wetter ist Teil der nativen Implementierung und des vollständigen Portierungsplans. P10 ergänzt weiterhin alle vereinbarten Anzeigeparameter und die Geräteabnahme. P11 liefert Radar später nach und blockiert die erste Produktversion nicht.

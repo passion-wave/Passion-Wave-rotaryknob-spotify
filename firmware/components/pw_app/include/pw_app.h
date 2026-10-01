@@ -1,7 +1,9 @@
 #pragma once
 #include "esp_err.h"
+#include "pw_spotify.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,6 +24,16 @@ esp_err_t pw_app_open_setup(void);
 void pw_app_close_setup(void);
 /* Coalesced physical UI settings; no flash write per encoder step. */
 void pw_app_adjust_brightness(int delta);
+typedef struct {
+    char id[65], name[81];
+    bool playable; /* Qualified lab playlist start only; no implicit podcast start. */
+} pw_app_favorite_t;
+/* Bounded physical-UI view of the saved, enabled catalog; returns total count. */
+size_t pw_app_get_favorites(size_t offset, pw_app_favorite_t *items, size_t capacity,
+                            uint32_t *revision);
+/* Resolves a saved ID again under the config lock; never accepts arbitrary URLs. */
+esp_err_t pw_app_play_favorite(const char *id, uint32_t expected_revision,
+                              const pw_spotify_command_t *target, uint32_t *request_id);
 #ifdef __cplusplus
 }
 #endif

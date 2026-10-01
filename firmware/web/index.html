@@ -48,7 +48,21 @@
               </form>
             </details>
           </article>
-          <article class="card card-music"><div class="music-art" aria-hidden="true"><div class="record"><i></i></div><span class="spark">✦</span></div><p class="eyebrow">SPOTIFY CONNECT</p><h2>Musik kommt als Nächstes.</h2><p>Die Spotify-Verbindung ist in dieser Geräteversion noch nicht verfügbar. Deine Playlists und Podcasts kannst du bereits vorbereiten.</p><button class="button light" type="button" data-go="content">Favoriten vorbereiten <span aria-hidden="true">→</span></button></article>
+          <article class="card card-music" id="music-card">
+            <div id="music-unavailable"><div class="music-art" aria-hidden="true"><div class="record"><i></i></div><span class="spark">✦</span></div><p class="eyebrow">SPOTIFY CONNECT</p><h2 id="music-unavailable-title">Musik kommt als Nächstes.</h2><p id="music-unavailable-copy">Die Spotify-Verbindung ist in dieser Geräteversion noch nicht verfügbar. Deine Playlists und Podcasts kannst du bereits vorbereiten.</p><button class="button light" type="button" data-go="content">Favoriten vorbereiten <span aria-hidden="true">→</span></button></div>
+            <div id="music-player" hidden>
+              <div class="section-title"><div><p class="eyebrow">SPOTIFY CONNECT · LABOR</p><h2>Deine Musik.</h2></div><button class="text-button" type="button" id="spotify-refresh">Aktualisieren</button></div>
+              <p id="spotify-state" role="status" aria-live="polite">Spotify wird geprüft …</p>
+              <div class="field"><label for="spotify-device">Hier abspielen</label><select id="spotify-device" disabled><option value="">Ausgabe wählen</option></select><p class="field-help" id="spotify-device-hint">Die Auswahl allein startet keine Musik.</p></div>
+              <div class="now-playing"><strong id="spotify-title">Noch keine Wiedergabe</strong><span id="spotify-artist"></span><small id="spotify-playing-device"></small></div>
+              <progress id="spotify-progress" max="100" value="0" aria-label="Titelposition" hidden></progress>
+              <div class="player-actions"><button class="button light" type="button" id="spotify-previous" aria-label="Vorheriger Titel" disabled>←</button><button class="button light" type="button" id="spotify-play" disabled>Abspielen</button><button class="button light" type="button" id="spotify-next" aria-label="Nächster Titel" disabled>→</button></div>
+              <div class="field" id="spotify-volume-field" hidden><div class="label-row"><label for="spotify-volume">Lautstärke</label><output id="spotify-volume-output" for="spotify-volume">—</output></div><input id="spotify-volume" type="range" min="0" max="100" step="1" disabled></div>
+              <p class="field-help" id="spotify-message" role="status" aria-live="polite"></p>
+              <button class="button light" type="button" data-go="content">Favoriten wählen</button>
+              <details><summary>Spotify-Verbindung</summary><p>Diese Laborversion wird per USB mit deinem Spotify-Konto verbunden. Passwörter oder Tokens werden hier nicht abgefragt.</p><button class="text-button" type="button" id="spotify-disconnect" disabled>Spotify vom Knob trennen</button></details>
+            </div>
+          </article>
         </div>
         <div class="quick-grid">
           <button class="quick-card" type="button" data-go="weather"><span class="quick-symbol" aria-hidden="true">☀</span><span><strong>Ein Blick nach draußen</strong><span id="weather-short">Wetter für deinen Standort einrichten.</span></span><span aria-hidden="true">↗</span></button>
@@ -58,7 +72,7 @@
 
       <section class="page" id="page-content" aria-labelledby="content-title" hidden>
         <div class="page-heading"><p class="eyebrow">DEINE AUSWAHL</p><h1 id="content-title">Weniger suchen.<br>Mehr Lieblingsmusik.</h1><p>Stelle die Inhalte zusammen, die später auf deinem Knob erscheinen.</p></div>
-        <div class="info-line">Wiedergabe ist in dieser Geräteversion noch nicht verfügbar. Deine Auswahl wird auf dem RotaryKnob gespeichert.</div>
+        <div class="info-line" id="content-playback-hint">Wiedergabe ist in dieser Geräteversion noch nicht verfügbar. Deine Auswahl wird auf dem RotaryKnob gespeichert.</div>
         <article class="card">
           <div class="section-title"><div><h2>Playlists &amp; Podcasts</h2><p>Füge einen geteilten Spotify-Link ein.</p></div><span class="count" id="favorites-count">0 / 64</span></div>
           <form id="favorite-form"><fieldset data-write disabled><legend class="sr-only">Spotify-Favorit hinzufügen</legend><div class="form-grid"><div class="field"><label for="favorite-link">Spotify-Link</label><input id="favorite-link" type="text" required maxlength="512" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="https://open.spotify.com/playlist/…"></div><div class="field"><label for="favorite-name">Name auf dem Knob</label><input id="favorite-name" required maxlength="80" placeholder="Zum Beispiel: Mein Feierabend"></div></div><button class="button secondary" type="submit">+ Zur Auswahl hinzufügen</button></fieldset></form>

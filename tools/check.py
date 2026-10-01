@@ -144,6 +144,7 @@ def main():
     if node:
         subprocess.run([node,'--check',str(ROOT/'web/app.js')],check=True)
         subprocess.run([node,'--check',str(ROOT/'firmware/web/app.js')],check=True)
+        subprocess.run([node,'--check',str(ROOT/'tools/spotify_setup/static/app.js')],check=True)
         print('Web JavaScript syntax: OK', flush=True)
     else:
         print('Node missing: JavaScript syntax check NOT RUN', flush=True)

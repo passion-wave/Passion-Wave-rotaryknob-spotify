@@ -6,6 +6,7 @@
 #include "pw_ui.h"
 #include "pw_storage.h"
 #include "pw_update_service.h"
+#include "pw_setup_usb.h"
 void app_main(void) {
     ESP_LOGI("pw", "Spotify Edition %s; %s", esp_app_get_description()->version, PW_APP_HARDWARE);
     /* Generate NVS keys before board peripherals, ADC or Wi-Fi can use the RNG source. */
@@ -13,6 +14,7 @@ void app_main(void) {
     ESP_ERROR_CHECK(pw_board_init());
     ESP_ERROR_CHECK(pw_app_init());
     ESP_ERROR_CHECK(pw_ui_init());
+    ESP_ERROR_CHECK(pw_setup_usb_init());
     /* Factory/local boot can finish without Internet. An OTA journal prevents
      * early cancellation of rollback; the future pair coordinator owns that. */
     if (pw_update_service_may_finalize_boot())

@@ -25,6 +25,7 @@
 #include "pw_board.h"
 #include "pw_protocol.h"
 #include "pw_storage.h"
+#include "pw_spotify.h"
 #include "pw_update_service.h"
 #include "pw_validation.h"
 #include "pw_weather.h"
@@ -52,6 +53,8 @@ static httpd_handle_t server;
 static char session[65], csrf[65];
 static int64_t session_until;
 static pw_weather_snapshot_t weather_copy;
+/* HTTP server owns this copy. Never place a multi-KiB device list on its stack. */
+static pw_spotify_snapshot_t spotify_http;
 extern const uint8_t page_start[] asm("_binary_index_html_start");
 extern const uint8_t page_end[] asm("_binary_index_html_end");
 extern const uint8_t js_start[] asm("_binary_app_js_start");
@@ -170,6 +173,53 @@ static esp_err_t save_config(cJSON *next) {
     }
     return e;
 }
+static bool playable_favorite(const cJSON *entry) {
+    const char *uri = text(entry, "uri");
+    if (!flag(entry, "enabled") || strcmp(text(entry, "kind"), "spotify_playlist") ||
+        strncmp(uri, "spotify:playlist:", 17) || strlen(uri + 17) != 22) return false;
+    for (const unsigned char *c = (const unsigned char *)uri + 17; *c; ++c)
+        if (!((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') || (*c >= '0' && *c <= '9'))) return false;
+    return true;
+}
+size_t pw_app_get_favorites(size_t offset, pw_app_favorite_t *items, size_t capacity,
+                            uint32_t *revision) {
+    if (!items && capacity) return 0;
+    size_t total = 0, written = 0;
+    take();
+    const cJSON *favorites = item(item(config, "catalog"), "favorites");
+    for (const cJSON *entry = favorites ? favorites->child : NULL; entry; entry = entry->next) {
+        if (!flag(entry, "enabled")) continue;
+        if (total++ < offset || written >= capacity) continue;
+        pw_app_favorite_t *out = &items[written++];
+        memset(out, 0, sizeof *out);
+        strlcpy(out->id, text(entry, "id"), sizeof out->id);
+        strlcpy(out->name, text(entry, "name"), sizeof out->name);
+        out->playable = playable_favorite(entry);
+    }
+    if (revision) *revision = view.revision;
+    give();
+    return total;
+}
+esp_err_t pw_app_play_favorite(const char *id, uint32_t expected_revision,
+                              const pw_spotify_command_t *target, uint32_t *request_id) {
+    if (!id || !target || target->kind != PW_SPOTIFY_PLAY) return ESP_ERR_INVALID_ARG;
+    pw_spotify_command_t command = *target;
+    command.uri[0] = 0;
+    esp_err_t result = ESP_ERR_NOT_FOUND;
+    take();
+    if (expected_revision != view.revision) result = ESP_ERR_INVALID_STATE;
+    else {
+        const cJSON *favorites = item(item(config, "catalog"), "favorites");
+        for (const cJSON *entry = favorites ? favorites->child : NULL; entry; entry = entry->next) {
+            if (strcmp(text(entry, "id"), id)) continue;
+            if (!playable_favorite(entry)) result = ESP_ERR_NOT_SUPPORTED;
+            else { strlcpy(command.uri, text(entry, "uri"), sizeof command.uri); result = ESP_OK; }
+            break;
+        }
+    }
+    give();
+    return result == ESP_OK ? pw_spotify_submit(&command, request_id) : result;
+}
 static void apply_settings(bool changed_location) {
     take();
     cJSON *s = item(config, "settings");
@@ -261,6 +311,7 @@ static void network_event(void *arg, esp_event_base_t base, int32_t id, void *da
         snprintf(view.ip, sizeof view.ip, IPSTR, IP2STR(&ev->ip_info.ip));
         give();
         pw_weather_request_refresh();
+        pw_spotify_set_network(true);
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
         wifi_event_sta_disconnected_t *ev = data;
         take();
@@ -275,6 +326,7 @@ static void network_event(void *arg, esp_event_base_t base, int32_t id, void *da
         unsigned shift = retry_count < 5 ? retry_count++ : 5;
         retry_at = esp_timer_get_time() + ((int64_t)1 << shift) * 1000000;
         give();
+        pw_spotify_set_network(false);
     }
 }
 /* The AP endpoint is reachable via its own local socket address, not a forged Host/IP header. */
@@ -468,6 +520,168 @@ static esp_err_t session_handler(httpd_req_t *r) {
     }
     return json_response(r, j);
 }
+static const char *spotify_command_name(pw_spotify_command_state_t state) {
+    static const char *names[] = {"none", "queued", "accepted", "rejected", "uncertain", "stale"};
+    return (unsigned)state < sizeof names / sizeof names[0] ? names[state] : "uncertain";
+}
+static cJSON *spotify_snapshot_json(void) {
+    pw_spotify_get_snapshot(&spotify_http);
+    const pw_spotify_snapshot_t *s = &spotify_http;
+    cJSON *j = cJSON_CreateObject();
+    bool ok = j && cJSON_AddBoolToObject(j, "enabled", s->enabled) &&
+        cJSON_AddBoolToObject(j, "linked", s->linked) && cJSON_AddBoolToObject(j, "product_approved", false) &&
+        cJSON_AddStringToObject(j, "state", pw_spotify_state_name(s->state)) &&
+        cJSON_AddStringToObject(j, "error", pw_spotify_error_name(s->error)) &&
+        cJSON_AddNumberToObject(j, "retry_after_seconds", s->retry_after_seconds) &&
+        cJSON_AddNumberToObject(j, "session", s->session) &&
+        cJSON_AddNumberToObject(j, "selection_generation", s->selection_generation) &&
+        cJSON_AddNumberToObject(j, "revision", s->revision) &&
+        cJSON_AddNumberToObject(j, "last_request_id", s->last_request_id) &&
+        cJSON_AddStringToObject(j, "last_command_state", spotify_command_name(s->last_command_state));
+    cJSON *selected = cJSON_AddObjectToObject(j, "selected");
+    ok = ok && selected && cJSON_AddStringToObject(selected, "id", s->selected_device_id) &&
+        cJSON_AddStringToObject(selected, "name", s->selected_device_name) &&
+        cJSON_AddBoolToObject(selected, "present", s->selected_present) &&
+        cJSON_AddBoolToObject(selected, "restricted", s->selected_restricted) &&
+        cJSON_AddBoolToObject(selected, "supports_volume", s->selected_supports_volume) &&
+        cJSON_AddBoolToObject(selected, "volume_known", s->selected_volume_known);
+    if (ok && s->selected_volume_known) ok = cJSON_AddNumberToObject(selected, "volume_percent", s->selected_volume);
+    cJSON *playback = cJSON_AddObjectToObject(j, "playback");
+    ok = ok && playback && cJSON_AddBoolToObject(playback, "known", s->playback_known) &&
+        cJSON_AddBoolToObject(playback, "is_playing", s->playback_known && s->playing) &&
+        cJSON_AddStringToObject(playback, "title", s->title) && cJSON_AddStringToObject(playback, "artist", s->artist) &&
+        cJSON_AddStringToObject(playback, "device_id", s->active_device_id) &&
+        cJSON_AddStringToObject(playback, "device_name", s->active_device_name) &&
+        cJSON_AddStringToObject(playback, "item_type", s->item_type) &&
+        cJSON_AddNumberToObject(playback, "observed_at_ms", (double)s->observed_at_ms) &&
+        cJSON_AddBoolToObject(playback, "position_known", s->position_known);
+    if (ok && s->position_known) ok = cJSON_AddNumberToObject(playback, "position_ms", s->position_ms) &&
+        cJSON_AddNumberToObject(playback, "duration_ms", s->duration_ms);
+    cJSON *actions = cJSON_AddObjectToObject(j, "actions");
+    ok = ok && actions && cJSON_AddBoolToObject(actions, "play", s->can_play) &&
+        cJSON_AddBoolToObject(actions, "pause", s->can_pause) && cJSON_AddBoolToObject(actions, "next", s->can_next) &&
+        cJSON_AddBoolToObject(actions, "previous", s->can_previous) && cJSON_AddBoolToObject(actions, "volume", s->can_volume);
+    if (!ok) { cJSON_Delete(j); return NULL; }
+    return j;
+}
+static esp_err_t spotify_snapshot_handler(httpd_req_t *r) {
+    if (!authorized(r, false)) return error(r, "403 Forbidden", "pairing", "Geschützte Einrichtung öffnen");
+    return json_response(r, spotify_snapshot_json());
+}
+static esp_err_t spotify_devices_handler(httpd_req_t *r) {
+    if (!authorized(r, false)) return error(r, "403 Forbidden", "pairing", "Geschützte Einrichtung öffnen");
+    pw_spotify_get_snapshot(&spotify_http);
+    cJSON *j = cJSON_CreateObject(), *devices = cJSON_AddArrayToObject(j, "devices");
+    bool ok = devices && cJSON_AddNumberToObject(j, "session", spotify_http.session) &&
+        cJSON_AddBoolToObject(j, "truncated", spotify_http.devices_truncated);
+    for (unsigned i = 0; ok && i < spotify_http.device_count && i < PW_SPOTIFY_MAX_DEVICES; ++i) {
+        const pw_spotify_device_t *d = &spotify_http.devices[i];
+        cJSON *entry = cJSON_CreateObject();
+        if (!entry || !cJSON_AddItemToArray(devices, entry)) { cJSON_Delete(entry); ok = false; break; }
+        ok = cJSON_AddStringToObject(entry, "id", d->id) && cJSON_AddStringToObject(entry, "name", d->name) &&
+            cJSON_AddStringToObject(entry, "type", d->type) && cJSON_AddBoolToObject(entry, "active", d->active) &&
+            cJSON_AddBoolToObject(entry, "restricted", d->restricted) &&
+            cJSON_AddBoolToObject(entry, "supports_volume", d->supports_volume) &&
+            cJSON_AddBoolToObject(entry, "volume_known", d->volume_known);
+        if (ok && d->volume_known) ok = cJSON_AddNumberToObject(entry, "volume_percent", d->volume);
+    }
+    if (!ok) { cJSON_Delete(j); return memory_error(r); }
+    return json_response(r, j);
+}
+static bool json_u32(const cJSON *body, const char *key, uint32_t *out) {
+    const cJSON *v = item(body, key);
+    if (!cJSON_IsNumber(v) || !isfinite(v->valuedouble) || v->valuedouble < 1 ||
+        v->valuedouble > UINT32_MAX || floor(v->valuedouble) != v->valuedouble) return false;
+    *out = (uint32_t)v->valuedouble;
+    return true;
+}
+static esp_err_t spotify_result(httpd_req_t *r, esp_err_t result, uint32_t request_id) {
+    if (result == ESP_ERR_NOT_SUPPORTED)
+        return error(r, "422 Unprocessable Content", "unsupported", "Diese Wiedergabeaktion ist hier noch nicht verfügbar.");
+    if (result == ESP_ERR_INVALID_ARG || result == ESP_ERR_NOT_FOUND)
+        return error(r, "400 Bad Request", "spotify_request", "Ausgabe oder gespeicherten Favoriten erneut wählen.");
+    if (result == ESP_ERR_INVALID_STATE)
+        return error(r, "409 Conflict", "spotify_changed", "Spotify oder die Ausgabe hat sich geändert. Bitte erneut wählen.");
+    if (result != ESP_OK)
+        return error(r, "503 Service Unavailable", "spotify_busy", "Spotify ist gerade nicht bereit. Bitte erneut versuchen.");
+    cJSON *j = cJSON_CreateObject();
+    if (!j || !cJSON_AddBoolToObject(j, "accepted", true) || !cJSON_AddNumberToObject(j, "request_id", request_id)) {
+        cJSON_Delete(j); return memory_error(r);
+    }
+    httpd_resp_set_status(r, "202 Accepted");
+    return json_response(r, j); /* Acceptance is not confirmation that playback changed. */
+}
+static bool spotify_revision(httpd_req_t *r, uint32_t *revision) {
+    take();
+    const bool valid = revision_matches(r);
+    *revision = view.revision;
+    give();
+    return valid;
+}
+static esp_err_t spotify_select_handler(httpd_req_t *r) {
+    if (!authorized(r, true)) return error(r, "403 Forbidden", "pairing", "Geschützte Einrichtung öffnen");
+    cJSON *body = read_body(r, 512);
+    const char *const keys[] = {"device_id", "session"};
+    uint32_t session_id, revision;
+    if (!pw_keys_only(body, keys, 2) || !json_u32(body, "session", &session_id) ||
+        !clean_text(text(body, "device_id"), 1, PW_SPOTIFY_DEVICE_ID_BYTES - 1)) {
+        cJSON_Delete(body); return error(r, "400 Bad Request", "spotify_request", "Ausgabe erneut wählen.");
+    }
+    if (!spotify_revision(r, &revision)) { cJSON_Delete(body); return error(r, "409 Conflict", "revision", "Gerätestand neu laden."); }
+    esp_err_t result = pw_spotify_select_device(text(body, "device_id"), session_id);
+    cJSON_Delete(body);
+    return spotify_result(r, result, 0);
+}
+static esp_err_t spotify_action_handler(httpd_req_t *r) {
+    if (!authorized(r, true)) return error(r, "403 Forbidden", "pairing", "Geschützte Einrichtung öffnen");
+    cJSON *body = read_body(r, 768);
+    const char *action = text(body, "action");
+    uint32_t revision, request_id = 0;
+    if (!spotify_revision(r, &revision)) { cJSON_Delete(body); return error(r, "409 Conflict", "revision", "Gerätestand neu laden."); }
+    if (!strcmp(action, "refresh")) {
+        const char *const keys[] = {"action"};
+        bool valid = pw_keys_only(body, keys, 1);
+        cJSON_Delete(body);
+        return spotify_result(r, valid ? pw_spotify_refresh() : ESP_ERR_INVALID_ARG, 0);
+    }
+    const char *const keys[] = {"action", "device_id", "session", "selection_generation", "volume_percent", "favorite_id"};
+    pw_spotify_command_t command = {0};
+    bool favorite = !strcmp(action, "favorite"), volume = !strcmp(action, "volume");
+    bool valid = pw_keys_only(body, keys, 6) &&
+        json_u32(body, "session", &command.session) &&
+        json_u32(body, "selection_generation", &command.selection_generation) &&
+        clean_text(text(body, "device_id"), 1, PW_SPOTIFY_DEVICE_ID_BYTES - 1);
+    if (!strcmp(action, "play") || favorite) command.kind = PW_SPOTIFY_PLAY;
+    else if (!strcmp(action, "pause")) command.kind = PW_SPOTIFY_PAUSE;
+    else if (!strcmp(action, "next")) command.kind = PW_SPOTIFY_NEXT;
+    else if (!strcmp(action, "previous")) command.kind = PW_SPOTIFY_PREVIOUS;
+    else if (volume) command.kind = PW_SPOTIFY_VOLUME;
+    else valid = false;
+    if (favorite != (item(body, "favorite_id") != NULL) || volume != (item(body, "volume_percent") != NULL)) valid = false;
+    if (favorite && !clean_text(text(body, "favorite_id"), 1, 64)) valid = false;
+    if (volume) {
+        const cJSON *value = item(body, "volume_percent");
+        if (!cJSON_IsNumber(value) || !isfinite(value->valuedouble) || value->valuedouble < 0 ||
+            value->valuedouble > 100 || floor(value->valuedouble) != value->valuedouble) valid = false;
+        else command.volume = (uint8_t)value->valuedouble;
+    }
+    strlcpy(command.device_id, text(body, "device_id"), sizeof command.device_id);
+    esp_err_t result = !valid ? ESP_ERR_INVALID_ARG : favorite ?
+        pw_app_play_favorite(text(body, "favorite_id"), revision, &command, &request_id) :
+        pw_spotify_submit(&command, &request_id);
+    cJSON_Delete(body);
+    return spotify_result(r, result, request_id);
+}
+static esp_err_t spotify_disconnect_handler(httpd_req_t *r) {
+    if (!authorized(r, true)) return error(r, "403 Forbidden", "pairing", "Geschützte Einrichtung öffnen");
+    cJSON *body = read_body(r, 64);
+    bool valid = pw_keys_only(body, NULL, 0);
+    cJSON_Delete(body);
+    if (!valid) return error(r, "400 Bad Request", "spotify_request", "Leere Trennanfrage erwartet.");
+    uint32_t revision;
+    if (!spotify_revision(r, &revision)) return error(r, "409 Conflict", "revision", "Gerätestand neu laden.");
+    return spotify_result(r, pw_spotify_disconnect(), 0);
+}
 static cJSON *weather_json(void) {
     pw_weather_get_snapshot(&weather_copy);
     cJSON *w = cJSON_CreateObject();
@@ -536,8 +750,10 @@ static esp_err_t status_handler(httpd_req_t *r) {
     cJSON *c = cJSON_AddObjectToObject(j, "capabilities");
     pw_update_service_view_t update;
     pw_update_service_get_view(&update);
+    pw_spotify_get_snapshot(&spotify_http);
     ok = ok && c && cJSON_AddBoolToObject(c, "signed_bundle_staging", update.upload_enabled) &&
-         cJSON_AddBoolToObject(c, "spotify", false) &&
+         cJSON_AddBoolToObject(c, "spotify", spotify_http.enabled) &&
+         cJSON_AddBoolToObject(c, "spotify_product_approved", false) &&
          cJSON_AddBoolToObject(c, "radio_playback", false) &&
          cJSON_AddBoolToObject(c, "pair_ota", false) &&
          cJSON_AddBoolToObject(c, "secure_lan_write", false) &&
@@ -1047,6 +1263,9 @@ static void service_task(void *arg) {
             }
         }
         give();
+        pw_update_service_view_t update_activity;
+        pw_update_service_get_view(&update_activity);
+        pw_spotify_set_suspended(update_activity.busy);
         if (expire)
             pw_app_close_setup();
         if (change) {
@@ -1211,6 +1430,7 @@ esp_err_t pw_app_init(void) {
     view.revision = (uint32_t)number(config, "revision", 1);
     setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
     tzset();
+    ESP_ERROR_CHECK(pw_spotify_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     station_if = esp_netif_create_default_wifi_sta();
@@ -1279,7 +1499,7 @@ esp_err_t pw_app_init(void) {
     ESP_ERROR_CHECK(uart_set_pin(UART_NUM_1, 38, 48, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     ESP_ERROR_CHECK(uart_driver_install(UART_NUM_1, 2048, 0, 0, NULL, 0));
     httpd_config_t hc = HTTPD_DEFAULT_CONFIG();
-    hc.max_uri_handlers = 18;
+    hc.max_uri_handlers = 24;
     hc.stack_size = 12288;
     hc.max_open_sockets = 4;
     hc.lru_purge_enable = true;
@@ -1294,6 +1514,11 @@ esp_err_t pw_app_init(void) {
     register_uri("/api/v1/status", HTTP_GET, status_handler);
     register_uri("/api/v1/wifi/scan", HTTP_GET, scan_handler);
     register_uri("/api/v1/wifi", HTTP_POST, wifi_handler);
+    register_uri("/api/v1/spotify/snapshot", HTTP_GET, spotify_snapshot_handler);
+    register_uri("/api/v1/spotify/devices", HTTP_GET, spotify_devices_handler);
+    register_uri("/api/v1/spotify/select", HTTP_POST, spotify_select_handler);
+    register_uri("/api/v1/spotify/action", HTTP_POST, spotify_action_handler);
+    register_uri("/api/v1/spotify/disconnect", HTTP_POST, spotify_disconnect_handler);
     register_uri("/api/v1/settings", HTTP_PATCH, settings_handler);
     register_uri("/api/v1/catalog", HTTP_PUT, catalog_handler);
     register_uri("/api/v1/radio/search", HTTP_GET, radio_handler);
