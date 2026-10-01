@@ -20,18 +20,22 @@ async function api(path, body) {
   return data;
 }
 function message(text) { $('notice').textContent = text; $('notice').hidden = !text; }
+function canAuthorize(state) {
+  return !!state && !state.error && state.setup_open && state.lab_enabled && !state.pending && state.spotify?.connected === true;
+}
 function render(state) {
   last = state;
   const spotify = state.spotify || {};
-  const ready = !state.error && !state.pending && state.setup_open && spotify.linked === true && spotify.state === 'ready' && ['none', 'confirmed'].includes(state.authorization_status);
+  const online = spotify.connected === true;
+  const ready = !state.error && !state.pending && state.setup_open && online && spotify.linked === true && spotify.state === 'ready' && ['none', 'confirmed'].includes(state.authorization_status);
   $('indicator').classList.toggle('ready', ready);
-  $('authorize').disabled = busy || !!state.error || !state.setup_open || !state.lab_enabled || state.pending;
+  $('authorize').disabled = busy || !canAuthorize(state);
   $('authorize').textContent = spotify.linked ? 'Spotify erneut verbinden' : 'Mit Spotify verbinden';
   $('cancel').hidden = !state.pending;
   $('cancel').disabled = busy;
   $('choose').disabled = busy || state.pending;
-  $('status').textContent = state.error ? state.message : !state.setup_open ? 'Einrichtung am Knob öffnen' : !state.lab_enabled ? 'Spotify ist noch nicht freigeschaltet' : ready ? 'Spotify ist auf deinem Knob verbunden' : state.pending ? 'Anmeldung bei Spotify läuft …' : state.authorization_status === 'failed' ? 'Neue Anmeldung nicht bestätigt' : labels[spotify.state] || (spotify.linked ? 'Spotify ist verknüpft · Verbindung wird geprüft' : 'Bereit für deine Spotify-Anmeldung');
-  $('detail').textContent = ready ? 'Der Knob ist bereit. Wähle einen Spotify Connect-Lautsprecher auf dem Gerät.' : labels[spotify.state] || (state.setup_open ? 'USB verbunden. Richte zuerst über den QR-Code am Display dein Heim-WLAN ein. Danach hier Spotify verbinden.' : 'RotaryKnob per USB anschließen. Das Display 3 Sekunden berühren, um die Einrichtung zu öffnen.');
+  $('status').textContent = state.error ? state.message : !state.setup_open ? 'Einrichtung am Knob öffnen' : !state.lab_enabled ? 'Spotify ist noch nicht freigeschaltet' : !online ? 'Zuerst WLAN am Knob einrichten' : ready ? 'Spotify ist auf deinem Knob verbunden' : state.pending ? 'Anmeldung bei Spotify läuft …' : state.authorization_status === 'failed' ? 'Neue Anmeldung nicht bestätigt' : labels[spotify.state] || (spotify.linked ? 'Spotify ist verknüpft · Verbindung wird geprüft' : 'Bereit für deine Spotify-Anmeldung');
+  $('detail').textContent = !state.setup_open ? 'RotaryKnob per USB anschließen. Das Display 3 Sekunden berühren, um die Einrichtung zu öffnen.' : !online ? 'Scanne den QR-Code am Display mit deinem Smartphone und richte dein Heim-WLAN ein. Sobald der Knob verbunden ist, kannst du hier Spotify verbinden.' : ready ? 'Der Knob ist bereit. Wähle einen Spotify Connect-Lautsprecher auf dem Gerät.' : labels[spotify.state] || 'WLAN verbunden. Klicke auf „Mit Spotify verbinden“, um dich bei Spotify anzumelden.';
   const ports = state.ports || [];
   $('ports').hidden = ports.length < 2 && state.error !== 'select_port';
   const previous = $('port').value;
@@ -57,14 +61,14 @@ async function refresh() {
   } finally { busy = false; $('refresh').disabled = false; if (last) render(last); }
 }
 async function action(path, body, redirect = false) {
-  if (busy) return;
+  if (busy || (path === '/api/authorize' && !canAuthorize(last))) return;
   busy = true; $('authorize').disabled = true; $('cancel').disabled = true;
   try {
     const result = await api(path, body);
     if (redirect) { window.location.assign(result.authorization_url); return; }
     busy = false; await refresh();
   } catch (error) { message(error.message); }
-  finally { busy = false; if (last) $('authorize').disabled = !!last.error || !last.setup_open || !last.lab_enabled || last.pending; $('cancel').disabled = false; }
+  finally { busy = false; $('authorize').disabled = !canAuthorize(last); $('cancel').disabled = false; }
 }
 $('refresh').addEventListener('click', refresh);
 $('authorize').addEventListener('click', () => action('/api/authorize', {}, true));

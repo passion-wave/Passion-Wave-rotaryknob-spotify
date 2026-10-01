@@ -142,3 +142,9 @@ Fehlerfalltests**, **285 Spotify-Modell- und 623 Worker-Assertions**, **36 nativ
 USB-Parserprüfungen**. Die aktualisierte Einrichtungswebsite bestand das isolierte
 Chromium-Szenario mit simuliertem USB/Spotify. Die tatsächlich ausgeführten
 USB-HELLO-/Statusabfragen oben sind davon getrennte Gerätenachweise.
+
+Der Desktophelfer gibt den Anmeldeknopf erst frei, wenn der echte USB-Status die
+WLAN-Verbindung bestätigt. Davor führt er zum WLAN-QR-Code am Display. Fällt WLAN
+aus, erscheint auch bei noch gespeicherter Spotify-Verknüpfung keine grüne
+Bereitschaftsanzeige. Beide Übergänge und der anschließende OAuth-Ablauf wurden
+im isolierten Chromium mit simulierten Netzwerkzuständen geprüft.

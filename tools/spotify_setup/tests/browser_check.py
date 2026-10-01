@@ -12,12 +12,25 @@ from test_helper import FakeDevice, running_server
 import helper
 
 
+class NetworkDevice(FakeDevice):
+    """Network availability is independent of whether Spotify is linked."""
+    def __init__(self):
+        super().__init__()
+        self.network_connected = False
+
+    def request(self, method, **values):
+        response = super().request(method, **values)
+        if "spotify" in response:
+            response["spotify"]["connected"] = self.network_connected
+        return response
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--screenshots", type=Path, default=Path(tempfile.gettempdir()) / "pw-spotify-setup-preview")
     args = parser.parse_args()
     args.screenshots.mkdir(parents=True, exist_ok=True)
-    device = FakeDevice()
+    device = NetworkDevice()
     device.setup = False
     app = helper.SetupApp(device)
     failures, callbacks = [], []
@@ -56,7 +69,19 @@ def main():
         with app.lock:
             device.setup = True
         page.locator("#refresh").click()
+        page.get_by_text("Zuerst WLAN am Knob einrichten", exact=True).wait_for()
+        assert page.locator("#authorize").is_disabled()
+        assert "QR-Code" in page.locator("#detail").inner_text()
+        assert "Heim-WLAN" in page.locator("#detail").inner_text()
+        assert not any(method == "authorize" for method, _ in device.calls)
+        assert not page.locator("#indicator").evaluate("element => element.classList.contains('ready')")
+        page.screenshot(path=str(args.screenshots / "02-wlan-required.png"), full_page=True)
+
+        with app.lock:
+            device.network_connected = True
+        page.locator("#refresh").click()
         page.get_by_text("Bereit für deine Spotify-Anmeldung", exact=True).wait_for()
+        assert page.locator("#authorize").is_enabled()
         assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
         page.screenshot(path=str(args.screenshots / "02-ready.png"), full_page=True)
         page.locator("#authorize").click()
@@ -79,7 +104,16 @@ def main():
         page.screenshot(path=str(args.screenshots / "04-linked.png"), full_page=True)
         assert page.evaluate("localStorage.length === 0 && sessionStorage.length === 0")
 
+        # Even a retained linked/ready snapshot cannot claim readiness without WLAN.
         with app.lock:
+            device.network_connected = False
+        page.locator("#refresh").click()
+        page.get_by_text("Zuerst WLAN am Knob einrichten", exact=True).wait_for()
+        assert page.locator("#authorize").is_disabled()
+        assert not page.locator("#indicator").evaluate("element => element.classList.contains('ready')")
+
+        with app.lock:
+            device.network_connected = True
             device.role = "companion_esp32"
         page.locator("#refresh").click()
         page.get_by_text("Der Display-Chip ist nicht verbunden. USB-Stecker um 180° drehen und erneut prüfen.", exact=True).wait_for()
