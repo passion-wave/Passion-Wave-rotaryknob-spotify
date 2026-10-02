@@ -701,3 +701,35 @@ Der fremde sichtbare USB-Port wurde nicht geöffnet oder beschrieben.
 Alle vollständigen dev.11-CI-Läufe für `fcc5f52` und `ea68932` bestanden;
 [PR-Lauf 37001704091](https://github.com/passion-wave/Passion-Wave-rotaryknob-spotify/actions/runs/37001704091).
 Die dev.12-CI für `fb08362` läuft zu diesem Zwischenstand noch.
+
+
+### dev.12 nach Wiederanschluss verifiziert
+
+Nach der Nutzerrückmeldung „wieder angeschlossen“ erschien der S3 erneut als
+`303a:1001`. Das unveränderte dev.12-Image wurde nur gelesen/verglichen, nicht
+erneut geschrieben. Der vollständige Vergleich bei `0x10000` bestätigte
+`verify OK (digest matched)`; nach dem Hard-Reset erhielt der direkt gestartete
+Helfer viermal HELLO mit `version: 0.1.0-dev.12`, `lab_enabled: true` und
+`setup_open: false`. Der zuvor ausstehende Installationsnachweis ist damit
+abgeschlossen.
+
+Die anschließenden Abrufe lieferten dreimal HTTP 204 ohne Transportfehler und
+mit gültiger Verarbeitung (`known: 0`, `playing: 0`) sowie eine gültige
+Geräteliste mit einem Eintrag. Dieser aktuelle Zustand reproduziert die früheren
+HTTP-200-Validierungsfehler noch nicht. Der Nutzer wurde um erneuten hörbaren
+Roam-Start direkt in Spotify und Aktualisierung am Knob gebeten. Die genaue
+Ursache der früher verworfenen Roam-Antwort ist weiterhin unbestätigt.
+
+Alle vier vollständigen dev.12-CI-Läufe für `fb08362` und `1d99be5` bestanden;
+[PR-Lauf 37002673144](https://github.com/passion-wave/Passion-Wave-rotaryknob-spotify/actions/runs/37002673144),
+[Push-Lauf 37002667851](https://github.com/passion-wave/Passion-Wave-rotaryknob-spotify/actions/runs/37002667851).
+
+
+Bei einer weiteren Beobachtung wurden erneut ausschließlich gültige HTTP-204-
+Playbackantworten und ein gültiger Listeneintrag erfasst. Währenddessen brach
+der USB-Zugriff mit `usb_unavailable`, anschließend `no_port` ab. Die neue
+Inventur zeigte nur ein anderes USB-Seriell-Gerät (`1a86:55d3`), keinen S3 mit
+`303a:1001`. Es wurde weder dieser andere Port geöffnet noch erneut geflasht.
+Ob der Nutzer umgesteckt hat oder die Verbindung unverändert blieb, wird nun
+separat geklärt. Der bereits erfolgreiche Flashvergleich und dev.12-HELLO-
+Nachweis bleiben davon getrennt gültig.
