@@ -1,10 +1,11 @@
-"""Lossy, secret-free recognition of a few ESP-IDF 5.4.3 transport errors.
+"""Lossy, secret-free recognition of fixed IDF errors and device-fetch metadata.
 
-Only fixed event names and bounded numeric error codes survive. This is not a
+Only fixed event names and bounded numeric metadata survive. This is not a
 log sanitizer: unrecognized lines, contexts, names and suffixes are discarded.
 Patterns mirror esp-tls/{esp_tls,esp_tls_mbedtls}.c, esp_http_client.c and
-mbedtls/esp_crt_bundle/esp_crt_bundle.c in the pinned IDF source tree. An event
-does not identify the requesting firmware task or prove an OAuth failure.
+mbedtls/esp_crt_bundle/esp_crt_bundle.c in the pinned IDF source tree, plus the
+fixed pw_spotify device-fetch summary. Generic IDF events do not identify the
+requesting firmware task. Device-fetch results do not prove playback.
 """
 import re
 
@@ -20,6 +21,11 @@ def _pattern(tag, message):
 # Each capture is numeric, with a fixed output key, radix, sign and range.
 # DNS hostnames/pointers and socket descriptors are deliberately not captured.
 _RULES = (
+    (_pattern(b"pw_spotify", rb"devices http=(0|[1-5][0-9]{2}) transport=(-?[0-9]{1,6}) "
+              rb"valid=([01]) listed=([0-9]{1,5}) count=([0-9]{1,2})"),
+     "spotify_devices", (("http_status", 10, 1, 0, 599), ("transport", 10, 1, -65535, 65535),
+                         ("valid", 10, 1, 0, 1), ("listed", 10, 1, 0, 65535),
+                         ("count", 10, 1, 0, 16))),
     (_pattern(b"esp-tls-mbedtls", rb"mbedtls_ssl_handshake returned -0x([0-9A-Fa-f]{4,8})"),
      "tls_handshake", (("code", 16, -1, 0, 65535),)),
     (_pattern(b"esp-tls-mbedtls", rb"mbedtls_ssl_setup returned -0x([0-9A-Fa-f]{4,8})"),

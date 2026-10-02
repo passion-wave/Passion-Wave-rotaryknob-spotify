@@ -45,6 +45,7 @@ jobs:
           sh tests/setup_native/run.sh
           python3 -m unittest discover -s tests/contracts -p 'test_*.py' -v
           sh firmware/components/pw_spotify/tests/run.sh
+          python3 firmware/components/pw_ui/tests/run_picker.py
           python tests/update_native/run.py
           python tests/companion_update_native/run.py
           python tests/update_service_native/run.py

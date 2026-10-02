@@ -74,6 +74,14 @@ Auch andere HTTPS-Funktionen können sie auslösen. Ein Netzwerkfehler beim
 Anmeldeabschluss erhält einen eigenen Hinweis statt der pauschalen Aufforderung,
 sich erneut anzumelden. Die Diagnose behebt selbst keinen Verbindungsfehler.
 
+Ab dev.9 meldet `spotify_devices` zusätzlich das Ergebnis des Geräteabrufs:
+HTTP-Status, numerischer Transportfehler, erfolgreiche Formatprüfung sowie
+Anzahl gelieferter und erfolgreich geparster Geräte. Namen, IDs und Antwortinhalte werden
+nicht ausgegeben. Dadurch bleibt ein Geräteabruf-Fehler erkennbar, auch wenn
+eine spätere Wiedergabeabfrage den allgemeinen letzten HTTP-Status ersetzt.
+Eine erfolgreich leere Liste und eine verworfene Antwort sind unterscheidbar;
+daraus folgt noch keine Bedienbarkeit oder hörbare Wiedergabe.
+
 ## Verbindung und Fehler
 
 - Ohne angeschlossenes Gerät oder mit mehreren Kandidaten werden keine Ports

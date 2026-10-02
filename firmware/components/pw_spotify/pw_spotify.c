@@ -62,6 +62,7 @@ esp_err_t pw_spotify_disconnect(void) {
 #else
 #include "esp_crt_bundle.h"
 #include "esp_http_client.h"
+#include "esp_log.h"
 #include "esp_random.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -763,15 +764,26 @@ static void publish_playback(pw_spotify_snapshot_t *value, const pw_spotify_disa
 }
 static void poll_devices(uint32_t epoch, pw_spotify_snapshot_t *scratch) {
     response_t r = api(HTTP_METHOD_GET, "/v1/me/player/devices", NULL, epoch);
+    bool valid = false;
+    unsigned listed = 0;
     if (r.transport == ESP_OK && r.status == 200) {
         cJSON *j = pw_spotify_json(r.body, r.size);
-        bool valid = j && pw_spotify_parse_devices(j, scratch);
+        const cJSON *list = cJSON_GetObjectItemCaseSensitive(j, "devices");
+        if (cJSON_IsArray(list)) listed = (unsigned)cJSON_GetArraySize(list);
+        valid = j && pw_spotify_parse_devices(j, scratch);
         cJSON_Delete(j);
         if (valid)
             publish_devices(scratch, epoch);
         else
             token_failure(false, PW_SPOTIFY_ERROR_RESPONSE, epoch);
     }
+    /* Fixed numeric metadata only: playback polling may replace the public
+     * last-response status, so retain this endpoint's outcome separately in
+     * diagnostics. Never log response bodies, names, IDs or credentials. */
+    ESP_LOGI("pw_spotify", "devices http=%u transport=%d valid=%u listed=%u count=%u",
+             r.status >= 100 && r.status <= 599 ? (unsigned)r.status : 0,
+             (int)r.transport, (unsigned)valid, listed,
+             valid ? (unsigned)scratch->device_count : 0);
     response_free(&r);
 }
 static void poll_playback(uint32_t epoch, pw_spotify_snapshot_t *scratch) {

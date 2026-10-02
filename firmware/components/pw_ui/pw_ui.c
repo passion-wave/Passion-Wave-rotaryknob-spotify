@@ -82,7 +82,7 @@ static lv_obj_t *picker_panel, *picker_title, *picker_hint, *picker_rows[3], *pi
 static char picker_ids[3][PW_SPOTIFY_DEVICE_ID_BYTES];
 static pw_app_favorite_t picker_favorites[3];
 static size_t picker_offset, picker_total;
-static uint32_t picker_session, picker_revision;
+static uint32_t picker_session, picker_revision, picker_snapshot_revision;
 static pw_spotify_command_t picker_target;
 static int volume_target = -1;
 static uint32_t volume_session, volume_generation;
@@ -259,6 +259,9 @@ static void refresh_picker(void) {
     memset(picker_ids, 0, sizeof picker_ids);
     if (picker_kind == PICKER_DEVICES) {
         picker_total = spotify_view.device_count < PW_SPOTIFY_MAX_DEVICES ? spotify_view.device_count : PW_SPOTIFY_MAX_DEVICES;
+        if (picker_offset >= picker_total)
+            picker_offset = picker_total ? ((picker_total - 1) / 3) * 3 : 0;
+        picker_snapshot_revision = spotify_view.revision;
         label_text(picker_title, "Deine Ausgabe");
     } else {
         memset(picker_favorites, 0, sizeof picker_favorites);
@@ -291,6 +294,25 @@ static void refresh_picker(void) {
     label_text(picker_hint, hint);
     enabled_button(picker_prev, picker_offset >= 3);
     enabled_button(picker_next, picker_offset + 3 < picker_total);
+}
+static void service_picker_refresh(void) {
+    const bool linked = spotify_view.enabled && spotify_view.linked;
+    if (picker_kind != PICKER_NONE &&
+        (app_view.setup_open || !linked || picker_session != spotify_view.session)) {
+        close_picker();
+        return;
+    }
+    if (picker_kind != PICKER_DEVICES) return;
+    const int64_t now = esp_timer_get_time();
+    const bool due = picker_refresh_at && now >= picker_refresh_at;
+    const bool changed = picker_snapshot_revision != spotify_view.revision;
+    if ((due || changed) && !input.touch_pressed && now - last_activity > 750000) {
+        /* Async HTTPS may finish after the initial two-second feedback timer.
+         * Follow later snapshots too, but never rebind a row under a touching
+         * finger or before its queued release/click has been consumed. */
+        picker_refresh_at = 0;
+        refresh_picker();
+    }
 }
 static void picker_open_clicked(lv_event_t *event) {
     acknowledge(); close_visual();
@@ -353,13 +375,7 @@ static void refresh_music(void) {
         spotify_view.selection_generation != volume_generation || !spotify_view.can_volume ||
         (spotify_view.selected_volume_known && spotify_view.selected_volume == volume_target) ||
         esp_timer_get_time() - volume_requested_at > 3000000)) volume_target = -1;
-    if (picker_kind != PICKER_NONE && (app_view.setup_open || !linked || picker_session != spotify_view.session)) close_picker();
-    if (picker_kind == PICKER_DEVICES && picker_refresh_at && esp_timer_get_time() >= picker_refresh_at &&
-        !input.touch_pressed && esp_timer_get_time() - last_activity > 750000) {
-        /* Never rebind a row under a touching finger or its pending click event. */
-        picker_refresh_at = 0;
-        refresh_picker();
-    }
+    service_picker_refresh();
 }
 static void music_rotate(int delta) {
     if (!spotify_view.can_volume || !spotify_view.selected_volume_known) {

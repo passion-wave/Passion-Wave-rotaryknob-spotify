@@ -26,6 +26,13 @@ die zusammengefasste Anwendungseinstellung.
   oben `Ausgabe wählen`, Play/Pause, vor/zurück und Lautstärke am Ring. Die
   erste Geräteanmeldung auf dev.8 ist bestätigt; physische Bedienprüfung und
   hörbare Wiedergabe auf den Connect-Lautsprechern bleiben offen.
+- Die offene Ausgabeliste folgt ab dev.9 neuen Gerätezuständen auch nach dem
+  ersten Zweisekundenfenster. Während einer Berührung und bis 750 ms Eingaberuhe
+  bleiben Zeilen und Geräte-IDs gebunden. Ein Kontositzungswechsel schließt die
+  Liste; Favoriten werden von dieser automatischen Geräteaktualisierung nicht
+  verändert. `python3 firmware/components/pw_ui/tests/run_picker.py` prüft die
+  Produktionsfunktionen mit simulierten LVGL-/Providergrenzen und ASan/UBSan;
+  es ist kein Render- oder physischer Touchtest.
 - Wetter zeigt den realen Snapshot mit Temperatur, Zustand, Wind, Regenmenge
   pro Stunde, zwei Tagesprognosen und Herkunft. Fehlende Werte werden nicht
   durch Null ersetzt. Der Wetterzustand bleibt ausdrücklich eine Prognose.

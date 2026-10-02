@@ -13,6 +13,28 @@ def log(tag, text, level="E"):
 
 
 class DiagnosticsTests(unittest.TestCase):
+    def test_device_fetch_metadata_and_rejected_payloads(self):
+        valid = "devices http=200 transport=0 valid=1 listed=2 count=1"
+        self.assertEqual(parse_firmware_diagnostic(log("pw_spotify", valid, "I")),
+                         {"event": "spotify_devices", "http_status": 200, "transport": 0,
+                          "valid": 1, "listed": 2, "count": 1})
+        for message in ("devices http=200 transport=0 valid=1 listed=0 count=0",
+                        "devices http=403 transport=0 valid=0 listed=0 count=0",
+                        "devices http=0 transport=258 valid=0 listed=0 count=0",
+                        "devices http=200 transport=0 valid=0 listed=1 count=0"):
+            result = parse_firmware_diagnostic(log("pw_spotify", message, "I"))
+            self.assertIsNotNone(result)
+            self.assertEqual(result["event"], "spotify_devices")
+        for changed in (valid + " name=SECRET", "SECRET " + valid,
+                        valid.replace("count=1", "count=17"),
+                        valid.replace("listed=2", "listed=65536"),
+                        valid.replace("valid=1", "valid=2"),
+                        valid.replace("http=200", "http=99"),
+                        valid.replace("http=200", "http=600"),
+                        valid.replace("transport=0", "transport=-65536"),
+                        valid.replace("listed=2", "listed=SECRET")):
+            self.assertIsNone(parse_firmware_diagnostic(log("pw_spotify", changed, "I")))
+
     def test_known_pinned_idf_events(self):
         cases = (
             ("esp-tls-mbedtls", "mbedtls_ssl_handshake returned -0x2700", {"event": "tls_handshake", "code": -9984}),

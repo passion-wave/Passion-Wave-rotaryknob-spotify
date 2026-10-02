@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 /* Actual provider C with deterministic IDF boundary fakes. No network or USB. */
 #include <assert.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +29,15 @@ static int64_t clock_us = 10000000;
 static uint32_t rng = 23;
 static unsigned http_count, response_count, commits, erased;
 static bool fail_commit;
+static char last_device_log[256];
+void pw_test_logi(const char *tag, const char *format, ...) {
+    CHECK(!strcmp(tag, "pw_spotify"));
+    va_list args;
+    va_start(args, format);
+    int n = vsnprintf(last_device_log, sizeof last_device_log, format, args);
+    va_end(args);
+    CHECK(n > 0 && n < (int)sizeof last_device_log);
+}
 static uint8_t stored[PW_SPOTIFY_RECORD_BYTES];
 static size_t stored_size;
 static const char *token_ok =
@@ -219,6 +229,7 @@ static void reset(void) {
     http_count = response_count = commits = erased = 0;
     stored_size = 0;
     fail_commit = false;
+    last_device_log[0] = 0;
     clock_us = 10000000;
     CHECK(pw_spotify_init() == ESP_OK);
     pw_spotify_set_network(true);
@@ -439,11 +450,54 @@ static void test_auth_persistence_cancellation_and_failed_relink(void) {
     disconnect_worker();
     CHECK(!stored_size && !tokens.refresh[0] && !service.snapshot.linked);
 }
+static void test_device_fetch_diagnostics(void) {
+    pw_spotify_snapshot_t scratch = {0};
+    reset();
+    account();
+    fixture(200, "{\"devices\":[{\"id\":\"SECRET-ID\",\"name\":\"SECRET-NAME\","
+                 "\"type\":\"speaker\",\"is_active\":true,\"is_restricted\":false},"
+                 "{\"id\":null}]}");
+    poll_devices(service.epoch, &scratch);
+    CHECK(service.snapshot.device_count == 1);
+    CHECK(!strcmp(last_device_log, "devices http=200 transport=0 valid=1 listed=2 count=1"));
+    CHECK(!strstr(last_device_log, "SECRET"));
+    fixture(200, "{\"devices\":[]}");
+    poll_devices(service.epoch, &scratch);
+    CHECK(!strcmp(last_device_log, "devices http=200 transport=0 valid=1 listed=0 count=0"));
+    CHECK(service.snapshot.device_count == 0);
+
+    reset();
+    account();
+    fixture(403, "{\"error\":\"SECRET-REASON\"}");
+    poll_devices(service.epoch, &scratch);
+    CHECK(!strcmp(last_device_log, "devices http=403 transport=0 valid=0 listed=0 count=0"));
+    fixture(204, "");
+    poll_playback(service.epoch, &scratch);
+    CHECK(service.snapshot.http_status == 204);
+    CHECK(!strcmp(last_device_log, "devices http=403 transport=0 valid=0 listed=0 count=0"));
+
+    reset();
+    account();
+    fixture(200, "{\"devices\":[{\"id\":\"SECRET-ID\"}]}");
+    poll_devices(service.epoch, &scratch);
+    CHECK(!strcmp(last_device_log, "devices http=200 transport=0 valid=0 listed=1 count=0"));
+    CHECK(service.snapshot.error == PW_SPOTIFY_ERROR_RESPONSE);
+    fixture(200, "SECRET-MALFORMED-RESPONSE");
+    poll_devices(service.epoch, &scratch);
+    CHECK(!strcmp(last_device_log, "devices http=200 transport=0 valid=0 listed=0 count=0"));
+    fixture(200, "");
+    responses[2].timeout = true;
+    poll_devices(service.epoch, &scratch);
+    CHECK(strstr(last_device_log, "devices http=0 transport="));
+    CHECK(strstr(last_device_log, " valid=0 listed=0 count=0"));
+    CHECK(!strstr(last_device_log, "SECRET"));
+}
 int main(void) {
     test_targets_and_uncertain_commands();
     test_refresh_rate_limit_and_invalidation();
     test_header_timeout_and_public_http_status();
     test_auth_persistence_cancellation_and_failed_relink();
+    test_device_fetch_diagnostics();
     printf("Spotify worker: %u assertions passed; actual provider, simulated IDF HTTP/NVS/tasks\n",
            checks);
     return 0;

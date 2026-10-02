@@ -1,6 +1,6 @@
 # Native Implementierung und Geräteabnahme
 
-Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.8`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
+Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.9`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
 
 ## Reale Implementierung
 
@@ -475,3 +475,44 @@ Sonos-Roam-/Move-Auswahl und hörbare Connect-Steuerung, Kontowechsel/Refresh,
 mobile Kundeneinrichtung sowie kommerzielle Freigabe bleiben offen. Dieser
 erfolgreiche Anmeldeversuch ersetzt weder die USB-Dauerprüfung noch die übrigen
 Geräte- und Produktabnahmen.
+
+### Ausgabeliste und getrennte Geräteabruf-Diagnose dev.9
+
+Der Nutzer meldete nach der erfolgreichen Anmeldung, dass der Sonos nicht in
+der Knob-Ausgabeliste erscheint. Ob er gleichzeitig in der Spotify-App sichtbar
+ist und ob die Knob-Liste vollständig leer ist, wird separat abgefragt. Eine
+fehlende API-Unterstützung für das konkrete Sonos-Modell ist damit nicht belegt.
+
+Der Codeaudit fand einen reproduzierbaren Anzeigefehler: Die Liste wurde nach
+Öffnen beziehungsweise Aktualisieren einmal nach zwei Sekunden aufgebaut.
+Später eintreffende Spotify-Geräte aktualisierten zwar den Snapshot, aber nicht
+die offene Liste. dev.9 zieht neue Snapshotrevisionen nach. Während Berührung
+und bis 750 ms Eingaberuhe bleiben die sichtbaren Geräte-IDs unverändert;
+Sitzungswechsel schließen den Picker. Bei kürzeren Listen wird die aktuelle
+Seite begrenzt. Favoritenpaginierung bleibt unabhängig. 21 Assertions mit
+ASan/UBSan prüfen die echten Pickerfunktionen gegen simulierte LVGL-/Provider-
+Grenzen, einschließlich verspäteter Antwort und ausstehendem Touch-Release.
+
+Zusätzlich protokolliert ausschließlich das Laborprofil fest begrenzte numerische
+Metadaten pro Geräteabruf: HTTP-/Transportstatus, Formatprüfung und Anzahl
+gelieferter beziehungsweise erfolgreich geparster Geräte. Der optionale Helferdiagnose-
+Filter erkennt nur dieses exakte Format; Namen, IDs und Antwortinhalte bleiben
+ausgeschlossen. Das ist erforderlich, weil eine spätere Playbackabfrage den
+allgemeinen letzten HTTP-/Fehlerstatus ersetzen kann. Der Geräteabruf wird so
+getrennt von einer Playbackantwort mit Status 204 nachweisbar.
+
+285 Modell- und 791 Worker-Assertions bestanden, darunter leere/ungültige
+Gerätelisten, HTTP 403 gefolgt von Playback 204, Transportfehler und Geheimnis-
+freiheit. Alle 41 Helfer-/HTTP-/Diagnosetests bestanden. Die neue UI-Prüfung
+ist in CI aufgenommen. Die Diagnosezahlen belegen keine Veröffentlichung des
+Snapshots, falls während des Abrufs die Kontositzung gewechselt wurde.
+
+Alle drei ESP-IDF-Profile und 51 Frameworkprüfungen bestanden; tatsächliche
+Appversionen und CMake-Metadaten wurden mit dev.9 abgeglichen. Standard-S3:
+**2.711.552 Byte**, Labor-S3: **2.723.296 Byte**, Companion: **278.064 Byte**.
+Laborimage-SHA-256:
+`2a24414d8a6aa8f3ef15709779d619f1d185293c0652caa6d8928ff0f338debc`.
+Vor einer Installation war der S3 nicht mehr als USB-Gerät erreichbar; der
+Nutzer wurde um Wiederanschließen in der zuletzt funktionierenden Orientierung
+gebeten. dev.9 ist deshalb noch nicht geflasht. Der gefundene UI-Fehler ist
+noch nicht als alleinige Ursache des gemeldeten fehlenden Sonos belegt.
