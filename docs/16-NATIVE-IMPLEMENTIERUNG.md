@@ -590,5 +590,28 @@ geprüft. Der explizite Flashvergleich meldete `verify OK (digest matched)`.
 Nach dem Hard-Reset startete unmittelbar der USB-Helfer; HELLO bestätigte
 `version: 0.1.0-dev.10`, `lab_enabled: true`, `setup_open: false`. Companion,
 Bootloader, Partitionstabelle, Einstellungen und Schlüssel wurden nicht
-beschrieben. Die Anzeige des Ersatztextes auf dem physischen Display, der
-konkrete API-Namensinhalt und die Roam-Steuerung sind noch nicht bestätigt.
+beschrieben. Der konkrete API-Namensinhalt und die Roam-Steuerung sind noch
+nicht bestätigt; die nachfolgende Nutzerrückmeldung ergänzt den Displaynachweis.
+
+
+Der Nutzer bestätigte danach den Ersatztext auf dem physischen Display
+(als „Ausgaben ohne Namen“ wiedergegeben). Zu diesem Zeitpunkt lief nach seiner
+Angabe keine Spotify-Connect-Musik. Nach der Aufforderung, Spotify auf dem Roam
+zu starten und die Liste zu aktualisieren, meldete er erneut `iPhone` und
+`Ausgabe ohne Namen`; der tatsächliche Roam-Start und dessen Spotify-Name wurden
+in dieser Antwort nicht ausdrücklich bestätigt. Der Anzeige-Fallback ist damit
+physisch beobachtet. Eine Zuordnung des namenlosen Eintrags zum Roam oder ein
+Nachweis der Knob-Steuerung folgt daraus weiterhin nicht.
+
+Die vollständigen dev.10-CI-Läufe für Firmwarecommit `c962160` und Nachweiscommit
+`e0c67a0` bestanden jeweils als Push- und PR-Lauf. Aktueller PR-Nachweis:
+[Lauf 36994971139](https://github.com/passion-wave/Passion-Wave-rotaryknob-spotify/actions/runs/36994971139),
+[Push-Lauf 36994966770](https://github.com/passion-wave/Passion-Wave-rotaryknob-spotify/actions/runs/36994966770).
+
+Bei der anschließenden USB-Diagnose meldete der Helper `usb_unavailable`.
+Die Portinventur zeigte den S3 weiterhin; `lsof` wies einen anderen
+Python-Prozess aus einem separaten VS-Code-Codex-Aufruf als aktuellen
+Portbesitzer aus. Dieser Prozess wurde nicht beendet, der Port nicht parallel
+geöffnet und keine weitere Firmware geschrieben. Dieser Hostkonflikt ist kein
+Nachweis eines erneuten Geräte- oder Spotify-Fehlers. Der Test über die sichtbare
+Musikseite kann unabhängig fortgesetzt werden.
