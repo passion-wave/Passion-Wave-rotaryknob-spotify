@@ -47,11 +47,15 @@ die HA-/ESPHome-Laufzeit wird nicht als Produktabhängigkeit übernommen.
 Erfolgreiche Builds und Hosttests ersetzen keine physische Abnahme. Schneller
 Seitenaufbau und Heim-WLAN-Einrichtung wurden am iPhone bestätigt. Die erste echte
 Spotify-Anmeldung auf dev.8 wurde vom S3 für den konkreten Anmeldeversuch und vom
-Nutzer bestätigt; TLS und Tokenabschluss sind damit belegt. Daraus folgt keine
+Nutzer bestätigt; TLS und Tokenabschluss sind damit belegt. Das Appupdate auf
+dev.9 wurde gegen den Flash verifiziert. Nach Neustart gelangen ohne neue
+Anmeldung zwei erfolgreiche Geräteabrufe mit jeweils zwei geparsten Geräten;
+die gespeicherte Verknüpfung blieb für diesen Ablauf nutzbar. Daraus folgt keine
 vollständige Feature- oder Produktfreigabe. Offen bleiben insbesondere:
 
-- Tokenpersistenz nach Neustart, Kontowechsel, hörbare Connect-Ausgabe auf
-  Roam/Move, mobiles Kunden-Onboarding und kommerzielle Controller-Freigabe.
+- Weitere Refresh-/Kontowechsel- und Stromausfalltests, Auswahl auf dem Knob und
+  hörbare Knob-Steuerung von Roam/Move, mobiles Kunden-Onboarding und kommerzielle
+  Controller-Freigabe.
 - Sicherer, jederzeit schreibender Heimnetz-Zugriff (G2); die aktuelle
   Heimnetz-Website bleibt lesend. Einrichtung erfolgt im geschützten Geräte-AP.
 - Reale Bedien-, Wetter-, Speicher-, TLS- und Mischlastmessungen sowie Dauerlauf.

@@ -8,8 +8,11 @@ PassionWave-Cloudservice wird nicht verwendet.
 **Entwicklungsstand:** echter lokaler HTTP-/USB-Helfer mit isolierten Tests und
 erster realer Geräteanmeldung auf dev.8 am 02.10.2026. Der S3 bestätigte den
 konkreten Anmeldeversuch mit `linked: true`, `state: ready` und `error: none`;
-der Nutzer bestätigte den Erfolg ebenfalls. Tokenpersistenz nach Neustart,
-Kontowechsel, hörbare Wiedergabe und Produktfreigabe bleiben offen.
+der Nutzer bestätigte den Erfolg ebenfalls. Nach verifiziertem Appupdate auf
+dev.9 und Neustart gelangen ohne erneute Anmeldung zwei Geräteabrufe mit jeweils
+zwei erfolgreich geparsten Geräten. Die gespeicherte Verknüpfung blieb in diesem
+Ablauf nutzbar. Weitere Refresh-/Kontowechsel- und Stromausfalltests, hörbare
+Knob-Steuerung und Produktfreigabe bleiben offen.
 [Gerätenachweis](../../docs/16-NATIVE-IMPLEMENTIERUNG.md#erste-erfolgreiche-ger%C3%A4teanmeldung-auf-dev8).
 
 Die öffentliche App-ID verweist auf die nach ausdrücklicher Nutzerfreigabe am
@@ -184,9 +187,10 @@ Die feste Produktbindung wird separat geprüft. Er prüft speziell zusätzliche 
 Strict-Cookie/Rückleitung, ausstehenden
 Callback gegenüber bestätigtem Status, Bedienbarkeit bei 390 px und leere
 Webstorage-APIs. Screenshots werden ausschließlich in ein temporäres Verzeichnis
-geschrieben. Die erste reale USB-/OAuth-Anmeldung auf dev.8 ist separat
-dokumentiert; Kontowechsel, Neustartpersistenz und weitere Treiberprüfungen
-bleiben offen.
+geschrieben. Die erste reale USB-/OAuth-Anmeldung auf dev.8 sowie die ohne neue
+Anmeldung erfolgreiche Geräteabfrage nach Appupdate/Neustart auf dev.9 sind
+separat dokumentiert. Weitere Refresh-/Kontowechsel-, Stromausfall- und
+Treiberprüfungen bleiben offen.
 
 Primärquellen: [Spotify PKCE](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow),
 [Spotify Redirectregeln](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri),

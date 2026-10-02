@@ -16,7 +16,7 @@ Die ESP-IDF-Projekte in `firmware/s3` und `firmware/companion` ersetzen für die
 | Wetterbilder/Avatar | 67 Schlüssel, 55 unveränderte JPEGs, begrenzter Decoderworker, echte Wetterbindung, Fotos/analoge Uhr, Morgenavatar/Haarwahl | Physische Geräte-, Leerlauf- und Speichermessung; Hostdecoder samt unabhängiger Farbprüfung bestanden |
 | Chipkommunikation | Begrenzte COBS/CRC-Frames, Rollen/Sitzung/Sequenz und Heartbeat | Tatsächliche UART-Verbindung; Heartbeat allein ist keine Pair-OTA-Gesundheitsbestätigung |
 | Updateprüfung/Staging | ECDSA-P256/SHA256 über exakte Manifestbytes, zwei Rollen, Hardware/Protokoll/Schema/Version, gestreamte Imagehashes, authentifizierter Upload, persistentes Journal, Companion-Empfänger | Provisionierter Trust, vollständige S3-Aktivierungskoordination und reale Fehler-/Rollbacktests. Staging ist kein ausgeführtes Update; Aktivierung bleibt gesperrt |
-| Spotify | Direkter S3-Web-API-Provider im expliziten Laborprofil; USB-PKCE, Refresh, Ausgabewahl, Play/Pause/Next/Previous/Volume, Playliststart und echte UI-/Websitebindung; eigene Lab-App samt Redirect angelegt; erste reale Anmeldung auf dev.8 geräte- und nutzerbestätigt; Standardprofil deaktiviert | Tokenpersistenz nach Neustart, Kontowechsel, Roam-/Move-Wiedergabetests, erweiterte Medienfunktionen, kommerzielle Controller-Freigabe und mobiler Kunden-Anmeldeweg |
+| Spotify | Direkter S3-Web-API-Provider im expliziten Laborprofil; USB-PKCE, Refresh, Ausgabewahl, Play/Pause/Next/Previous/Volume, Playliststart und echte UI-/Websitebindung; erste reale Anmeldung auf dev.8 geräte- und nutzerbestätigt; nach Appupdate/Neustart auf dev.9 ohne Neuanmeldung zweimal zwei Geräte erfolgreich geparst; Standardprofil deaktiviert | Weitere Refresh-/Kontowechsel- und Stromausfalltests, Knob-Auswahl und Roam-/Move-Steuerung, erweiterte Medienfunktionen, kommerzielle Controller-Freigabe und mobiler Kunden-Anmeldeweg |
 | Weitere Ports | Radar, native Sonos-Option und Klinke bleiben im Gesamtplan | Keine Wiedergabe-, Radar- oder Kopfhörerfähigkeit aus dieser Basis ableiten |
 
 ## Einrichtung und Sicherheitsgrenze dieses Laborstands
@@ -514,5 +514,34 @@ Laborimage-SHA-256:
 `2a24414d8a6aa8f3ef15709779d619f1d185293c0652caa6d8928ff0f338debc`.
 Vor einer Installation war der S3 nicht mehr als USB-Gerät erreichbar; der
 Nutzer wurde um Wiederanschließen in der zuletzt funktionierenden Orientierung
-gebeten. dev.9 ist deshalb noch nicht geflasht. Der gefundene UI-Fehler ist
-noch nicht als alleinige Ursache des gemeldeten fehlenden Sonos belegt.
+gebeten. Zu diesem Zwischenstand war dev.9 noch nicht geflasht. Der gefundene
+UI-Fehler war noch nicht als alleinige Ursache des gemeldeten fehlenden Sonos
+belegt.
+
+### dev.9 installiert: Geräteabruf nach Neustart ohne Neuanmeldung
+
+Beide vollständigen CI-Läufe für Commit `d5527b6` bestanden:
+[PR-Lauf 36991665093](https://github.com/passion-wave/Passion-Wave-rotaryknob-spotify/actions/runs/36991665093)
+und [Push-Lauf 36991661279](https://github.com/passion-wave/Passion-Wave-rotaryknob-spotify/actions/runs/36991661279).
+Vertrags-/Modellprüfungen, Browserprüfungen, native Tests einschließlich
+Pickerregression und Firmwarebuilds waren jeweils erfolgreich.
+
+Anschließend wurde das oben identifizierte dev.9-Laborimage ausschließlich als
+S3-App bei `0x10000` geschrieben und mit explizitem Flashvergleich erfolgreich
+verifiziert. Auf den Hard-Reset folgte direkt der Einrichtungshelfer als einziger
+USB-Besitzer, ohne zwischengeschalteten Monitor. Die echte HELLO-Antwort meldete
+`version: 0.1.0-dev.9`, `lab_enabled: true` und `setup_open: false`.
+
+Die gefilterte Diagnose belegte danach zweimal den Geräteabruf mit
+`http_status: 200`, `transport: 0`, `valid: 1`, `listed: 2` und `count: 2`.
+Seit dem Flash gab es keinen OAuth-Callback und keine erneute Anmeldung. Damit
+ist erstmals nachgewiesen, dass die im NVS gespeicherte Spotify-Verknüpfung
+dieses Appupdate und den Neustart überstanden hat und für einen authentifizierten
+Geräteabruf nutzbar blieb. Das ist keine vollständige Refresh-, Kontowechsel-
+oder Stromausfallabnahme. Die Rohbelege bleiben im privaten Recovery-Verzeichnis.
+
+Zwei erfolgreich geparste Einträge beweisen weder, dass einer davon der Roam
+ist, noch ihre Anzeige oder Auswahl auf dem Knob. Der Nutzer bestätigte separat
+hörbare Roam-Wiedergabe über die Spotify-App. Auswahl und hörbare Steuerung
+durch den Knob werden noch geprüft; auch die alleinige Ursache des zuvor
+fehlenden Sonos ist damit noch nicht abschließend belegt.
