@@ -1445,6 +1445,8 @@ esp_err_t pw_app_init(void) {
     if (!station_if || !ap_if)
         return ESP_ERR_NO_MEM;
     wifi_init_config_t init = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_LOGI(TAG, "Wi-Fi transport: AMPDU RX=%d TX=%d", init.ampdu_rx_enable,
+             init.ampdu_tx_enable);
     ESP_ERROR_CHECK(esp_wifi_init(&init));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, network_event, NULL));

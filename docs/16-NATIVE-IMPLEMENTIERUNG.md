@@ -1,6 +1,6 @@
 # Native Implementierung und Geräteabnahme
 
-Stand 01.10.2026, Entwicklungsstand `0.1.0-dev.6`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
+Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.7`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
 
 ## Reale Implementierung
 
@@ -261,3 +261,51 @@ WLAN-Einrichtung bestätigen. Anschließend lokalen USB-Helfer wieder starten,
 echtes Spotify-OAuth und danach gezielte Roam-/Move-Wiedergabe prüfen. Ein Start
 für morgen wurde nicht automatisch terminiert. Die vollständige Feature- und
 Produktabnahme bleibt offen.
+
+
+## Safari-Übertragungsstau / dev.7 am 02.10.2026
+
+Der reale dev.6-Retest mit iPhone/Safari im geschützten Geräte-WLAN scheiterte
+weiterhin. Drei aufgezeichnete `app.js`-Übertragungen (je 14.582 komprimierte
+Byte) brachen nach **10.851 / 10.678 / 10.874 ms** mit `errno 11` und
+`ESP_ERR_HTTPD_RESP_SEND` ab. HTML (5.408 Byte) und CSS (4.570 Byte) meldeten
+vorher kurze Sendaufrufe. Diese passen aber in den **5.760-Byte-TCP-Sendepuffer**;
+`ESP_OK` bestätigt die Annahme in den Netzwerkstack, nicht den vollständigen
+Empfang im Browser. lwIP gibt beim größeren Sendaufruf nach dem ersten
+Fünfsekundenlimit einen Teilfortschritt zurück, beim nächsten ohne Fortschritt
+einen Timeout. Das erklärt die beobachteten rund elf Sekunden, beweist allein
+aber noch keine konkrete Funkursache.
+
+Als gezielter Vergleichskandidat deaktiviert dev.7 `ESP_WIFI_AMPDU_RX_ENABLED`
+und `ESP_WIFI_AMPDU_TX_ENABLED` entsprechend der [Espressif-Empfehlung für
+SoftAP-/Smartphone-Kompatibilitätsprobleme](https://github.com/espressif/esp-faq/blob/master/docs/en/software-framework/wifi.rst).
+Der sonstige WLAN-PHY-Modus bleibt erhalten. Die Option wirkt auch auf die
+Heimnetz-Station; möglichen Einfluss auf späteren OTA-Durchsatz separat messen.
+HTTP-Code, Webdateien, TCP-Puffer, Timeouts und Stromsparmodus bleiben für diesen
+Vergleich unverändert. Das Bootlog nennt die tatsächlich an `esp_wifi_init`
+übergebenen RX-/TX-Werte. Die effektiven Konfigurationen beider S3-Buildordner
+wurden auf deaktiviertes AMPDU und unveränderte 5.760 TCP-Bytes geprüft;
+`SDKCONFIG_DEFAULTS` allein hätte vorhandene Buildwerte nicht überschrieben.
+
+Alle drei Profile wurden gebaut und ihre tatsächlichen Binärversionen auf
+dev.7 abgeglichen. Ein erfolgreicher iPhone-Abruf bleibt nach dem Schreiben
+physisch zu bestätigen. Dieser Kandidat ist noch kein nachgewiesener Abschluss
+des Ladezeitfehlers; größere Sendepuffer oder längere Wartezeiten wurden nicht
+als Ersatz für funktionierenden Transport eingeführt.
+
+
+Zusätzlich bestanden 25 native HTTP-Antwortszenarien mit ASan/UBSan. Sie verwenden
+die unveränderten aktuellen Asset-/Headerfunktionen und den gepinnten originalen
+IDF-Antwortwriter, aber einen simulierten Sendekanal. Alle vier Gzip-Assets
+bleiben bei kurzen Writes bytegenau vollständig; simulierte Abbrüche liefern
+korrekt einen Fehler. In diesen Szenarien zeigte sich kein Format- oder Partial-Write-Fehler.
+Der Test simuliert jedoch keine Funkverbindung. Dieser Test läuft künftig in CI.
+Die 51 Frameworkprüfungen bestanden ebenfalls.
+
+dev.7 wurde auf demselben identifizierten S3 geschrieben und gegen den Flash
+verifiziert, ohne Einstellungen/Schlüssel zu ändern: **2.722.656 Byte**, SHA-256
+`15b68eca9c840f6d3f49367f8f1e789f149c354c2dcde90178cf4886b77ef602`.
+Bootlog bestätigt **AMPDU RX=0 / TX=0**, lokale Dienste und Rückkehr aus
+`app_main`; USB-HELLO bestätigt dev.7 und offenes Setupfenster. Die Original-
+Recovery-Prüfsumme wurde vor dem Schreiben erneut abgeglichen. Companion bleibt
+auf Originalfirmware. Der angefragte Safari-Vergleich wird separat protokolliert.

@@ -39,6 +39,7 @@ jobs:
           /tmp/pw-protocol-tests
           sh tests/app_native/run.sh
           sh tests/http_native/run.sh
+          python3 tests/http_response_native/run.py
           sh tests/storage_native/run.sh
           sh tests/weather_native/run.sh
           sh tests/setup_native/run.sh
