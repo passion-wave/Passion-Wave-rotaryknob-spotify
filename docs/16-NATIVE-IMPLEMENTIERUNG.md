@@ -689,4 +689,15 @@ Alle drei ESP-IDF-Profile bauen; binäre Appdeskriptoren und CMake melden dev.12
 Standard-S3: **2.711.552 Byte**, Labor-S3: **2.724.224 Byte**, Companion:
 **278.064 Byte**. Laborimage-SHA-256:
 `3f3e9c2e8d996a6e5ea0bed88c0f68a8acd3cf1eff8788a7689091496ae757e0`.
-Installation und tatsächlicher Validierungsgrund stehen noch aus.
+Das Appimage wurde nach erneutem Backup-Hash- und Chipabgleich bei `0x10000`
+geschrieben; esptool bestätigte `Hash of data verified`. Der anschließend
+aufgerufene eigenständige `verify_flash`-Schritt konnte den bisherigen S3-Port
+nicht mehr öffnen (`No such file or directory`). Die Inventur enthielt zu diesem
+Zeitpunkt keinen S3 mit `303a:1001`. Deshalb sind unabhängiger Flashvergleich,
+Neustart/USB-HELLO und der tatsächliche Validierungsgrund noch offen. Der Nutzer
+wurde gebeten, den Knob in derselben Ausrichtung wieder mit dem Mac zu verbinden.
+Der fremde sichtbare USB-Port wurde nicht geöffnet oder beschrieben.
+
+Alle vollständigen dev.11-CI-Läufe für `fcc5f52` und `ea68932` bestanden;
+[PR-Lauf 37001704091](https://github.com/passion-wave/Passion-Wave-rotaryknob-spotify/actions/runs/37001704091).
+Die dev.12-CI für `fb08362` läuft zu diesem Zwischenstand noch.
