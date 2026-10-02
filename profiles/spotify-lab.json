@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "profile": "spotify-lab",
+  "app_name": "PassionWave RotaryKnob Lab",
+  "client_id": "b785d8a5f5c840e9bc33e168c53098ca",
+  "redirect_uri": "http://127.0.0.1:8766/callback",
+  "scopes": [
+    "user-read-playback-state",
+    "user-modify-playback-state"
+  ],
+  "mode": "development",
+  "product_approved": false,
+  "dashboard_url": "https://developer.spotify.com/dashboard/b785d8a5f5c840e9bc33e168c53098ca",
+  "dashboard_verified_at": "2026-10-01",
+  "refresh_token_lifetime_days": 180
+}

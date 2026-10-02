@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:passion-wave:usb-setup:v1:response",
+  "title": "PWSET1 emitted response JSON — contract 1.0.0",
+  "description": "Closed producer contract. A matching schema does not prove request-ID/method correlation, OAuth URL profile binding or successful authorization. The helper filters unknown response fields rather than exposing them.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ok",
+        "role",
+        "hardware",
+        "version",
+        "lab_enabled",
+        "setup_open"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "ok": {
+          "const": true
+        },
+        "role": {
+          "const": "controller_s3"
+        },
+        "hardware": {
+          "const": "JC3636K518C_I_YR1"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 31,
+          "pattern": "^[!-~]+$"
+        },
+        "lab_enabled": {
+          "type": "boolean"
+        },
+        "setup_open": {
+          "type": "boolean"
+        }
+      },
+      "title": "hello"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ok",
+        "role",
+        "hardware",
+        "version",
+        "lab_enabled",
+        "setup_open",
+        "spotify"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "ok": {
+          "const": true
+        },
+        "role": {
+          "const": "controller_s3"
+        },
+        "hardware": {
+          "const": "JC3636K518C_I_YR1"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 31,
+          "pattern": "^[!-~]+$"
+        },
+        "lab_enabled": {
+          "type": "boolean"
+        },
+        "setup_open": {
+          "type": "boolean"
+        },
+        "spotify": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "linked",
+            "state",
+            "error",
+            "connected",
+            "session",
+            "authorization_id",
+            "http_status"
+          ],
+          "properties": {
+            "linked": {
+              "type": "boolean"
+            },
+            "state": {
+              "enum": [
+                "disabled",
+                "unlinked",
+                "waiting_network",
+                "waiting_clock",
+                "authorizing",
+                "ready",
+                "reauth_required",
+                "rate_limited",
+                "error",
+                "suspended",
+                "disconnecting"
+              ]
+            },
+            "error": {
+              "enum": [
+                "none",
+                "storage",
+                "network",
+                "auth",
+                "forbidden",
+                "no_device",
+                "rate_limit",
+                "response",
+                "memory",
+                "stale",
+                "unsupported"
+              ]
+            },
+            "connected": {
+              "type": "boolean"
+            },
+            "session": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4294967295
+            },
+            "authorization_id": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 48,
+              "pattern": "^(?:[0-9a-f]{48})?$"
+            },
+            "http_status": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 599
+            }
+          }
+        }
+      },
+      "title": "status"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ok",
+        "authorization_url",
+        "expires_in_seconds"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "ok": {
+          "const": true
+        },
+        "authorization_url": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1023,
+          "pattern": "^https://accounts\\.spotify\\.com/authorize\\?[^\\s#]+$"
+        },
+        "expires_in_seconds": {
+          "const": 600
+        }
+      },
+      "title": "authorize"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ok",
+        "accepted"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "ok": {
+          "const": true
+        },
+        "accepted": {
+          "const": true
+        }
+      },
+      "title": "callback accepted, not linked"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ok"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "ok": {
+          "const": true
+        }
+      },
+      "title": "cancel"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ok",
+        "error"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "enum": [
+            "setup_closed",
+            "lab_disabled",
+            "not_ready",
+            "invalid_request",
+            "busy",
+            "device_error"
+          ]
+        }
+      },
+      "title": "device error"
+    }
+  ]
+}

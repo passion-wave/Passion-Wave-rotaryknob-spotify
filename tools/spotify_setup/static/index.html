@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Spotify verbinden · PassionWave</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body><main>
+  <p class="brand">PASSIONWAVE <span>RotaryKnob</span></p>
+  <h1>Deine Musik.<br>Ein Dreh genügt.</h1>
+  <p class="intro">Verbinde deinen RotaryKnob einmal mit Spotify. Danach steuert der Knob deine Spotify Connect-Lautsprecher selbst.</p>
+  <section aria-labelledby="setup-title">
+    <div class="heading"><span id="indicator" aria-hidden="true"></span><h2 id="setup-title">Spotify verbinden</h2></div>
+    <p id="status" role="status" aria-live="polite">RotaryKnob wird gesucht …</p>
+    <p id="detail">RotaryKnob per USB anschließen. Das Display 3 Sekunden berühren, um die Einrichtung zu öffnen.</p>
+    <div id="ports" hidden><label for="port">USB-Anschluss</label><div class="row"><select id="port"></select><button id="choose" class="secondary" type="button">Auswählen</button></div></div>
+    <p id="notice" role="alert" hidden></p>
+    <div class="actions"><button id="authorize" type="button" disabled>Mit Spotify verbinden</button><button id="refresh" class="secondary" type="button">Erneut prüfen</button><button id="cancel" class="secondary" type="button" hidden>Anmeldung abbrechen</button></div>
+    <p class="hint">Die Anmeldung öffnet sich direkt bei Spotify. Hier brauchst du keine Entwicklerdaten oder API-Schlüssel.</p>
+  </section>
+  <p class="footnote">Einrichtung am Computer · Spotify Premium erforderlich<br>Laborversion für freigeschaltete Testkonten. Keine Produktfreigabe.<br>Nach erfolgreicher Verknüpfung kannst du diesen Helfer schließen.</p>
+</main></body></html>

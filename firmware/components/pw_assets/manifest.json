@@ -1,0 +1,679 @@
+{
+  "schema_version": 1,
+  "upstream_commit": "9cc5576c2fd4a9beb56cad24e211957c43aa2c62",
+  "images": [
+    {
+      "index": 0,
+      "name": "avatar/brown_brown/hot-dry",
+      "source": "assets/weather-avatar/images/brown_brown/hot-dry.jpg",
+      "sha256": "421c28f5bd61fefd9f370accaa85829eb5fa5afc4eb1f7883253e73fe982f81d",
+      "bytes": 13823,
+      "file": "assets/a_421c28f5bd61fefd9f370accaa85829eb5fa5afc4eb1f7883253e73fe982f81d.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 1,
+      "name": "avatar/brown_brown/warm-dry",
+      "source": "assets/weather-avatar/images/brown_brown/warm-dry.jpg",
+      "sha256": "36bf38be3130d0260fc95d04951a0036320a6f6eb56a6d27f450b58a31f16090",
+      "bytes": 13885,
+      "file": "assets/a_36bf38be3130d0260fc95d04951a0036320a6f6eb56a6d27f450b58a31f16090.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 2,
+      "name": "avatar/brown_brown/mild-dry",
+      "source": "assets/weather-avatar/images/brown_brown/mild-dry.jpg",
+      "sha256": "9140d3b5f96f7d89d4dd8e35618e5242ffd663f96a9a61b6ca2d644ce6da62c3",
+      "bytes": 13614,
+      "file": "assets/a_9140d3b5f96f7d89d4dd8e35618e5242ffd663f96a9a61b6ca2d644ce6da62c3.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 3,
+      "name": "avatar/brown_brown/cool-dry",
+      "source": "assets/weather-avatar/images/brown_brown/cool-dry.jpg",
+      "sha256": "1c536fe43e5999bfee776d1b1f841fa3e8bf502e2f6c032aa078752aa51e2abc",
+      "bytes": 14329,
+      "file": "assets/a_1c536fe43e5999bfee776d1b1f841fa3e8bf502e2f6c032aa078752aa51e2abc.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 4,
+      "name": "avatar/brown_brown/cold-dry",
+      "source": "assets/weather-avatar/images/brown_brown/cold-dry.jpg",
+      "sha256": "928e45f22d06cc9eace269b19e3dc2ba9dc69d0fec9d594d2a9522c34ab75021",
+      "bytes": 13037,
+      "file": "assets/a_928e45f22d06cc9eace269b19e3dc2ba9dc69d0fec9d594d2a9522c34ab75021.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 5,
+      "name": "avatar/brown_brown/frost-dry",
+      "source": "assets/weather-avatar/images/brown_brown/frost-dry.jpg",
+      "sha256": "18d4f45cd16967bb2ae98a28ce069b28df76555069c718977197f841291b1ac4",
+      "bytes": 13085,
+      "file": "assets/a_18d4f45cd16967bb2ae98a28ce069b28df76555069c718977197f841291b1ac4.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 6,
+      "name": "avatar/blond_hazel/hot-dry",
+      "source": "assets/weather-avatar/images/blond_hazel/hot-dry.jpg",
+      "sha256": "5e029359eada5cf7d7d5e1cbc6aa5c29f6e3ea1252344b9e237617d97b22181e",
+      "bytes": 13954,
+      "file": "assets/a_5e029359eada5cf7d7d5e1cbc6aa5c29f6e3ea1252344b9e237617d97b22181e.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 7,
+      "name": "avatar/blond_hazel/warm-dry",
+      "source": "assets/weather-avatar/images/blond_hazel/warm-dry.jpg",
+      "sha256": "02a0768acdae5f06cd7b98309e52ceca3e8c4281c2547ea4e6e0dbea6724eca4",
+      "bytes": 13903,
+      "file": "assets/a_02a0768acdae5f06cd7b98309e52ceca3e8c4281c2547ea4e6e0dbea6724eca4.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 8,
+      "name": "avatar/blond_hazel/mild-dry",
+      "source": "assets/weather-avatar/images/blond_hazel/mild-dry.jpg",
+      "sha256": "52f44be5123809e3f5732f7d87718d898bbb6418f6edb89d53eeb87955a9b8b4",
+      "bytes": 13788,
+      "file": "assets/a_52f44be5123809e3f5732f7d87718d898bbb6418f6edb89d53eeb87955a9b8b4.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 9,
+      "name": "avatar/blond_hazel/cool-dry",
+      "source": "assets/weather-avatar/images/blond_hazel/cool-dry.jpg",
+      "sha256": "1dd1d3a6fd84dd558f57e5712b3f7ecec014e0573f7158bf23df6ad4d1902f5f",
+      "bytes": 14468,
+      "file": "assets/a_1dd1d3a6fd84dd558f57e5712b3f7ecec014e0573f7158bf23df6ad4d1902f5f.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 10,
+      "name": "avatar/blond_hazel/cold-dry",
+      "source": "assets/weather-avatar/images/blond_hazel/cold-dry.jpg",
+      "sha256": "6b037622a16b899c9b5428ac7a387454b26daa09ce1cd6b38b35b41b6a5cdaf7",
+      "bytes": 12995,
+      "file": "assets/a_6b037622a16b899c9b5428ac7a387454b26daa09ce1cd6b38b35b41b6a5cdaf7.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 11,
+      "name": "avatar/blond_hazel/frost-dry",
+      "source": "assets/weather-avatar/images/blond_hazel/frost-dry.jpg",
+      "sha256": "5856a238002f818c928c9d2706bfbded9ad173d74cd6733af42fe3f0a0a8add1",
+      "bytes": 12986,
+      "file": "assets/a_5856a238002f818c928c9d2706bfbded9ad173d74cd6733af42fe3f0a0a8add1.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 12,
+      "name": "avatar/brown_brown/hot-wind",
+      "source": "assets/weather-avatar/images/brown_brown/hot-wind.jpg",
+      "sha256": "a6d0f8b24a84bf0dee313595eb3b9782652f6b29cc026428e4f5ef7f09c51edf",
+      "bytes": 13235,
+      "file": "assets/a_a6d0f8b24a84bf0dee313595eb3b9782652f6b29cc026428e4f5ef7f09c51edf.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 13,
+      "name": "avatar/brown_brown/warm-wind",
+      "source": "assets/weather-avatar/images/brown_brown/warm-wind.jpg",
+      "sha256": "a6d0f8b24a84bf0dee313595eb3b9782652f6b29cc026428e4f5ef7f09c51edf",
+      "bytes": 13235,
+      "file": "assets/a_a6d0f8b24a84bf0dee313595eb3b9782652f6b29cc026428e4f5ef7f09c51edf.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 14,
+      "name": "avatar/brown_brown/mild-wind",
+      "source": "assets/weather-avatar/images/brown_brown/mild-wind.jpg",
+      "sha256": "4425e66040cac2963fe54c0bf7b27a11798240e75464ead05221d27ab448d8db",
+      "bytes": 13183,
+      "file": "assets/a_4425e66040cac2963fe54c0bf7b27a11798240e75464ead05221d27ab448d8db.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 15,
+      "name": "avatar/brown_brown/cool-wind",
+      "source": "assets/weather-avatar/images/brown_brown/cool-wind.jpg",
+      "sha256": "1ed94e8bd41b8fc9593709b0cce23f8fba26faae93cb38bb949f04772135bc26",
+      "bytes": 13694,
+      "file": "assets/a_1ed94e8bd41b8fc9593709b0cce23f8fba26faae93cb38bb949f04772135bc26.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 16,
+      "name": "avatar/brown_brown/cold-wind",
+      "source": "assets/weather-avatar/images/brown_brown/cold-wind.jpg",
+      "sha256": "928e45f22d06cc9eace269b19e3dc2ba9dc69d0fec9d594d2a9522c34ab75021",
+      "bytes": 13037,
+      "file": "assets/a_928e45f22d06cc9eace269b19e3dc2ba9dc69d0fec9d594d2a9522c34ab75021.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 17,
+      "name": "avatar/brown_brown/frost-wind",
+      "source": "assets/weather-avatar/images/brown_brown/frost-wind.jpg",
+      "sha256": "18d4f45cd16967bb2ae98a28ce069b28df76555069c718977197f841291b1ac4",
+      "bytes": 13085,
+      "file": "assets/a_18d4f45cd16967bb2ae98a28ce069b28df76555069c718977197f841291b1ac4.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 18,
+      "name": "avatar/blond_hazel/hot-wind",
+      "source": "assets/weather-avatar/images/blond_hazel/hot-wind.jpg",
+      "sha256": "34cd0f4875723447bd93ec6b5b119876c65df54ab07f7197d0d4035f834ab209",
+      "bytes": 13334,
+      "file": "assets/a_34cd0f4875723447bd93ec6b5b119876c65df54ab07f7197d0d4035f834ab209.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 19,
+      "name": "avatar/blond_hazel/warm-wind",
+      "source": "assets/weather-avatar/images/blond_hazel/warm-wind.jpg",
+      "sha256": "34cd0f4875723447bd93ec6b5b119876c65df54ab07f7197d0d4035f834ab209",
+      "bytes": 13334,
+      "file": "assets/a_34cd0f4875723447bd93ec6b5b119876c65df54ab07f7197d0d4035f834ab209.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 20,
+      "name": "avatar/blond_hazel/mild-wind",
+      "source": "assets/weather-avatar/images/blond_hazel/mild-wind.jpg",
+      "sha256": "711c76868cdcd82029e0ac86af747dc029f0062b5ceac5a1fc2b33817b354ade",
+      "bytes": 13273,
+      "file": "assets/a_711c76868cdcd82029e0ac86af747dc029f0062b5ceac5a1fc2b33817b354ade.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 21,
+      "name": "avatar/blond_hazel/cool-wind",
+      "source": "assets/weather-avatar/images/blond_hazel/cool-wind.jpg",
+      "sha256": "b30086592873cd2fd36638853ce95be1343ca575e61e6a0327f54cf75d189d6f",
+      "bytes": 13832,
+      "file": "assets/a_b30086592873cd2fd36638853ce95be1343ca575e61e6a0327f54cf75d189d6f.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 22,
+      "name": "avatar/blond_hazel/cold-wind",
+      "source": "assets/weather-avatar/images/blond_hazel/cold-wind.jpg",
+      "sha256": "6b037622a16b899c9b5428ac7a387454b26daa09ce1cd6b38b35b41b6a5cdaf7",
+      "bytes": 12995,
+      "file": "assets/a_6b037622a16b899c9b5428ac7a387454b26daa09ce1cd6b38b35b41b6a5cdaf7.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 23,
+      "name": "avatar/blond_hazel/frost-wind",
+      "source": "assets/weather-avatar/images/blond_hazel/frost-wind.jpg",
+      "sha256": "5856a238002f818c928c9d2706bfbded9ad173d74cd6733af42fe3f0a0a8add1",
+      "bytes": 12986,
+      "file": "assets/a_5856a238002f818c928c9d2706bfbded9ad173d74cd6733af42fe3f0a0a8add1.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 24,
+      "name": "avatar/brown_brown/hot-wet",
+      "source": "assets/weather-avatar/images/brown_brown/hot-wet.jpg",
+      "sha256": "8cc46e1de425a42d94477c32169e2b691e3da837838599e6a73b7e110f0f4b90",
+      "bytes": 13947,
+      "file": "assets/a_8cc46e1de425a42d94477c32169e2b691e3da837838599e6a73b7e110f0f4b90.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 25,
+      "name": "avatar/brown_brown/warm-wet",
+      "source": "assets/weather-avatar/images/brown_brown/warm-wet.jpg",
+      "sha256": "69a40ad5dd4fe8384c5010203b6cb1eda780573a053737230d0664f9f1013ff7",
+      "bytes": 14198,
+      "file": "assets/a_69a40ad5dd4fe8384c5010203b6cb1eda780573a053737230d0664f9f1013ff7.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 26,
+      "name": "avatar/brown_brown/mild-wet",
+      "source": "assets/weather-avatar/images/brown_brown/mild-wet.jpg",
+      "sha256": "ecb0b9cb252942cb6eb5853fc1db2f178fe82ef1ba5d855a64fc89b6a3a8ce5d",
+      "bytes": 14248,
+      "file": "assets/a_ecb0b9cb252942cb6eb5853fc1db2f178fe82ef1ba5d855a64fc89b6a3a8ce5d.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 27,
+      "name": "avatar/brown_brown/cool-wet",
+      "source": "assets/weather-avatar/images/brown_brown/cool-wet.jpg",
+      "sha256": "b15c94df3dda8f8540023f9cb8b70351e2eca0bfd8b1e855e0c7c99b5f63a937",
+      "bytes": 13579,
+      "file": "assets/a_b15c94df3dda8f8540023f9cb8b70351e2eca0bfd8b1e855e0c7c99b5f63a937.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 28,
+      "name": "avatar/brown_brown/cold-wet",
+      "source": "assets/weather-avatar/images/brown_brown/cold-wet.jpg",
+      "sha256": "e83dad5abeee8cfe53830542abbc9546f6b185c13dd287e8a18d35cba1dd3a87",
+      "bytes": 12576,
+      "file": "assets/a_e83dad5abeee8cfe53830542abbc9546f6b185c13dd287e8a18d35cba1dd3a87.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 29,
+      "name": "avatar/brown_brown/frost-wet",
+      "source": "assets/weather-avatar/images/brown_brown/frost-wet.jpg",
+      "sha256": "5da7c36d992475c8ac2fa3a88cfe93a09ada74475aa983ebcb74f63a3760ab78",
+      "bytes": 12308,
+      "file": "assets/a_5da7c36d992475c8ac2fa3a88cfe93a09ada74475aa983ebcb74f63a3760ab78.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 30,
+      "name": "avatar/blond_hazel/hot-wet",
+      "source": "assets/weather-avatar/images/blond_hazel/hot-wet.jpg",
+      "sha256": "e1a53458b47bce9c954f6686473314f372685baf0e91bc065c22bcd4f23362d4",
+      "bytes": 14019,
+      "file": "assets/a_e1a53458b47bce9c954f6686473314f372685baf0e91bc065c22bcd4f23362d4.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 31,
+      "name": "avatar/blond_hazel/warm-wet",
+      "source": "assets/weather-avatar/images/blond_hazel/warm-wet.jpg",
+      "sha256": "09a67bbf64011e23af23aaa4c8183aec0578c86491a268b673e31ded4d0b7e6f",
+      "bytes": 14184,
+      "file": "assets/a_09a67bbf64011e23af23aaa4c8183aec0578c86491a268b673e31ded4d0b7e6f.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 32,
+      "name": "avatar/blond_hazel/mild-wet",
+      "source": "assets/weather-avatar/images/blond_hazel/mild-wet.jpg",
+      "sha256": "19149b11d90504c9f2531ee22c2ebc25f067a4a821e0571217987e33c985afc7",
+      "bytes": 14210,
+      "file": "assets/a_19149b11d90504c9f2531ee22c2ebc25f067a4a821e0571217987e33c985afc7.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 33,
+      "name": "avatar/blond_hazel/cool-wet",
+      "source": "assets/weather-avatar/images/blond_hazel/cool-wet.jpg",
+      "sha256": "f66cdeb3d47bf385a591749fe60f6e0b2ed76661e0d64011603c026a3bbb1d88",
+      "bytes": 13639,
+      "file": "assets/a_f66cdeb3d47bf385a591749fe60f6e0b2ed76661e0d64011603c026a3bbb1d88.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 34,
+      "name": "avatar/blond_hazel/cold-wet",
+      "source": "assets/weather-avatar/images/blond_hazel/cold-wet.jpg",
+      "sha256": "e8498de3c81d3c2e586f166a87c83da5ae87d47e40d0b5f5004dd6c6fd305f36",
+      "bytes": 12732,
+      "file": "assets/a_e8498de3c81d3c2e586f166a87c83da5ae87d47e40d0b5f5004dd6c6fd305f36.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 35,
+      "name": "avatar/blond_hazel/frost-wet",
+      "source": "assets/weather-avatar/images/blond_hazel/frost-wet.jpg",
+      "sha256": "e50f238f142ceaf15e6cb47ce1c3f9286324f46af8dc768ef6e4870810c2c412",
+      "bytes": 12404,
+      "file": "assets/a_e50f238f142ceaf15e6cb47ce1c3f9286324f46af8dc768ef6e4870810c2c412.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 36,
+      "name": "avatar/brown_brown/hot-snow",
+      "source": "assets/weather-avatar/images/brown_brown/hot-snow.jpg",
+      "sha256": "8cc46e1de425a42d94477c32169e2b691e3da837838599e6a73b7e110f0f4b90",
+      "bytes": 13947,
+      "file": "assets/a_8cc46e1de425a42d94477c32169e2b691e3da837838599e6a73b7e110f0f4b90.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 37,
+      "name": "avatar/brown_brown/warm-snow",
+      "source": "assets/weather-avatar/images/brown_brown/warm-snow.jpg",
+      "sha256": "69a40ad5dd4fe8384c5010203b6cb1eda780573a053737230d0664f9f1013ff7",
+      "bytes": 14198,
+      "file": "assets/a_69a40ad5dd4fe8384c5010203b6cb1eda780573a053737230d0664f9f1013ff7.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 38,
+      "name": "avatar/brown_brown/mild-snow",
+      "source": "assets/weather-avatar/images/brown_brown/mild-snow.jpg",
+      "sha256": "07c2fddff55a8f1d753287517cec77829fa9b5e14d290521214cc5d358afa0f4",
+      "bytes": 14999,
+      "file": "assets/a_07c2fddff55a8f1d753287517cec77829fa9b5e14d290521214cc5d358afa0f4.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 39,
+      "name": "avatar/brown_brown/cool-snow",
+      "source": "assets/weather-avatar/images/brown_brown/cool-snow.jpg",
+      "sha256": "8614c214a1c40fb0f8aa66d654205f6b4e54195c49efb7ab9b15999cf2246e0e",
+      "bytes": 14830,
+      "file": "assets/a_8614c214a1c40fb0f8aa66d654205f6b4e54195c49efb7ab9b15999cf2246e0e.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 40,
+      "name": "avatar/brown_brown/cold-snow",
+      "source": "assets/weather-avatar/images/brown_brown/cold-snow.jpg",
+      "sha256": "90a399a23ca90adc543de924d96aced1108e09d0cba80332717340953bddde09",
+      "bytes": 13527,
+      "file": "assets/a_90a399a23ca90adc543de924d96aced1108e09d0cba80332717340953bddde09.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 41,
+      "name": "avatar/brown_brown/frost-snow",
+      "source": "assets/weather-avatar/images/brown_brown/frost-snow.jpg",
+      "sha256": "34e292f30e1202b8795f1267e1b4495b1714388a86a6a1f29bb56bef822d8a70",
+      "bytes": 13390,
+      "file": "assets/a_34e292f30e1202b8795f1267e1b4495b1714388a86a6a1f29bb56bef822d8a70.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 42,
+      "name": "avatar/blond_hazel/hot-snow",
+      "source": "assets/weather-avatar/images/blond_hazel/hot-snow.jpg",
+      "sha256": "e1a53458b47bce9c954f6686473314f372685baf0e91bc065c22bcd4f23362d4",
+      "bytes": 14019,
+      "file": "assets/a_e1a53458b47bce9c954f6686473314f372685baf0e91bc065c22bcd4f23362d4.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 43,
+      "name": "avatar/blond_hazel/warm-snow",
+      "source": "assets/weather-avatar/images/blond_hazel/warm-snow.jpg",
+      "sha256": "09a67bbf64011e23af23aaa4c8183aec0578c86491a268b673e31ded4d0b7e6f",
+      "bytes": 14184,
+      "file": "assets/a_09a67bbf64011e23af23aaa4c8183aec0578c86491a268b673e31ded4d0b7e6f.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 44,
+      "name": "avatar/blond_hazel/mild-snow",
+      "source": "assets/weather-avatar/images/blond_hazel/mild-snow.jpg",
+      "sha256": "e66c2c7bd4ed7d99812a465c31f73403149811254f0444789b60e02990585cf3",
+      "bytes": 15180,
+      "file": "assets/a_e66c2c7bd4ed7d99812a465c31f73403149811254f0444789b60e02990585cf3.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 45,
+      "name": "avatar/blond_hazel/cool-snow",
+      "source": "assets/weather-avatar/images/blond_hazel/cool-snow.jpg",
+      "sha256": "6b60e1cb6581372e5b7b5be7256b4580a1802a80ece56e7813726e2d88c47ccd",
+      "bytes": 14953,
+      "file": "assets/a_6b60e1cb6581372e5b7b5be7256b4580a1802a80ece56e7813726e2d88c47ccd.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 46,
+      "name": "avatar/blond_hazel/cold-snow",
+      "source": "assets/weather-avatar/images/blond_hazel/cold-snow.jpg",
+      "sha256": "e9d0fd48b8d50fe4d5d949d2639e04afcfe6a0641b79e1f0a32236129e8e037c",
+      "bytes": 13635,
+      "file": "assets/a_e9d0fd48b8d50fe4d5d949d2639e04afcfe6a0641b79e1f0a32236129e8e037c.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 47,
+      "name": "avatar/blond_hazel/frost-snow",
+      "source": "assets/weather-avatar/images/blond_hazel/frost-snow.jpg",
+      "sha256": "d4bb92b37b286b7b3ee0d3ec3b2632b2ccdaf8d4a0cdeee55e64665abbd5200e",
+      "bytes": 13461,
+      "file": "assets/a_d4bb92b37b286b7b3ee0d3ec3b2632b2ccdaf8d4a0cdeee55e64665abbd5200e.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 48,
+      "name": "avatar/brown_brown/neutral",
+      "source": "assets/weather-avatar/images/brown_brown/neutral.jpg",
+      "sha256": "9140d3b5f96f7d89d4dd8e35618e5242ffd663f96a9a61b6ca2d644ce6da62c3",
+      "bytes": 13614,
+      "file": "assets/a_9140d3b5f96f7d89d4dd8e35618e5242ffd663f96a9a61b6ca2d644ce6da62c3.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 49,
+      "name": "avatar/blond_hazel/neutral",
+      "source": "assets/weather-avatar/images/blond_hazel/neutral.jpg",
+      "sha256": "52f44be5123809e3f5732f7d87718d898bbb6418f6edb89d53eeb87955a9b8b4",
+      "bytes": 13788,
+      "file": "assets/a_52f44be5123809e3f5732f7d87718d898bbb6418f6edb89d53eeb87955a9b8b4.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 50,
+      "name": "avatar/brown_brown/hot-sunhat",
+      "source": "assets/weather-avatar/images/brown_brown/hot-sunhat.jpg",
+      "sha256": "db0cf2dc5c7f45c449c46caee8e8b238a7a7a62bdc38b82e9c5de0a1d1d1b79c",
+      "bytes": 14351,
+      "file": "assets/a_db0cf2dc5c7f45c449c46caee8e8b238a7a7a62bdc38b82e9c5de0a1d1d1b79c.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 51,
+      "name": "avatar/blond_hazel/hot-sunhat",
+      "source": "assets/weather-avatar/images/blond_hazel/hot-sunhat.jpg",
+      "sha256": "771f490cb1c5d9762ca0c83bbec5f8a19e5e2da348b7a5c2bd4b6032c8cb7038",
+      "bytes": 14353,
+      "file": "assets/a_771f490cb1c5d9762ca0c83bbec5f8a19e5e2da348b7a5c2bd4b6032c8cb7038.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 52,
+      "name": "weather/clear-night",
+      "source": "assets/screensaver/states/clear-night.jpg",
+      "sha256": "557b0645b67c817c2a95e6a212aa38fdbf1cf57c6f9b0550e995aa638aeeb4b4",
+      "bytes": 13964,
+      "file": "assets/a_557b0645b67c817c2a95e6a212aa38fdbf1cf57c6f9b0550e995aa638aeeb4b4.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 53,
+      "name": "weather/cloudy",
+      "source": "assets/screensaver/states/cloudy.jpg",
+      "sha256": "86d6bded2044c8aa0c7f8183f4b213f157336b84ce51d3184cfc380b5d75ff3b",
+      "bytes": 14843,
+      "file": "assets/a_86d6bded2044c8aa0c7f8183f4b213f157336b84ce51d3184cfc380b5d75ff3b.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 54,
+      "name": "weather/exceptional",
+      "source": "assets/screensaver/states/exceptional.jpg",
+      "sha256": "89eac31281e5084aa5c771a952e14b31406622687e72300f130039e408eac335",
+      "bytes": 20613,
+      "file": "assets/a_89eac31281e5084aa5c771a952e14b31406622687e72300f130039e408eac335.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 55,
+      "name": "weather/fog",
+      "source": "assets/screensaver/states/fog.jpg",
+      "sha256": "d69cbacea29f5b9917f60fd8d2078b4ba5da85755c88c82e0ad489dd899709bf",
+      "bytes": 13883,
+      "file": "assets/a_d69cbacea29f5b9917f60fd8d2078b4ba5da85755c88c82e0ad489dd899709bf.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 56,
+      "name": "weather/hail",
+      "source": "assets/screensaver/states/hail.jpg",
+      "sha256": "0d53746f1f35d7fb696963e186d37daf3f1a469eea008afd74cb3e04c48a847a",
+      "bytes": 42664,
+      "file": "assets/a_0d53746f1f35d7fb696963e186d37daf3f1a469eea008afd74cb3e04c48a847a.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 57,
+      "name": "weather/lightning-rainy",
+      "source": "assets/screensaver/states/lightning-rainy.jpg",
+      "sha256": "3c2ae47017c0c9568b83bb14b2adbe3ba4c1f94e43946b62e23115d9fa16e8bb",
+      "bytes": 28058,
+      "file": "assets/a_3c2ae47017c0c9568b83bb14b2adbe3ba4c1f94e43946b62e23115d9fa16e8bb.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 58,
+      "name": "weather/lightning",
+      "source": "assets/screensaver/states/lightning.jpg",
+      "sha256": "53e376b19b21436ae0c1d1e53324c89ee0368b9e2dee8c88c062ab065f6c2e13",
+      "bytes": 20080,
+      "file": "assets/a_53e376b19b21436ae0c1d1e53324c89ee0368b9e2dee8c88c062ab065f6c2e13.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 59,
+      "name": "weather/partlycloudy",
+      "source": "assets/screensaver/states/partlycloudy.jpg",
+      "sha256": "91b6b93a61996d3c44eca47178d1960586577bf0bd65418b66de24e872dd0ef1",
+      "bytes": 17905,
+      "file": "assets/a_91b6b93a61996d3c44eca47178d1960586577bf0bd65418b66de24e872dd0ef1.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 60,
+      "name": "weather/pouring",
+      "source": "assets/screensaver/states/pouring.jpg",
+      "sha256": "6157d31c358ab9ce6f187163b4b5d3ba3c23aa751c0ef58917d97a77773a68a9",
+      "bytes": 19912,
+      "file": "assets/a_6157d31c358ab9ce6f187163b4b5d3ba3c23aa751c0ef58917d97a77773a68a9.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 61,
+      "name": "weather/rainy",
+      "source": "assets/screensaver/states/rainy.jpg",
+      "sha256": "cc7f857ca5cacf68ded3b8f1dfc36be9af5b22c4a0b4603cda84af8f43972133",
+      "bytes": 32629,
+      "file": "assets/a_cc7f857ca5cacf68ded3b8f1dfc36be9af5b22c4a0b4603cda84af8f43972133.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 62,
+      "name": "weather/snowy-rainy",
+      "source": "assets/screensaver/states/snowy-rainy.jpg",
+      "sha256": "995b257794d77374b3487eb99db66aaeaaed865b4fa9b941e421663998560678",
+      "bytes": 36142,
+      "file": "assets/a_995b257794d77374b3487eb99db66aaeaaed865b4fa9b941e421663998560678.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 63,
+      "name": "weather/snowy",
+      "source": "assets/screensaver/states/snowy.jpg",
+      "sha256": "bd8745289e1da57e4aad3c5dadb1fc31c616f7d8c4c39af42cd46fd3bf38891d",
+      "bytes": 27635,
+      "file": "assets/a_bd8745289e1da57e4aad3c5dadb1fc31c616f7d8c4c39af42cd46fd3bf38891d.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 64,
+      "name": "weather/sunny",
+      "source": "assets/screensaver/states/sunny.jpg",
+      "sha256": "7cf482cef766d06ae57125c5abfa3e702ff297fd03bfbd71524d3cf94d623a63",
+      "bytes": 15740,
+      "file": "assets/a_7cf482cef766d06ae57125c5abfa3e702ff297fd03bfbd71524d3cf94d623a63.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 65,
+      "name": "weather/windy-variant",
+      "source": "assets/screensaver/states/windy-variant.jpg",
+      "sha256": "2a40e7d0492e39b854886a057c8d1f5d1e915fdcebe7f55d90e6931275407146",
+      "bytes": 26887,
+      "file": "assets/a_2a40e7d0492e39b854886a057c8d1f5d1e915fdcebe7f55d90e6931275407146.jpg",
+      "width": 368,
+      "height": 368
+    },
+    {
+      "index": 66,
+      "name": "weather/windy",
+      "source": "assets/screensaver/states/windy.jpg",
+      "sha256": "14f0a0ce495464abb26f74aa759d7c705697667539acd19602f3d47b08899f0b",
+      "bytes": 30484,
+      "file": "assets/a_14f0a0ce495464abb26f74aa759d7c705697667539acd19602f3d47b08899f0b.jpg",
+      "width": 368,
+      "height": 368
+    }
+  ],
+  "unique_images": 55,
+  "embedded_unique_bytes": 910580,
+  "decoded_double_buffer_bytes": 541696
+}

@@ -1,0 +1,11 @@
+German postal-code/place data: GeoNames, https://www.geonames.org/
+Source: https://download.geonames.org/export/zip/DE.zip
+Source documentation: https://download.geonames.org/export/zip/readme.txt
+License declaration: Creative Commons Attribution 4.0 International
+License: https://creativecommons.org/licenses/by/4.0/
+
+Adapted by Passion Wave: retained postcode, place name, state and coordinates;
+rounded coordinates to four decimal places; deduplicated, sorted and compressed.
+Source and output hashes and retrieval date: places-de.provenance.json.
+Reproduction: tools/build_places.py. Source accuracy/completeness is not guaranteed;
+coordinates may be estimated or averaged. Manual coordinates remain available.

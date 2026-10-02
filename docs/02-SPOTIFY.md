@@ -1,6 +1,6 @@
 # Spotify: Machbarkeit, Produktfreigabe und Adapter
 
-Prüfdatum 2026-09-30. Kein authentifizierter API-Test oder Lautsprechertest durchgeführt. Die folgenden Aussagen trennen dokumentierte Möglichkeiten, offene Freigaben und geplante Implementierung.
+Prüfdatum 2026-10-01. Kein authentifizierter API-Test oder Lautsprechertest durchgeführt. Die folgenden Aussagen trennen dokumentierte Möglichkeiten, offene Freigaben und geplante Implementierung.
 
 ## Gate G0: gewünschtes Produkt ausdrücklich klären
 
@@ -27,7 +27,7 @@ Die Partnerroute setzt eine Organisation, Verträge, Plattformprüfung und Zerti
 | --- | --- | --- |
 | `DisabledProvider` | Vorgabe des Frameworks | ehrlicher Einrichtungs-/Fehlerzustand |
 | `MockProvider` | Entwurfs-/Testkonzept | UI/Fehlerfälle ohne Konto oder Lautsprecher |
-| `WebApiEvaluationProvider` | geplanter, begrenzter Labormodus | technische Lautsprecher-/Contentprüfung mit berechtigtem Testkonto |
+| `WebApiEvaluationProvider` | nativer `pw_spotify`-Labormodus implementiert; reale Konto-/Geräteprüfung offen | technische Lautsprecher-/Contentprüfung mit berechtigtem Testkonto |
 | `ApprovedControllerProvider` | Vertrag, Implementierung offen | Produktpfad nach G0; Schnittstelle noch nicht durch SDK belegt |
 | `PartnerReceiverProvider` | optional, separates Gate | lokale Spotify-Audiowiedergabe; ersetzt den Ferncontroller nicht automatisch |
 
@@ -71,6 +71,20 @@ Development-Profile liefern Playlistinhalte nur bei Eigentum/Mitarbeit. Die erfo
 
 ## Anmeldung und lokales Audio
 
+### Käufer melden sich mit ihrem normalen Konto an
+
+Verbindliches Bedienziel: Käufer benötigen **kein Spotify-Entwicklerkonto, keine eigene App-Registrierung und keine Eingabe einer Client-ID, eines Client Secrets oder eines Tokens**. Passion Wave stellt eine für dieses Produkt freigegebene Integration bereit. Der Kunde wählt „Mit Spotify verbinden“, meldet sich auf der echten Spotify-Seite an und erlaubt den Zugriff. Passwörter werden niemals auf der Gerätewebsite abgefragt oder auf dem Knob gespeichert.
+
+Der vorgesehene Web-API-Weg zur Wiedergabesteuerung setzt **Spotify Premium** voraus. Diese Kontovoraussetzung muss schon vor dem Kauf verständlich genannt werden. Normale Spotify-Zugangsdaten genügen für die Anmeldung; ein kostenloses Konto erfüllt damit noch nicht die Voraussetzungen für die Playback-API. Abweichende Partnerbedingungen dürfen erst nach einer konkreten Vereinbarung zugesagt werden. [Start/Resume Playback](https://developer.spotify.com/documentation/web-api/reference/start-a-users-playback)
+
+Der Produkteigentümer hat am 30.09.2026 einen vorhandenen privaten Spotify-Dashboardzugang mitgeteilt. Am 01.10.2026 wurde der Eintrag im angemeldeten Dashboard gelesen: Appname **HomeAssistant**, **Development mode**, Refresh-Token-Laufzeit **180 Tage**. Die eingetragenen Rückleitungen gehören zur bisherigen HA-Anbindung; der benötigte Loopback-Redirect fehlt. Es wurden keine Änderungen an dieser App gespeichert und kein Client Secret aufgerufen. Eine getrennte **PassionWave RotaryKnob Lab**-App mit ausschließlich Web API und `http://127.0.0.1:8766/callback` wurde nach ausdrücklicher Nutzerzustimmung am 01.10.2026 angelegt und im Dashboard geprüft: Client-ID `b785d8a5f5c840e9bc33e168c53098ca`, Development Mode, 180 Tage Refresh-Laufzeit. Der Client Secret wurde nicht aufgerufen. Die öffentlichen Profildaten stehen in [spotify-lab.json](../profiles/spotify-lab.json). Die kommerzielle Controller-Freigabe bleibt offen. Das ist ein möglicher Zugang für die Laborevaluierung; **G0 ist dadurch nicht bestanden**. Auch die Fernsteuerung von Play/Next/Previous zählt laut Spotify zu Streaming-Anwendungen. Die schriftlich bestätigte Nutzung beim Verkauf bleibt erforderlich. [Compliance Tips](https://developer.spotify.com/compliance-tips)
+
+Unter Q01 ist eine **mobile Einrichtungs-App mit PKCE und lokal gesicherter Kopplung** der derzeit aussichtsreichste technische Vorschlag. Spotify unterstützt Custom-Scheme-Rückleitungen weiterhin; damit wäre kein eigener externer Callbackdienst nötig. Zustimmung zu einer verpflichtenden zusätzlichen App wurde angefragt und steht aus. Der verteilte Codeaustausch, sichere Gerätebindung, Plattformunterstützung und Spotify-Freigabe sind noch zu qualifizieren. Die Website bleibt für Einstellungen vorgesehen; eine App löst den sicheren schreibenden Browserzugriff im Heimnetz (G2) nicht automatisch. [PKCE](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow), [Custom Schemes](https://developer.spotify.com/blog/2025-02-12-increasing-the-security-requirements-for-integrating-with-spotify)
+
+Eine normale lokale HTTP-Website auf `192.168…` oder `.local` ist kein zulässiger Spotify-Callback. Loopback `127.0.0.1` meint das Browsergerät, nicht den Knob. Ein Desktopprogramm mit lokalem Loopback ist ein möglicher Laborweg, keine fertige Handy-Einrichtung. HTTPS-App-Links würden zusätzliche öffentlich erreichbare Domain-Zuordnungsdateien benötigen und werden unter Q01 nicht stillschweigend eingeführt. [Redirectregeln](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri)
+
+Seit Juni/Juli 2026 laufen Refresh-Tokens der Developer-Apps sechs Monate nach ursprünglicher Autorisierung ab; Refresh verlängert die Frist nicht. Die erneute Anmeldung gehört deshalb zum regulären Kundenerlebnis: verständlicher Hinweis, gleiche Kontoverknüpfung, vorhandene Einstellungen erhalten. `invalid_grant` beendet Refresh-Versuche und wechselt in „Spotify erneut verbinden“. Die Abnahme muss Ablauf, Widerruf, Kontowechsel, Abbruch und Geräteverkauf/Werksreset abdecken. [Spotify-Änderung](https://developer.spotify.com/blog/2026-06-18-refresh-token-expiration)
+
 PKCE und eSDK-ZeroConf sind verschiedene Pfade; siehe [Onboarding](03-ONBOARDING-WEB.md). Browser-Web-Playback-SDK würde im Telefonbrowser spielen, nicht im ESP32 und nicht an dessen Klinke. Lokale Spotify-Audiowiedergabe benötigt einen separat freigegebenen Empfänger und dessen Audio-/Codec-Ressourcen. [Web Playback SDK](https://developer.spotify.com/documentation/web-playback-sdk)
 
 Die öffentliche eSDK-Speicherempfehlung liegt oberhalb des internen Speichers des classic ESP32; S3-PSRAM hilft nur, wenn das tatsächliche SDK/Port es unterstützt. Erste Integration misst Speicher, Timing und Decoderlast; SDK-Verfügbarkeit bleibt offen. [Technische Anforderungen](https://developer.spotify.com/documentation/commercial-hardware/implementation/requirements/technical)
@@ -78,3 +92,11 @@ Die öffentliche eSDK-Speicherempfehlung liegt oberhalb des internen Speichers d
 ## Sonos als zusätzliche Ausgabe
 
 Sonos wird zuerst als `spotify_connect`-Ziel getestet. Für diesen Weg bleiben Spotify-Produktgate und Laufzeitrestriktionen bestehen. Ein separater Sonos-Favoritenpfad verwendet künftig eigene Konto-/Inhaltsreferenzen und muss unter seinen tatsächlichen Plattformbedingungen geprüft werden; er ist keine automatische Freigabe der direkten Spotify-API. Architektur und Prüfungen: [Sonos](12-SONOS-PRUEFUNG.md).
+
+## Implementierter Laborumfang in dev.2
+
+`pw_spotify` läuft nur mit `CONFIG_PW_SPOTIFY_LAB=y`. Der S3 hält PKCE, OAuth-Codeaustausch, Refresh-Token im verschlüsselten NVS und sämtliche Spotify-HTTPS-Aufrufe. Der [USB-Helfer](../tools/spotify_setup/README.md) läuft vorübergehend am Computer und reicht die Rückleitung zum S3; nach Einrichtung ist er keine Steuerungsabhängigkeit. Die eingetragene öffentliche Client-ID verweist jetzt auf die getrennte, ausdrücklich angelegte Lab-App. Ihr Loopback-Redirect ist im Dashboard nachgewiesen. Firmware, USB-Helfer und öffentliche Profildatei werden automatisch auf Übereinstimmung geprüft. Eine echte Kontoverknüpfung bleibt bis zum Gerätetest offen.
+
+Vorhanden: bis zu 16 entdeckte Ausgaben, Auswahl ohne Wiedergabeübertragung, explizit adressiertes Play/Pause/Next/Previous/Volume, gespeicherte Playlistreferenzen, beobachteter Titel/Interpret/Position, Reauth, Disconnect und begrenzte Fehlerbehandlung. Auswahl und aktive Wiedergabe sind getrennte Zustände. `204` und lokale Annahme bedeuten keine bestätigte oder hörbare Wiedergabe. In Arbeit bleiben unter anderem Cover, Seek/Shuffle/Repeat, Playlistbrowser und qualifizierter Podcast-/Episodenstart.
+
+Veraltete Befehle werden vor Ausführung verworfen; bereits gesendete Befehle lassen sich beim Zielwechsel nicht zurückholen. Ihre Rückmeldung darf die neue Auswahl nicht als bestätigt darstellen. Bei Transportfehlern werden Befehle nicht blind wiederholt. Ein explizites `401` erlaubt genau eine koordinierte Token-Erneuerung; `429` hält die serverseitige Wartezeit ein. Ungültige Refresh-Tokens werden gelöscht; Speicherfehler sperren weitere Steuerung. Eine neue Anmeldung bestätigt der USB-Helfer erst anhand der erfolgreich gespeicherten, konkreten OAuth-Autorisierung. Eine alte Verknüpfung oder ein Neustart reicht dafür nicht.

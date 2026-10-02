@@ -1,0 +1,28 @@
+:root { color-scheme: dark; font: 16px/1.55 system-ui, sans-serif; color: #f5f5f0; background: #101817; }
+* { box-sizing: border-box; }
+body { margin: 0; background: radial-gradient(ellipse at 90% 0%, #22443a 0, transparent 60%); min-height: 100vh; }
+main { max-width: 650px; margin: auto; padding: 52px 24px 32px; }
+.brand { font-size: .8rem; font-weight: 750; letter-spacing: .16em; color: #9bceb8; }
+.brand span { display: block; letter-spacing: .03em; color: #c1cdc8; font-weight: 400; }
+h1 { font-size: clamp(2.5rem, 8vw, 3.8rem); line-height: 1.06; letter-spacing: -.045em; margin: 38px 0 20px; }
+.intro { max-width: 510px; color: #bfcbc5; }
+section { border: 1px solid #476358; border-radius: 22px; padding: 26px; margin-top: 30px; background: #192722; }
+.heading { display: flex; align-items: center; gap: 10px; }
+h2 { font-size: 1.15rem; margin: 0; }
+#indicator { width: 10px; height: 10px; flex: 0 0 10px; border-radius: 50%; background: #b3c1ba; }
+#indicator.ready { background: #b3f1b8; box-shadow: 0 0 16px #b3f1b840; }
+#status { font-size: 1.15rem; font-weight: 650; }
+#detail, .hint, .footnote { color: #bcc8c0; font-size: .9rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 16px; }
+button, select { font: inherit; border-radius: 11px; border: 1px solid transparent; padding: 12px 16px; min-height: 46px; }
+button { background: #c0f0bd; color: #112819; cursor: pointer; font-weight: 650; }
+button.secondary, select { background: #24382e; border-color: #65816f; color: #f5f5f0; }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, select:focus-visible { outline: 3px solid #d2f3dd; outline-offset: 3px; }
+.row { display: flex; gap: 8px; margin-top: 8px; }
+select { min-width: 0; flex: 1; max-width: 100%; }
+#notice { background: #403923; border: 1px solid #9c8c58; padding: 12px; border-radius: 10px; font-size: .92rem; }
+.hint { margin-bottom: 0; }
+.footnote { margin-top: 24px; line-height: 1.8; }
+[hidden] { display: none !important; }
+@media (max-width: 440px) { main { padding: 28px 18px; } section { padding: 20px; } .actions > button { width: 100%; } .row { flex-direction: column; } }

@@ -9,7 +9,7 @@ Dieses Repository ist ein eigenständiges Spotify-Edition-Framework. Lies README
 - Bestehende RotaryKnob-Repositories und reale Geräte nur nach passend autorisiertem Auftrag verändern. Keine vorhandenen Secrets oder Gerätekonfigurationen importieren.
 - Referenzmodelle und Website-Demo sind keine Geräteimplementierung. Prüfberichte müssen automatisiert, simuliert und physisch beobachtet auseinanderhalten.
 - Schema-/Vertragsänderungen: Beispiele und docs aktualisieren, python3 tools/check.py ausführen. Sicherheits- und OTA-Regeln mit Fehlerfällen testen.
-- Noch keine Toolchain freigegeben. Keine Firmware als baubar/flashbar markieren, bevor Board-, SDK-, Speicher- und Recovery-Gates belegt sind.
+- Entwicklungs-Toolchain: ESP-IDF 5.4.3, LVGL 9.2.2. Erfolgreiche Builds als Compiler-Nachweis dokumentieren; sie ersetzen keine Board-, Speicher-, Recovery- oder Produktabnahme. Kein Flash vor Identifikation und verifiziertem Backup des jeweiligen Chips. Stand und verbleibende Gates: docs/16-NATIVE-IMPLEMENTIERUNG.md.
 - OTA bleibt signiert, kompatibilitätsgeprüft und transaktional über beide Chips. Kein gemeinsames Factory-Passwort, keine Tokens in Exporten oder Logs.
 - Proprietäres SDK darf nur entsprechend Partnervertrag außerhalb öffentlicher Artefakte eingebunden werden. Lizenzhinweise übernommener Quellen erhalten.
 
