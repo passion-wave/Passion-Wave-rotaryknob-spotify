@@ -646,4 +646,25 @@ Alle drei ESP-IDF-Profile bauen; CMake und Appdeskriptoren bestätigen dev.11.
 Standard-S3: **2.711.552 Byte**, Labor-S3: **2.723.984 Byte**, Companion:
 **278.064 Byte**. Laborimage-SHA-256:
 `8cfbb99eb40b56e85b01b65d04f93a00dad6bfab4589113e2bf0babdd2103369`.
-Die Installation und tatsächliche Wiedergaberückmeldung stehen noch aus.
+dev.11 wurde danach als reines S3-Appupdate bei `0x10000` installiert. Erneute
+Chipidentifikation und Originalbackup-Hashprüfung bestanden; der explizite
+Flashvergleich meldete `verify OK (digest matched)`. Der direkt danach gestartete
+USB-Helfer erhielt dreimal HELLO mit dev.11, aktivem Laborprofil und geschlossenem
+Setupfenster. Einstellungen, Schlüssel und Companion wurden nicht geschrieben.
+
+Der Nutzer bestätigte nun ausdrücklich hörbare Roam-Wiedergabe nach direkter
+Auswahl in Spotify. Die erste getrennte Diagnose nach dem Neustart ergab einen
+gültigen Geräteabruf mit HTTP 200 und zwei Einträgen, aber für Playback
+`http_status: 0`, `transport: -1`, `valid: 0`. Damit liegt für diesen Abruf kein
+bekannter HTTP-Erfolgsstatus und kein gültiger Wiedergabezustand vor. Der genaue
+Transportfehler und seine Wiederholbarkeit werden weiter eingegrenzt; weder
+fehlende Modellunterstützung noch eine falsche Kontoverknüpfung sind damit bewiesen.
+
+
+Die Folgemessung während bestätigter hörbarer Roam-Wiedergabe zeigte unter den
+zehn erfassten Playbackabrufen mehrfach `http_status: 200`, `transport: 0`,
+`valid: 0`; zusätzlich traten einzelne Status-0-/Transport-−1-Fehler auf. Damit
+verwirft der Knob auch erfolgreich übertragene HTTP-200-Antworten. Der JSON-/
+Feldvalidierungspfad wird nun getrennt eingegrenzt. HTTP 0 bedeutet mit dem
+verwendeten IDF nicht zwingend, dass keine Statuszeile empfangen wurde: Der
+öffentliche Status wird erst nach vollständigen Headern gesetzt.
