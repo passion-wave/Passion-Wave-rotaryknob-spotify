@@ -561,8 +561,8 @@ Wiedergabezustand und die daraus gespeiste Website keine leere Gerätebezeichnun
 erhalten. Geräte-ID und Steuerrechte bleiben unverändert; weder Hersteller noch
 Modell werden aus dem fehlenden Namen geraten. Sichtbare gültige UTF-8-Namen
 bleiben erhalten. Fehlende, nicht-stringförmige und ungültig kodierte Namensfelder
-bleiben Antwortfehler. Das konkrete Verhalten am betroffenen Gerät ist noch zu
-prüfen; dev.10 ist noch nicht installiert.
+bleiben Antwortfehler. Das konkrete Verhalten der betroffenen Zeile am Gerät
+und die Identität des zweiten Eintrags sind weiterhin zu prüfen.
 
 
 Vor dem Flash bestanden 419 Modell- und 791 Worker-Assertions mit ASan/UBSan,
@@ -581,3 +581,14 @@ Alle drei ESP-IDF-Builds bestanden; CMake-Metadaten und binäre Appdeskriptoren
 melden dev.10. Standard-S3: **2.711.552 Byte**, Labor-S3: **2.723.600 Byte**,
 Companion: **278.064 Byte**. Laborimage-SHA-256:
 `86d11b72bde5d41b0d7d9da9f1329db72b99fec4609b2aa40503907faee160e3`.
+
+
+dev.10 wurde anschließend ausschließlich als S3-App bei `0x10000` installiert.
+Der erneute Chipnachweis bestätigte ESP32-S3 rev0.2 mit 16 MiB Flash und 8 MiB
+PSRAM; der vollständige Originalbackup-Hash wurde vor dem Schreiben erneut
+geprüft. Der explizite Flashvergleich meldete `verify OK (digest matched)`.
+Nach dem Hard-Reset startete unmittelbar der USB-Helfer; HELLO bestätigte
+`version: 0.1.0-dev.10`, `lab_enabled: true`, `setup_open: false`. Companion,
+Bootloader, Partitionstabelle, Einstellungen und Schlüssel wurden nicht
+beschrieben. Die Anzeige des Ersatztextes auf dem physischen Display, der
+konkrete API-Namensinhalt und die Roam-Steuerung sind noch nicht bestätigt.
