@@ -163,7 +163,144 @@ class AppTests(unittest.TestCase):
         self.app.authorize(self.sid)
         self.device.selected = "/dev/cu.other"
         self.app.callback(urlencode({"state": "ab" * 24, "code": "fixture"}))
-        self.assertEqual(self.session.notice, "callback_invalid")
+        self.assertEqual(self.session.notice, "callback_port_changed")
+
+    def diagnostic_callback(self, query):
+        self.app.diagnostics = True
+        output = io.StringIO()
+        with redirect_stderr(output):
+            self.app.callback(query)
+        lines = output.getvalue().splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertTrue(lines[0].startswith("PWSET_CALLBACK_DIAGNOSTIC "))
+        record = json.loads(lines[0].split(" ", 1)[1])
+        self.assertEqual(set(record), {"reason", "parameter_count", "code_length", "code_ascii",
+                                      "code_printable_ascii", "port_matches", "has_iss",
+                                      "has_scope", "has_error_uri"})
+        self.assertIn(record["reason"], helper.CALLBACK_DIAGNOSTIC_REASONS)
+        for secret in ("ab" * 24, "cd" * 24, self.sid, self.session.csrf,
+                       "PRIVATE-CODE", "PRIVATE-FIELD", "PRIVATE-VALUE", self.device.selected):
+            self.assertNotIn(secret, output.getvalue())
+        return record
+
+    def test_callback_diagnostics_are_opt_in(self):
+        self.app.authorize(self.sid)
+        output = io.StringIO()
+        with redirect_stderr(output):
+            self.app.callback(urlencode({"state": "ab" * 24, "code": "PRIVATE-CODE"}))
+        self.assertEqual(output.getvalue(), "")
+        self.assertEqual(self.session.notice, "callback_accepted")
+
+    def test_callback_code_limits_and_format_keep_one_use_security(self):
+        cases = [
+            ("PRIVATE-CODE" + "c" * 1012, "accepted", "callback_accepted", True, True),
+            ("PRIVATE-CODE" + "c" * 1013, "code_too_long", "callback_code_too_long", True, True),
+            ("", "code_invalid", "callback_format", True, True),
+            ("PRIVATE-CODE bad", "code_invalid", "callback_format", True, False),
+            ("PRIVATE-CODE\n", "code_invalid", "callback_format", True, False),
+            ("PRIVATE-CODEä", "code_invalid", "callback_format", False, False),
+        ]
+        for code, reason, notice, ascii_ok, printable_ok in cases:
+            with self.subTest(reason=reason, length=len(code)):
+                self.setUp()
+                self.app.authorize(self.sid)
+                record = self.diagnostic_callback(urlencode({"state": "ab" * 24, "code": code}))
+                self.assertEqual(record["reason"], reason)
+                self.assertEqual(record["parameter_count"], 2)
+                self.assertEqual(record["code_length"], len(code))
+                self.assertEqual(record["code_ascii"], ascii_ok)
+                self.assertEqual(record["code_printable_ascii"], printable_ok)
+                self.assertIs(record["port_matches"], True)
+                self.assertEqual(self.session.notice, notice)
+                self.assertIsNone(self.app.pending)
+                accepted = reason == "accepted"
+                self.assertEqual(self.session.authorization_status, "waiting" if accepted else "failed")
+                self.assertEqual(sum(method == "callback" for method, _ in self.device.calls), int(accepted))
+
+    def test_callback_extension_fields_are_diagnosed_without_allowing_them(self):
+        for key in ("iss", "scope", "error_uri", "PRIVATE-FIELD"):
+            with self.subTest(field=key):
+                self.setUp()
+                self.app.authorize(self.sid)
+                record = self.diagnostic_callback(urlencode({"state": "ab" * 24,
+                                                            "code": "PRIVATE-CODE", key: "PRIVATE-VALUE"}))
+                self.assertEqual(record["reason"], "fields_invalid")
+                self.assertEqual(record["parameter_count"], 3)
+                for known in ("iss", "scope", "error_uri"):
+                    self.assertEqual(record["has_" + known], key == known)
+                self.assertEqual(self.session.notice, "callback_format")
+                self.assertIsNone(self.app.pending)
+                self.assertNotIn("callback", [method for method, _ in self.device.calls])
+
+    def test_callback_invalid_field_combinations_are_not_forwarded(self):
+        for fields in ({}, {"code": "PRIVATE-CODE", "error": "PRIVATE-VALUE"}):
+            with self.subTest(code_present="code" in fields):
+                self.setUp()
+                self.app.authorize(self.sid)
+                record = self.diagnostic_callback(urlencode({"state": "ab" * 24, **fields}))
+                self.assertEqual(record["reason"], "fields_invalid")
+                self.assertEqual(self.session.notice, "callback_format")
+                self.assertIsNone(self.app.pending)
+                self.assertNotIn("callback", [method for method, _ in self.device.calls])
+
+    def test_callback_parse_and_state_diagnostics_do_not_consume_active_login(self):
+        self.app.authorize(self.sid)
+        cases = [
+            ("state=" + "ab" * 24 + "&state=PRIVATE-VALUE&code=PRIVATE-CODE", "parse_invalid", 3),
+            ("state=" + "ab" * 24 + "&code=PRIVATE-CODE&PRIVATE-FIELD", "parse_invalid", 3),
+            ("state=" + "ab" * 24 + "&code=PRIVATE-CODE&a=1&b=2&c=3", "parse_invalid", 5),
+            (urlencode({"state": "PRIVATE-VALUE", "code": "PRIVATE-CODE"}), "state_invalid", 2),
+            (urlencode({"state": "cd" * 24, "code": "PRIVATE-CODE"}), "state_mismatch", 2),
+        ]
+        for query, reason, count in cases:
+            with self.subTest(reason=reason, count=count):
+                record = self.diagnostic_callback(query)
+                self.assertEqual(record["reason"], reason)
+                self.assertEqual(record["parameter_count"], count)
+                self.assertIsNone(record["port_matches"])
+                self.assertIsNotNone(self.app.pending)
+                self.assertEqual(self.session.authorization_status, "waiting")
+        self.assertNotIn("callback", [method for method, _ in self.device.calls])
+
+    def test_callback_diagnostics_cover_failure_after_state_match(self):
+        for case, expected in (("port", "port_changed"), ("expired", "expired"),
+                               ("session", "session_missing"), ("device", "device_error")):
+            with self.subTest(case=case):
+                self.setUp()
+                self.app.authorize(self.sid)
+                if case == "port":
+                    self.device.selected = "/dev/cu.PRIVATE-VALUE"
+                elif case == "expired":
+                    self.now += 601
+                elif case == "session":
+                    self.app.sessions.clear()
+                else:
+                    self.device.failure = "usb_timeout"
+                record = self.diagnostic_callback(urlencode({"state": "ab" * 24, "code": "PRIVATE-CODE"}))
+                self.assertEqual(record["reason"], expected)
+                self.assertEqual(record["port_matches"], case != "port")
+                self.assertIsNone(self.app.pending)
+                self.assertNotIn("callback", [method for method, _ in self.device.calls])
+
+    def test_callback_diagnostic_does_not_let_sink_failure_change_result(self):
+        for failure in (OSError, ValueError):
+            with self.subTest(failure=failure):
+                self.setUp()
+                self.app.authorize(self.sid)
+                self.app.diagnostics = True
+                with patch("builtins.print", side_effect=failure("PRIVATE-VALUE")):
+                    self.app.callback(urlencode({"state": "ab" * 24, "code": "PRIVATE-CODE"}))
+                self.assertEqual(self.session.notice, "callback_accepted")
+                self.assertEqual(sum(method == "callback" for method, _ in self.device.calls), 1)
+
+    def test_callback_diagnostic_reason_cannot_reflect_arbitrary_text(self):
+        self.app.diagnostics = True
+        output = io.StringIO()
+        with redirect_stderr(output):
+            self.app.callback_diagnostic("PRIVATE-VALUE", 0)
+        record = json.loads(output.getvalue().split(" ", 1)[1])
+        self.assertEqual(record["reason"], "internal")
+        self.assertNotIn("PRIVATE-VALUE", output.getvalue())
 
 
 class SerialTests(unittest.TestCase):

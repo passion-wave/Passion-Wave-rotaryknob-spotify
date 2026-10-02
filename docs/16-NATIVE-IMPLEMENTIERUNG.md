@@ -326,3 +326,23 @@ verbunden“**. Zugangsdaten wurden ausschließlich in der Gerätewebsite eingeg
 Damit ist dieser konkrete Ladezeit-/Einrichtungsversuch erfolgreich; andere
 Handys, Funkbedingungen, Dauerlauf und alle übrigen Features sind dadurch nicht
 abgenommen. Die Paketbündelung bleibt für diesen Pilotstand deaktiviert.
+
+### Spotify-Rückgabe: Fehler eingrenzen
+
+Der folgende reale Anmeldeversuch endete im Desktophelfer mit „Diese Anmeldung
+gehört nicht zum aktuellen Einrichtungsvorgang.“ Der damalige Code verwendete
+diesen Text auch nach erfolgreichem Statevergleich für unerwartete Queryfelder,
+ungültige beziehungsweise überlange Codes und einen geänderten USB-Port. Aus
+diesem Text allein lässt sich die tatsächliche Ursache nicht bestimmen; der
+alte Helfer hat bewusst keine Callbackdaten protokolliert. USB-Status bestätigte
+dev.7, vorhandenes WLAN und noch keine Spotify-Verknüpfung.
+
+Der Helfer unterscheidet jetzt diese Fehler und bietet die ausdrücklich
+aktivierbare Option `--diagnostics`: feste Gründe, Parameteranzahl, Codelänge
+und boolesche Formprüfungen, niemals Codes, States, URLs, Cookies oder Tokens.
+Statevergleich, PKCE, Einmaligkeit und die bisherige Codegrenze bleiben
+unverändert. 21 App-/Serial-Tests einschließlich Diagnose-Geheimnisfreiheit,
+1024-/1025-Zeichen-Grenze und fehlschlagender Diagnoseausgabe sowie die 51
+Frameworkprüfungen bestanden. Keine neue Firmware wurde dafür geschrieben.
+Der Helfer wurde für einen frischen realen Versuch gestartet; dessen Diagnose,
+der ursächliche Fix und die erfolgreiche Spotify-Verknüpfung sind noch offen.

@@ -45,6 +45,15 @@ Der Port muss unter den aktuell aufgelisteten USB-Kandidaten vorkommen. Ein
 belegter HTTP-Port beendet den Start; der Helfer weicht nicht auf eine andere
 Adresse oder einen anderen OAuth-Redirect aus.
 
+Für die gezielte Fehlersuche kann `--diagnostics` ergänzt werden. Der Helfer
+meldet dann ausschließlich feste Rückgabegründe und begrenzte Formdaten wie
+Parameteranzahl, Codelänge und Zeichenprüfung. Anmeldecodes, States, URLs,
+Cookies, Tokens sowie frei angelieferte Parameternamen oder Werte werden nicht
+ausgegeben. Formatfehler, zu lange Codes und ein gewechselter USB-Anschluss
+erhalten unterscheidbare Hinweise. Diese Diagnose verändert weder die
+Stateprüfung noch PKCE, Einmaligkeit oder die Firmwaregrenzen; sie bestätigt
+keine erfolgreiche Anmeldung.
+
 ## Verbindung und Fehler
 
 - Ohne angeschlossenes Gerät oder mit mehreren Kandidaten werden keine Ports

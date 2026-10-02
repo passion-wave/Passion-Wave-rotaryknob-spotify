@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import re
 import secrets
+import sys
 import threading
 import time
 from urllib.parse import parse_qsl, urlsplit
@@ -42,7 +43,10 @@ ERRORS = {
     "auth_expired": "Die Anmeldung ist abgelaufen. Bitte Spotify erneut verbinden.",
     "auth_rejected": "Die Anmeldung wurde abgebrochen. Du kannst es erneut versuchen.",
     "callback_accepted": "Anmeldung an den RotaryKnob übergeben. Das Gerät prüft die Verbindung …",
-    "callback_invalid": "Diese Anmeldung gehört nicht zum aktuellen Einrichtungsvorgang.",
+    "callback_invalid": "Die Spotify-Rückmeldung konnte nicht zugeordnet werden. Bitte Spotify erneut verbinden.",
+    "callback_format": "Die Spotify-Rückmeldung hat ein unerwartetes Format. Bitte Spotify erneut verbinden.",
+    "callback_code_too_long": "Diese Version unterstützt die Länge der Spotify-Rückmeldung noch nicht. Dafür ist ein Softwareupdate erforderlich.",
+    "callback_port_changed": "Der USB-Anschluss wurde während der Anmeldung geändert. Bitte Spotify erneut verbinden.",
     "auth_failed": "Die neue Anmeldung wurde vom Knob nicht bestätigt. Bitte Spotify erneut verbinden.",
     "device_rejected": "Das Gerät konnte den Vorgang nicht annehmen. Gerätestatus prüfen und erneut versuchen.",
     "not_ready": "Der Knob ist noch nicht bereit. WLAN, Uhrzeit und geöffnetes Einrichtungsfenster prüfen.",
@@ -52,6 +56,11 @@ ERRORS = {
     "session": "Einrichtungsseite neu laden und erneut versuchen.",
     "request": "Die Anfrage konnte nicht verarbeitet werden.",
 }
+CALLBACK_DIAGNOSTIC_REASONS = frozenset({
+    "parse_invalid", "state_invalid", "no_pending", "state_mismatch", "session_missing",
+    "expired", "port_changed", "fields_invalid", "code_too_long", "code_invalid",
+    "rejected", "accepted", "device_error", "internal",
+})
 
 
 class SetupError(Exception):
@@ -286,9 +295,10 @@ class Pending:
 
 
 class SetupApp:
-    def __init__(self, device, clock=time.monotonic):
+    def __init__(self, device, clock=time.monotonic, diagnostics=False):
         self.device = device
         self.clock = clock
+        self.diagnostics = diagnostics
         self.sessions = {}
         self.pending = None
         self.lock = threading.RLock()
@@ -386,49 +396,98 @@ class SetupApp:
         self.device.request("cancel")
         return {"ok": True}
 
+    def callback_diagnostic(self, reason, parameter_count, values=None, port_matches=None):
+        """Opt-in structural evidence only; never serialize callback inputs or exceptions."""
+        if not self.diagnostics:
+            return
+        values = values or {}
+        code = values.get("code")
+        record = {
+            "reason": reason if reason in CALLBACK_DIAGNOSTIC_REASONS else "internal",
+            "parameter_count": parameter_count,
+            "code_length": len(code) if code is not None else None,
+            "code_ascii": code.isascii() if code is not None else None,
+            "code_printable_ascii": bool(re.fullmatch(r"[!-~]*", code)) if code is not None else None,
+            "port_matches": port_matches,
+            "has_iss": "iss" in values,
+            "has_scope": "scope" in values,
+            "has_error_uri": "error_uri" in values,
+        }
+        try:
+            print("PWSET_CALLBACK_DIAGNOSTIC " + json.dumps(record, separators=(",", ":")),
+                  file=sys.stderr, flush=True)
+        except (OSError, ValueError):
+            pass  # A closed diagnostic sink must not change the OAuth result.
+
     def callback(self, query):
         # Cross-site navigation deliberately need not carry the SameSite=Strict
         # cookie. Only the already CSRF-authorized, unguessable one-use state
         # identifies its originating session; no new session is made here.
+        parameter_count = query.count("&") + 1 if query else 0
+        values, port_matches = None, None
+
+        def diagnostic(reason):
+            self.callback_diagnostic(reason, parameter_count, values, port_matches)
+
         try:
             values = unique_object(parse_qsl(query, keep_blank_values=True, strict_parsing=True, max_num_fields=4))
         except ValueError:
+            diagnostic("parse_invalid")
             return
         state = values.get("state", "")
-        if not re.fullmatch(r"[0-9a-f]{48}", state) or not self.pending:
+        if not re.fullmatch(r"[0-9a-f]{48}", state):
+            diagnostic("state_invalid")
+            return
+        if not self.pending:
+            diagnostic("no_pending")
             return
         pending = self.pending
         if not hmac.compare_digest(pending.state, state):
+            diagnostic("state_mismatch")
             return
+        port_matches = pending.port == self.device.selected
         self.pending = None  # Consume before serial delivery, including timeout/error.
         session = self.sessions.get(pending.session)
         if not session:
+            diagnostic("session_missing")
             return
         session.authorization_status = "failed"
         if pending.expires <= self.clock() or session.expires <= self.clock():
             session.notice = "auth_expired"
+            diagnostic("expired")
             return
-        if pending.port != self.device.selected:
-            session.notice = "callback_invalid"
+        if not port_matches:
+            session.notice = "callback_port_changed"
+            diagnostic("port_changed")
             return
         has_code, has_error = "code" in values, "error" in values
         if has_code == has_error or not set(values) <= {"code", "state", "error", "error_description"}:
-            session.notice = "callback_invalid"
+            session.notice = "callback_format"
+            diagnostic("fields_invalid")
             return
         try:
             self.require_open()
             if has_error:
                 self.device.request("cancel")
                 session.notice = "auth_rejected"
+                diagnostic("rejected")
             else:
                 code = values["code"]
+                if len(code) > 1024:
+                    session.notice = "callback_code_too_long"
+                    diagnostic("code_too_long")
+                    return
                 if not re.fullmatch(r"[!-~]{1,1024}", code):
-                    raise SetupError("callback_invalid")
+                    session.notice = "callback_format"
+                    diagnostic("code_invalid")
+                    return
                 self.device.request("callback", code=code, state=state)
                 session.notice = "callback_accepted"
                 session.authorization_status = "waiting"
+                diagnostic("accepted")
         except SetupError as error:
             session.notice = error.code
+            diagnostic("device_error")
 
 
 class SetupServer(ThreadingHTTPServer):
@@ -593,11 +652,13 @@ def main():
     parser = argparse.ArgumentParser(description="PassionWave Spotify per USB einrichten")
     parser.add_argument("--port", help="USB-Anschluss explizit wählen; nur aufgelistete USB-Ports")
     parser.add_argument("--no-browser", action="store_true", help="Browser nicht automatisch öffnen")
+    parser.add_argument("--diagnostics", action="store_true",
+                        help="Nur feste Callback-Diagnosewerte ausgeben, ohne Anmeldedaten")
     args = parser.parse_args()
     device = None
     try:
         device = SerialDevice(args.port)
-        server = SetupServer(SetupApp(device))
+        server = SetupServer(SetupApp(device, diagnostics=args.diagnostics))
     except ImportError:
         print("Bitte zuerst die Abhängigkeit aus tools/spotify_setup/requirements.txt installieren.")
         return 1
