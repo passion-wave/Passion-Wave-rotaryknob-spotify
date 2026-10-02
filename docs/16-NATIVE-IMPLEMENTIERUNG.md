@@ -16,7 +16,7 @@ Die ESP-IDF-Projekte in `firmware/s3` und `firmware/companion` ersetzen für die
 | Wetterbilder/Avatar | 67 Schlüssel, 55 unveränderte JPEGs, begrenzter Decoderworker, echte Wetterbindung, Fotos/analoge Uhr, Morgenavatar/Haarwahl | Physische Geräte-, Leerlauf- und Speichermessung; Hostdecoder samt unabhängiger Farbprüfung bestanden |
 | Chipkommunikation | Begrenzte COBS/CRC-Frames, Rollen/Sitzung/Sequenz und Heartbeat | Tatsächliche UART-Verbindung; Heartbeat allein ist keine Pair-OTA-Gesundheitsbestätigung |
 | Updateprüfung/Staging | ECDSA-P256/SHA256 über exakte Manifestbytes, zwei Rollen, Hardware/Protokoll/Schema/Version, gestreamte Imagehashes, authentifizierter Upload, persistentes Journal, Companion-Empfänger | Provisionierter Trust, vollständige S3-Aktivierungskoordination und reale Fehler-/Rollbacktests. Staging ist kein ausgeführtes Update; Aktivierung bleibt gesperrt |
-| Spotify | Direkter S3-Web-API-Provider im expliziten Laborprofil; USB-PKCE, Refresh, Ausgabewahl, Play/Pause/Next/Previous/Volume, Playliststart und echte UI-/Websitebindung; eigene Lab-App samt Redirect angelegt; Standardprofil deaktiviert | Echte Konten-/Roam-/Move-Tests, erweiterte Medienfunktionen, kommerzielle Controller-Freigabe und mobiler Kunden-Anmeldeweg |
+| Spotify | Direkter S3-Web-API-Provider im expliziten Laborprofil; USB-PKCE, Refresh, Ausgabewahl, Play/Pause/Next/Previous/Volume, Playliststart und echte UI-/Websitebindung; eigene Lab-App samt Redirect angelegt; erste reale Anmeldung auf dev.8 geräte- und nutzerbestätigt; Standardprofil deaktiviert | Tokenpersistenz nach Neustart, Kontowechsel, Roam-/Move-Wiedergabetests, erweiterte Medienfunktionen, kommerzielle Controller-Freigabe und mobiler Kunden-Anmeldeweg |
 | Weitere Ports | Radar, native Sonos-Option und Klinke bleiben im Gesamtplan | Keine Wiedergabe-, Radar- oder Kopfhörerfähigkeit aus dieser Basis ableiten |
 
 ## Einrichtung und Sicherheitsgrenze dieses Laborstands
@@ -447,6 +447,31 @@ gestartet. Die echte HELLO-Antwort bestätigte wieder dev.8,
 `lab_enabled: true` und `setup_open: false`. Die Ursache der USB-Unterbrechung
 ist nicht bewiesen; dafür wurde keine zusätzliche Firmwareänderung vorgenommen.
 
-Der frische OAuth-Retest läuft. Erfolgreicher TLS-Aufbau, Verknüpfung,
-Tokenpersistenz nach Neustart und hörbare Connect-Ausgabe bleiben getrennte
-Gerätenachweise; bislang ist kein erfolgreicher Abschluss belegt.
+Zum Zeitpunkt dieses USB-Nachweises stand der frische OAuth-Retest noch aus.
+TLS-Aufbau, Verknüpfung, Tokenpersistenz nach Neustart und hörbare Connect-Ausgabe
+wurden als getrennte Gerätenachweise weitergeführt.
+
+### Erste erfolgreiche Geräteanmeldung auf dev.8
+
+Der anschließende reale Versuch am 02.10.2026 war erfolgreich; der Nutzer
+bestätigte ausdrücklich „erfolgreich“. Die gefilterte Helferdiagnose verzeichnete
+einen angenommenen Callback mit drei Parametern, 366 druckbaren ASCII-Codezeichen
+und keinem Fehlerfeld. Auf `authorizing` folgten `state: ready`, `error: none`,
+`linked: true`, `network_connected: true`, `http_status: 204` und
+`attempt_confirmed: true`. Im neuen Diagnoseprotokoll trat kein freigegebenes
+Transportfehlerereignis auf. Codes, Tokens und States wurden nicht aufgezeichnet.
+
+Die Bestätigung gilt für genau diesen neuen Anmeldeversuch. Sie wird laut
+Implementierung erst nach erfolgreichem Tokenaustausch und NVS-Speicherung
+gesetzt. Damit sind der echte TLS-/Tokenabschluss und die Geräteverknüpfung
+belegt; **Persistenz nach einem Neustart wurde noch nicht geprüft**. HTTP 204
+ist der zuletzt beobachtete Providerstatus nach dem Abschluss, keine belegte
+Antwort des Token-Endpunkts und kein Nachweis gestarteter oder hörbarer
+Wiedergabe. Eine spätere HELLO-Abfrage
+bestätigte weiterhin dev.8 bei inzwischen geschlossenem Setupfenster; dieses
+HELLO enthält keinen erneuten Spotify-Status.
+
+Sonos-Roam-/Move-Auswahl und hörbare Connect-Steuerung, Kontowechsel/Refresh,
+mobile Kundeneinrichtung sowie kommerzielle Freigabe bleiben offen. Dieser
+erfolgreiche Anmeldeversuch ersetzt weder die USB-Dauerprüfung noch die übrigen
+Geräte- und Produktabnahmen.

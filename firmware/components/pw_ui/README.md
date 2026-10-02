@@ -21,8 +21,11 @@ die zusammengefasste Anwendungseinstellung.
   Kein Token, Kennwort oder QR-Inhalt wird geloggt. Beim Schließen verschwindet
   das QR-Muster. Dies ist der Labor-AP-Weg, noch kein nachgewiesener sicherer
   schreibender Heimnetz-Zugriff auf allen Kundenbrowsern.
-- Drei klare Ziele: Musik, Wetter, Gerät. Die Musikseite meldet den noch nicht
-  verfügbaren Spotify-Anschluss ausdrücklich; sie simuliert keine Wiedergabe.
+- Drei klare Ziele: Musik, Wetter, Gerät. Das Standardprofil hält Spotify
+  deaktiviert. Im Laborprofil führt `Musik` zur echten Spotify-Steuerung:
+  oben `Ausgabe wählen`, Play/Pause, vor/zurück und Lautstärke am Ring. Die
+  erste Geräteanmeldung auf dev.8 ist bestätigt; physische Bedienprüfung und
+  hörbare Wiedergabe auf den Connect-Lautsprechern bleiben offen.
 - Wetter zeigt den realen Snapshot mit Temperatur, Zustand, Wind, Regenmenge
   pro Stunde, zwei Tagesprognosen und Herkunft. Fehlende Werte werden nicht
   durch Null ersetzt. Der Wetterzustand bleibt ausdrücklich eine Prognose.

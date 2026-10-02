@@ -5,8 +5,19 @@ den RotaryKnob weiter. Er steuert keine Lautsprecher. PKCE-Verifier, Tokenaustau
 Tokenablage, Erneuerung und Spotify-API liegen ausschließlich auf dem S3. Ein
 PassionWave-Cloudservice wird nicht verwendet.
 
-**Entwicklungsstand:** echter lokaler HTTP-/USB-Helfer mit isolierten Tests, noch
-keine bestätigte Geräteanmeldung. Die öffentliche App-ID verweist auf die nach ausdrücklicher Nutzerfreigabe am 01.10.2026 angelegte „PassionWave RotaryKnob Lab“-App. Development Mode und `http://127.0.0.1:8766/callback` wurden im Dashboard bestätigt. Testkontonutzung, echte Verknüpfung und Produktfreigabe sind dadurch noch nicht abgenommen. Die öffentlichen Profildaten stehen in [spotify-lab.json](../../profiles/spotify-lab.json); `tools/check.py` prüft ihre Übereinstimmung mit Firmware und Helfer. Dieses Werkzeug legt selbst keine Spotify-App an und akzeptiert keine Bedingungen.
+**Entwicklungsstand:** echter lokaler HTTP-/USB-Helfer mit isolierten Tests und
+erster realer Geräteanmeldung auf dev.8 am 02.10.2026. Der S3 bestätigte den
+konkreten Anmeldeversuch mit `linked: true`, `state: ready` und `error: none`;
+der Nutzer bestätigte den Erfolg ebenfalls. Tokenpersistenz nach Neustart,
+Kontowechsel, hörbare Wiedergabe und Produktfreigabe bleiben offen.
+[Gerätenachweis](../../docs/16-NATIVE-IMPLEMENTIERUNG.md#erste-erfolgreiche-ger%C3%A4teanmeldung-auf-dev8).
+
+Die öffentliche App-ID verweist auf die nach ausdrücklicher Nutzerfreigabe am
+01.10.2026 angelegte „PassionWave RotaryKnob Lab“-App. Development Mode und
+`http://127.0.0.1:8766/callback` wurden im Dashboard bestätigt. Die öffentlichen
+Profildaten stehen in [spotify-lab.json](../../profiles/spotify-lab.json);
+`tools/check.py` prüft ihre Übereinstimmung mit Firmware und Helfer. Dieses
+Werkzeug legt selbst keine Spotify-App an und akzeptiert keine Bedingungen.
 
 ## Start
 
@@ -165,7 +176,9 @@ Die feste Produktbindung wird separat geprüft. Er prüft speziell zusätzliche 
 Strict-Cookie/Rückleitung, ausstehenden
 Callback gegenüber bestätigtem Status, Bedienbarkeit bei 390 px und leere
 Webstorage-APIs. Screenshots werden ausschließlich in ein temporäres Verzeichnis
-geschrieben. Reale USB-/OAuth-/Kontowechsel-/Treiberprüfungen sind separat offen.
+geschrieben. Die erste reale USB-/OAuth-Anmeldung auf dev.8 ist separat
+dokumentiert; Kontowechsel, Neustartpersistenz und weitere Treiberprüfungen
+bleiben offen.
 
 Primärquellen: [Spotify PKCE](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow),
 [Spotify Redirectregeln](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri),

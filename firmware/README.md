@@ -45,11 +45,13 @@ die HA-/ESPHome-Laufzeit wird nicht als Produktabhängigkeit übernommen.
 ## Offene Geräte- und Produktabnahmen
 
 Erfolgreiche Builds und Hosttests ersetzen keine physische Abnahme. Schneller
-Seitenaufbau und Heim-WLAN-Einrichtung wurden am iPhone bestätigt; daraus folgt
-keine vollständige Feature- oder Produktfreigabe. Offen bleiben insbesondere:
+Seitenaufbau und Heim-WLAN-Einrichtung wurden am iPhone bestätigt. Die erste echte
+Spotify-Anmeldung auf dev.8 wurde vom S3 für den konkreten Anmeldeversuch und vom
+Nutzer bestätigt; TLS und Tokenabschluss sind damit belegt. Daraus folgt keine
+vollständige Feature- oder Produktfreigabe. Offen bleiben insbesondere:
 
-- Erfolgreicher Spotify-Anmeldeabschluss, hörbare Connect-Ausgabe auf Roam/Move,
-  mobiles Kunden-Onboarding und kommerzielle Controller-Freigabe.
+- Tokenpersistenz nach Neustart, Kontowechsel, hörbare Connect-Ausgabe auf
+  Roam/Move, mobiles Kunden-Onboarding und kommerzielle Controller-Freigabe.
 - Sicherer, jederzeit schreibender Heimnetz-Zugriff (G2); die aktuelle
   Heimnetz-Website bleibt lesend. Einrichtung erfolgt im geschützten Geräte-AP.
 - Reale Bedien-, Wetter-, Speicher-, TLS- und Mischlastmessungen sowie Dauerlauf.
