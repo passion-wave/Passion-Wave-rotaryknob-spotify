@@ -1,11 +1,12 @@
-"""Lossy, secret-free recognition of fixed IDF errors and device-fetch metadata.
+"""Lossy, secret-free recognition of fixed IDF errors and Spotify metadata.
 
 Only fixed event names and bounded numeric metadata survive. This is not a
 log sanitizer: unrecognized lines, contexts, names and suffixes are discarded.
 Patterns mirror esp-tls/{esp_tls,esp_tls_mbedtls}.c, esp_http_client.c and
 mbedtls/esp_crt_bundle/esp_crt_bundle.c in the pinned IDF source tree, plus the
-fixed pw_spotify device-fetch summary. Generic IDF events do not identify the
-requesting firmware task. Device-fetch results do not prove playback.
+fixed pw_spotify device-fetch and playback summaries. Generic IDF events do not
+identify the requesting firmware task. Device-fetch results and playback metadata
+do not prove audible playback.
 """
 import re
 
@@ -21,6 +22,12 @@ def _pattern(tag, message):
 # Each capture is numeric, with a fixed output key, radix, sign and range.
 # DNS hostnames/pointers and socket descriptors are deliberately not captured.
 _RULES = (
+    (_pattern(b"pw_spotify", rb"playback http=(0|[1-5][0-9]{2}) transport=(-?[0-9]{1,6}) "
+              rb"valid=([01]) known=([01]) playing=([01]) listed=([01]) selected=([01])"),
+     "spotify_playback", (("http_status", 10, 1, 0, 599), ("transport", 10, 1, -65535, 65535),
+                          ("valid", 10, 1, 0, 1), ("known", 10, 1, 0, 1),
+                          ("playing", 10, 1, 0, 1), ("listed", 10, 1, 0, 1),
+                          ("selected", 10, 1, 0, 1))),
     (_pattern(b"pw_spotify", rb"devices http=(0|[1-5][0-9]{2}) transport=(-?[0-9]{1,6}) "
               rb"valid=([01]) listed=([0-9]{1,5}) count=([0-9]{1,2})"),
      "spotify_devices", (("http_status", 10, 1, 0, 599), ("transport", 10, 1, -65535, 65535),

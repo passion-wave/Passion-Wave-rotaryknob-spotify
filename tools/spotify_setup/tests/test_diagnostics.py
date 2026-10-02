@@ -13,6 +13,76 @@ def log(tag, text, level="E"):
 
 
 class DiagnosticsTests(unittest.TestCase):
+    def test_playback_metadata_has_only_fixed_bounded_fields(self):
+        flags = ("valid", "known", "playing", "listed", "selected")
+        for mask in range(32):
+            values = {name: (mask >> bit) & 1 for bit, name in enumerate(flags)}
+            message = "playback http=200 transport=0 " + " ".join(
+                f"{name}={value}" for name, value in values.items())
+            with self.subTest(mask=mask):
+                result = parse_firmware_diagnostic(log("pw_spotify", message, "I"))
+                self.assertEqual(result, {"event": "spotify_playback", "http_status": 200,
+                                          "transport": 0, **values})
+                for key, value in result.items():
+                    if key != "event":
+                        self.assertIs(type(value), int)
+
+    def test_playback_http_and_transport_boundaries(self):
+        tail = " valid=0 known=0 playing=0 listed=0 selected=0"
+        for http in (0, 100, 204, 403, 599):
+            for transport in (-65535, -1, 0, 1, 65535):
+                with self.subTest(http=http, transport=transport):
+                    message = f"playback http={http} transport={transport}" + tail
+                    result = parse_firmware_diagnostic(log("pw_spotify", message, "I"))
+                    self.assertEqual(result["http_status"], http)
+                    self.assertEqual(result["transport"], transport)
+        for field, invalid in (("http", (-1, 1, 99, 600, 1000)),
+                               ("transport", (-65536, 65536, 1000000))):
+            for value in invalid:
+                message = "playback http=200 transport=0" + tail
+                message = message.replace(f"{field}={200 if field == 'http' else 0}",
+                                          f"{field}={value}")
+                with self.subTest(field=field, value=value):
+                    self.assertIsNone(parse_firmware_diagnostic(log("pw_spotify", message, "I")))
+
+    def test_playback_flags_reject_ranges_and_wrong_types(self):
+        message = "playback http=200 transport=0 valid=1 known=1 playing=1 listed=1 selected=1"
+        for field in ("valid", "known", "playing", "listed", "selected"):
+            for value in ("-1", "2", "01", "1.0", "true", "null", '"1"', "SECRET"):
+                with self.subTest(field=field, value=value):
+                    changed = message.replace(f"{field}=1", f"{field}={value}")
+                    self.assertIsNone(parse_firmware_diagnostic(log("pw_spotify", changed, "I")))
+        raw = log("pw_spotify", message, "I")
+        for value in (None, True, 1, raw.decode("ascii"), bytearray(raw), memoryview(raw)):
+            with self.subTest(value_type=type(value).__name__):
+                self.assertIsNone(parse_firmware_diagnostic(value))
+
+    def test_playback_rejects_suffixes_secrets_and_wrong_context(self):
+        message = "playback http=200 transport=0 valid=1 known=1 playing=1 listed=1 selected=1"
+        known = log("pw_spotify", message, "I")[:-2]
+        for secret in (b"name=SECRET-ROOM", b"id=SECRET-ID", b"Bearer SECRET-TOKEN",
+                       b"code=SECRET-CODE", b"https://secret.example"):
+            for line in (known + b" " + secret, secret + b" " + known,
+                         known + b"\n" + secret, known + b"\x00" + secret):
+                self.assertIsNone(parse_firmware_diagnostic(line))
+        for line in (log("wrong-tag", message, "I"), log("pw_spotify", message, "D"),
+                     known + b" selected=0", known.replace(b"playing=1 ", b""),
+                     known.replace(b"http=200", b"http=SECRET"),
+                     known.replace(b"transport=0", b"transport=SECRET")):
+            self.assertIsNone(parse_firmware_diagnostic(line))
+
+    def test_playback_accepts_only_supported_colour_and_line_framing(self):
+        known = log("pw_spotify", "playback http=204 transport=0 valid=1 known=0 "
+                    "playing=0 listed=0 selected=0", "I")[:-2]
+        expected = {"event": "spotify_playback", "http_status": 204, "transport": 0,
+                    "valid": 1, "known": 0, "playing": 0, "listed": 0, "selected": 0}
+        for ending in (b"", b"\r", b"\n", b"\r\n"):
+            self.assertEqual(parse_firmware_diagnostic(b"\x1b[0;32m" + known + b"\x1b[0m" + ending),
+                             expected)
+        for line in (known + b"\n\n", known + b"\x1b[2J", known + b"\t",
+                     known + b"\xff", known + b"\x1b]0;SECRET\x07"):
+            self.assertIsNone(parse_firmware_diagnostic(line))
+
     def test_device_fetch_metadata_and_rejected_payloads(self):
         valid = "devices http=200 transport=0 valid=1 listed=2 count=1"
         self.assertEqual(parse_firmware_diagnostic(log("pw_spotify", valid, "I")),

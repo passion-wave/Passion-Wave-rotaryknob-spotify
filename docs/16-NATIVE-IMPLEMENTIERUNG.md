@@ -1,6 +1,6 @@
 # Native Implementierung und Geräteabnahme
 
-Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.10`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
+Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.11`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
 
 ## Reale Implementierung
 
@@ -615,3 +615,35 @@ Portbesitzer aus. Dieser Prozess wurde nicht beendet, der Port nicht parallel
 geöffnet und keine weitere Firmware geschrieben. Dieser Hostkonflikt ist kein
 Nachweis eines erneuten Geräte- oder Spotify-Fehlers. Der Test über die sichtbare
 Musikseite kann unabhängig fortgesetzt werden.
+
+
+### Wiedergabediagnose / dev.11
+
+Nach Auswahl des namenlosen Eintrags meldete der Nutzer die Standardüberschrift
+`Deine Musik`. Diese erscheint sowohl bei unbekanntem Playback als auch bei
+bekanntem Playback ohne Titel; sie unterscheidet den konkreten Fehler nicht.
+Die erneute USB-Abfrage gelang inzwischen wieder und bestätigte dev.10 sowie
+zwei weitere Geräteabrufe mit HTTP 200, gültigem Format und zwei Einträgen.
+Die direkte Spotify-Connect-Wiedergabe auf dem Roam wird für den aktuellen Test
+noch ausdrücklich gegenüber AirPlay/Bluetooth beziehungsweise Stille abgefragt.
+
+Die bisherige Diagnose erfasst nur den Geräteendpunkt. dev.11 ergänzt deshalb
+eine getrennte, feste numerische Wiedergabezeile: HTTP-/Transportstatus,
+Formatprüfung, bekannter/spielender Zustand und Übereinstimmung des aktiven
+Geräts mit Liste und Auswahl. Antwortinhalte, Gerätenamen, Geräte-IDs und
+Anmeldedaten werden nicht protokolliert. Die Diagnose ändert weder Geräteauswahl
+noch Abspielbefehle; eine API-Rückmeldung beweist keine hörbare Wiedergabe.
+Vor der Installation bestanden 419 Modell- und 1104 Worker-Assertions mit
+ASan/UBSan sowie 46 Helfer- und 51 Frameworktests. Die Regressionen trennen
+HTTP 204, gültiges/ungültiges HTTP 200, HTTP 403 und Transportfehler; sie decken
+veralteten beziehungsweise teilweise geparsten Arbeitszustand, andere Auswahl,
+fehlenden Listeneintrag und Kontositzungswechsel ab. Listen-/Auswahlvergleich
+erfolgt unter Mutex nur für die passende Sitzung gegen den veröffentlichten
+Zustand. Die Parserflags beschreiben die Antwort selbst; diese Korrelationen
+beweisen weder die spätere UI-Anzeige noch erfolgreiche Steuerung.
+
+Alle drei ESP-IDF-Profile bauen; CMake und Appdeskriptoren bestätigen dev.11.
+Standard-S3: **2.711.552 Byte**, Labor-S3: **2.723.984 Byte**, Companion:
+**278.064 Byte**. Laborimage-SHA-256:
+`8cfbb99eb40b56e85b01b65d04f93a00dad6bfab4589113e2bf0babdd2103369`.
+Die Installation und tatsächliche Wiedergaberückmeldung stehen noch aus.

@@ -805,6 +805,31 @@ static void poll_playback(uint32_t epoch, pw_spotify_snapshot_t *scratch) {
         scratch->observed_at_ms = now_us() / 1000;
         publish_playback(scratch, &dis, epoch);
     }
+    const bool known = valid && scratch->playback_known;
+    const bool playing = known && scratch->playing;
+    bool listed = false, selected = false;
+    if (known) {
+        lock();
+        if (service.epoch == epoch) {
+            /* Compare with the published list, not a possibly partial failed
+             * parse in scratch. These matches describe this lookup only, not
+             * a later UI snapshot or successful playback control. */
+            selected = service.snapshot.selected_device_id[0] &&
+                       !strcmp(scratch->active_device_id, service.snapshot.selected_device_id);
+            for (unsigned i = 0; i < service.snapshot.device_count && i < PW_SPOTIFY_MAX_DEVICES; ++i)
+                if (!strcmp(scratch->active_device_id, service.snapshot.devices[i].id)) {
+                    listed = true;
+                    break;
+                }
+        }
+        unlock();
+    }
+    /* valid/known/playing describe this response; epoch changes suppress only
+     * the correlations above. Never log body text, names, IDs or credentials. */
+    ESP_LOGI("pw_spotify", "playback http=%u transport=%d valid=%u known=%u playing=%u listed=%u selected=%u",
+             r.status >= 100 && r.status <= 599 ? (unsigned)r.status : 0,
+             (int)r.transport, (unsigned)valid, (unsigned)known, (unsigned)playing,
+             (unsigned)listed, (unsigned)selected);
     response_free(&r);
 }
 static void finish_command(uint32_t id, pw_spotify_command_state_t state, uint32_t epoch) {
