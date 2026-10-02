@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real Chromium + actual helper HTTP; isolated fake USB and intercepted Spotify."""
+"""Isolated real browsers + ephemeral helper HTTP; USB/Spotify are simulated."""
 import argparse
 from pathlib import Path
 import sys
@@ -8,7 +8,7 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from test_helper import FakeDevice, running_server
+from test_helper import FakeDevice, authorization_url, running_server
 import helper
 
 
@@ -27,15 +27,24 @@ class NetworkDevice(FakeDevice):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--browser", choices=("chromium", "webkit"), default="chromium")
     parser.add_argument("--screenshots", type=Path, default=Path(tempfile.gettempdir()) / "pw-spotify-setup-preview")
     args = parser.parse_args()
     args.screenshots.mkdir(parents=True, exist_ok=True)
     device = NetworkDevice()
     device.setup = False
     app = helper.SetupApp(device)
-    failures, callbacks = [], []
-    with running_server(app), sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
+    failures = []
+    with running_server(app) as server, sync_playwright() as playwright:
+        assert server.server_address[1] != 8766
+        # This isolated process uses an ephemeral test redirect so that real
+        # browser cookies and fetch metadata reach the fixture unchanged.
+        # Production's fixed binding/profile are separately covered by tests.
+        helper.HOST = "%s:%s" % server.server_address
+        helper.ORIGIN = "http://" + helper.HOST
+        helper.REDIRECT = helper.ORIGIN + "/callback"
+        device.url = authorization_url()
+        browser = getattr(playwright, args.browser).launch()
         context = browser.new_context(viewport={"width": 390, "height": 844})
         page = context.new_page()
         page.on("pageerror", lambda error: failures.append(str(error)))
@@ -43,14 +52,16 @@ def main():
         def network(route):
             request = route.request
             parsed = urlsplit(request.url)
-            if parsed.netloc == helper.HOST:
-                if parsed.path == "/callback":
-                    callbacks.append(dict(request.headers))
+            if parsed.scheme == "http" and parsed.netloc == helper.HOST:
+                # Only this ephemeral fixture may receive actual HTTP traffic.
+                # The real helper at 8766 falls through to route.abort below.
                 route.continue_()
-            elif parsed.netloc == "accounts.spotify.com" and parsed.path == "/authorize":
+            elif parsed.scheme == "https" and parsed.netloc == "accounts.spotify.com" and parsed.path == "/authorize":
                 # This is an intercepted fixture, never a real Spotify login.
                 state = parse_qs(parsed.query)["state"][0]
-                callback = helper.REDIRECT + "?" + urlencode({"state": state, "code": "browser-fixture-only"})
+                callback = helper.REDIRECT + "?" + urlencode({
+                    "state": state, "code": "browser-fixture-only", "extension": "ignored-fixture-value",
+                })
                 route.fulfill(content_type="text/html", body=f'<!doctype html><a id="finish" href="{callback}">Simulierte Anmeldung abschließen</a>')
             else:
                 failures.append("Unexpected network destination")
@@ -89,10 +100,14 @@ def main():
         page.locator("#finish").click()
         page.wait_for_url(helper.ORIGIN + "/")
         page.get_by_text("Das Gerät prüft die Spotify-Anmeldung …", exact=True).first.wait_for()
-        assert callbacks and "cookie" not in callbacks[0]  # Strict cookie stays off cross-site callback.
+        # Observe the real HTTP request, not pre-network route interception.
+        assert server.callback_cookie_present == [False]
         assert "callback" not in page.url and "code=" not in page.url
         assert not page.get_by_text("Spotify ist auf deinem Knob verbunden", exact=True).count()
         assert sum(method == "callback" for method, _ in device.calls) == 1
+        assert next(values for method, values in device.calls if method == "callback") == {
+            "state": "ab" * 24, "code": "browser-fixture-only",
+        }
         assert next(item for item in context.cookies() if item["name"] == "pw_setup")["value"] == original_cookie
         page.screenshot(path=str(args.screenshots / "03-device-checks.png"), full_page=True)
 
@@ -122,7 +137,8 @@ def main():
         assert not failures, failures
         context.close()
         browser.close()
-    print("Chromium setup flow passed: real loopback HTTP; USB/Spotify simulated; no real device/account used")
+    print(f"{args.browser} setup flow passed: ephemeral loopback HTTP; extra callback parameter ignored; "
+          "USB/Spotify simulated; no real helper/device/account used")
 
 
 if __name__ == "__main__":

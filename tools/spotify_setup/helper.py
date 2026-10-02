@@ -409,6 +409,8 @@ class SetupApp:
             "code_ascii": code.isascii() if code is not None else None,
             "code_printable_ascii": bool(re.fullmatch(r"[!-~]*", code)) if code is not None else None,
             "port_matches": port_matches,
+            "has_code": "code" in values,
+            "has_error": "error" in values,
             "has_iss": "iss" in values,
             "has_scope": "scope" in values,
             "has_error_uri": "error_uri" in values,
@@ -461,7 +463,10 @@ class SetupApp:
             diagnostic("port_changed")
             return
         has_code, has_error = "code" in values, "error" in values
-        if has_code == has_error or not set(values) <= {"code", "state", "error", "error_description"}:
+        # RFC 6749 section 4.1.2: ignore unrecognized response parameters.
+        # They never select an endpoint, client, scope or USB field. Duplicate
+        # keys were rejected above; success/error remain mutually exclusive.
+        if has_code == has_error:
             session.notice = "callback_format"
             diagnostic("fields_invalid")
             return

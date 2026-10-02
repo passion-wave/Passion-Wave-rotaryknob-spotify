@@ -175,7 +175,7 @@ class AppTests(unittest.TestCase):
         self.assertTrue(lines[0].startswith("PWSET_CALLBACK_DIAGNOSTIC "))
         record = json.loads(lines[0].split(" ", 1)[1])
         self.assertEqual(set(record), {"reason", "parameter_count", "code_length", "code_ascii",
-                                      "code_printable_ascii", "port_matches", "has_iss",
+                                      "code_printable_ascii", "port_matches", "has_code", "has_error", "has_iss",
                                       "has_scope", "has_error_uri"})
         self.assertIn(record["reason"], helper.CALLBACK_DIAGNOSTIC_REASONS)
         for secret in ("ab" * 24, "cd" * 24, self.sid, self.session.csrf,
@@ -217,23 +217,56 @@ class AppTests(unittest.TestCase):
                 self.assertEqual(self.session.authorization_status, "waiting" if accepted else "failed")
                 self.assertEqual(sum(method == "callback" for method, _ in self.device.calls), int(accepted))
 
-    def test_callback_extension_fields_are_diagnosed_without_allowing_them(self):
-        for key in ("iss", "scope", "error_uri", "PRIVATE-FIELD"):
+    def test_callback_extension_fields_are_ignored_and_never_forwarded(self):
+        for key in ("iss", "scope", "error_uri", "PRIVATE-FIELD", "access_token",
+                    "refresh_token", "redirect_uri", "client_id"):
             with self.subTest(field=key):
                 self.setUp()
                 self.app.authorize(self.sid)
                 record = self.diagnostic_callback(urlencode({"state": "ab" * 24,
                                                             "code": "PRIVATE-CODE", key: "PRIVATE-VALUE"}))
-                self.assertEqual(record["reason"], "fields_invalid")
+                self.assertEqual(record["reason"], "accepted")
                 self.assertEqual(record["parameter_count"], 3)
+                self.assertIs(record["has_code"], True)
+                self.assertIs(record["has_error"], False)
                 for known in ("iss", "scope", "error_uri"):
                     self.assertEqual(record["has_" + known], key == known)
-                self.assertEqual(self.session.notice, "callback_format")
+                self.assertEqual(self.session.notice, "callback_accepted")
                 self.assertIsNone(self.app.pending)
-                self.assertNotIn("callback", [method for method, _ in self.device.calls])
+                callbacks = [values for method, values in self.device.calls if method == "callback"]
+                self.assertEqual(callbacks, [{"code": "PRIVATE-CODE", "state": "ab" * 24}])
+                status = json.dumps(self.app.status(self.sid))
+                self.assertNotIn("PRIVATE-VALUE", status)
+                self.assertNotIn("PRIVATE-CODE", status)
+                self.assertNotIn("PRIVATE-FIELD", status)
+
+    def test_callback_extensions_do_not_replace_state_or_allow_replay(self):
+        self.app.authorize(self.sid)
+        wrong = {"state": "cd" * 24, "code": "PRIVATE-CODE", "PRIVATE-FIELD": "ab" * 24}
+        self.assertEqual(self.diagnostic_callback(urlencode(wrong))["reason"], "state_mismatch")
+        self.assertIsNotNone(self.app.pending)
+        self.assertNotIn("callback", [method for method, _ in self.device.calls])
+        valid = urlencode({"state": "ab" * 24, "code": "PRIVATE-CODE", "PRIVATE-FIELD": "PRIVATE-VALUE"})
+        self.assertEqual(self.diagnostic_callback(valid)["reason"], "accepted")
+        self.assertEqual(self.diagnostic_callback(valid)["reason"], "no_pending")
+        self.assertEqual(sum(method == "callback" for method, _ in self.device.calls), 1)
+
+    def test_error_callback_with_extension_still_cancels(self):
+        self.app.authorize(self.sid)
+        record = self.diagnostic_callback(urlencode({"state": "ab" * 24, "error": "access_denied",
+                                                    "PRIVATE-FIELD": "PRIVATE-VALUE"}))
+        self.assertEqual(record["reason"], "rejected")
+        self.assertIs(record["has_code"], False)
+        self.assertIs(record["has_error"], True)
+        self.assertEqual(self.session.notice, "auth_rejected")
+        self.assertIsNone(self.app.pending)
+        self.assertIn("cancel", [method for method, _ in self.device.calls])
+        self.assertNotIn("callback", [method for method, _ in self.device.calls])
 
     def test_callback_invalid_field_combinations_are_not_forwarded(self):
-        for fields in ({}, {"code": "PRIVATE-CODE", "error": "PRIVATE-VALUE"}):
+        for fields in ({}, {"PRIVATE-FIELD": "PRIVATE-VALUE"},
+                       {"code": "PRIVATE-CODE", "error": "PRIVATE-VALUE"},
+                       {"code": "PRIVATE-CODE", "error": "", "PRIVATE-FIELD": "PRIVATE-VALUE"}):
             with self.subTest(code_present="code" in fields):
                 self.setUp()
                 self.app.authorize(self.sid)
@@ -247,6 +280,9 @@ class AppTests(unittest.TestCase):
         self.app.authorize(self.sid)
         cases = [
             ("state=" + "ab" * 24 + "&state=PRIVATE-VALUE&code=PRIVATE-CODE", "parse_invalid", 3),
+            ("state=" + "ab" * 24 + "&%73tate=PRIVATE-VALUE&code=PRIVATE-CODE", "parse_invalid", 3),
+            ("state=" + "ab" * 24 + "&code=PRIVATE-CODE&code=PRIVATE-VALUE", "parse_invalid", 3),
+            ("state=" + "ab" * 24 + "&code=PRIVATE-CODE&PRIVATE-FIELD=a&PRIVATE-FIELD=b", "parse_invalid", 4),
             ("state=" + "ab" * 24 + "&code=PRIVATE-CODE&PRIVATE-FIELD", "parse_invalid", 3),
             ("state=" + "ab" * 24 + "&code=PRIVATE-CODE&a=1&b=2&c=3", "parse_invalid", 5),
             (urlencode({"state": "PRIVATE-VALUE", "code": "PRIVATE-CODE"}), "state_invalid", 2),
@@ -373,9 +409,24 @@ class SerialTests(unittest.TestCase):
 
 @contextmanager
 def running_server(app):
-    # Sequential fixtures share the registered loopback port. Reuse only closed
-    # fixture sockets in TIME_WAIT; the actual application keeps reuse disabled.
-    server = type("FixtureServer", (helper.SetupServer,), {"allow_reuse_address": True})(app)
+    # Bind fixtures to a fresh port so they cannot replace or reach a user's
+    # active helper. Requests retain the production Host/Origin validation.
+    class FixtureHandler(helper.Handler):
+        def do_GET(self):
+            if helper.urlsplit(self.path).path == "/callback":
+                # Observe only header presence, after the browser has emitted
+                # the actual HTTP request. Never record cookie/code values.
+                self.server.callback_cookie_present.append(bool(self.headers.get("Cookie")))
+            super().do_GET()
+
+    class FixtureServer(helper.SetupServer):
+        def __init__(self, fixture_app):
+            self.app = fixture_app
+            self.slots = threading.BoundedSemaphore(8)
+            self.callback_cookie_present = []
+            helper.ThreadingHTTPServer.__init__(self, ("127.0.0.1", 0), FixtureHandler)
+
+    server = FixtureServer(app)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
@@ -408,8 +459,10 @@ class HTTPTests(unittest.TestCase):
         self.csrf = json.loads(body)["csrf"]
 
     def request(self, method, path, body=None, headers=None):
-        connection = http.client.HTTPConnection("127.0.0.1", 8766, timeout=3)
-        connection.request(method, path, body, headers or {})
+        connection = http.client.HTTPConnection(*self.server.server_address, timeout=3)
+        request_headers = {"Host": helper.HOST}
+        request_headers.update(headers or {})
+        connection.request(method, path, body, request_headers)
         response = connection.getresponse()
         result = response.status, dict(response.getheaders()), response.read()
         connection.close()
@@ -421,7 +474,8 @@ class HTTPTests(unittest.TestCase):
         return self.request("POST", path, data, headers)
 
     def test_bind_cookie_csp_no_cors(self):
-        self.assertEqual(self.server.server_address, ("127.0.0.1", 8766))
+        self.assertEqual(self.server.server_address[0], "127.0.0.1")
+        self.assertNotEqual(self.server.server_address[1], 8766)
         status, headers, _ = self.request("GET", "/")
         self.assertEqual(status, 200)
         self.assertEqual(headers["Referrer-Policy"], "no-referrer")
@@ -429,6 +483,13 @@ class HTTPTests(unittest.TestCase):
         self.assertNotIn("Access-Control-Allow-Origin", headers)
         _, headers, _ = self.request("GET", "/api/session", headers={"Sec-Fetch-Site": "same-origin"})
         self.assertIn("HttpOnly; SameSite=Strict", headers["Set-Cookie"])
+
+    def test_production_bind_remains_fixed_without_opening_registered_port(self):
+        with patch.object(helper.ThreadingHTTPServer, "__init__", return_value=None) as initialize:
+            server = helper.SetupServer(self.app)
+        initialize.assert_called_once_with(("127.0.0.1", 8766), helper.Handler)
+        self.assertIs(server.app, self.app)
+        self.assertFalse(server.allow_reuse_address)
 
     def test_host_origin_csrf_and_cross_site_session_rejected(self):
         self.assertEqual(self.request("GET", "/", headers={"Host": "evil.test:8766"})[0], 403)
@@ -452,6 +513,27 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertFalse(json.loads(body)["spotify"]["linked"])
         self.assertNotIn(b"MUST-NEVER", body)
+
+    def test_callback_extension_is_ignored_without_secret_echo_or_usb_forwarding(self):
+        self.assertEqual(self.post("/api/authorize")[0], 200)
+        log = io.StringIO()
+        with redirect_stderr(log):
+            status, headers, body = self.request("GET", "/callback?" + urlencode({
+                "state": "ab" * 24, "code": "synthetic-code", "extension": "PRIVATE-EXTENSION",
+            }))
+        self.assertEqual(status, 303)
+        self.assertEqual(headers["Location"], "/")
+        self.assertNotIn("Set-Cookie", headers)
+        self.assertNotIn(b"PRIVATE-EXTENSION", body)
+        self.assertNotIn("PRIVATE-EXTENSION", log.getvalue())
+        callbacks = [values for method, values in self.app.device.calls if method == "callback"]
+        self.assertEqual(callbacks, [{"code": "synthetic-code", "state": "ab" * 24}])
+        status, _, body = self.request("GET", "/api/status", headers={
+            "Cookie": self.cookie, "Sec-Fetch-Site": "same-origin",
+        })
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)["notice"], helper.ERRORS["callback_accepted"])
+        self.assertNotIn(b"PRIVATE-EXTENSION", body)
 
     def test_non_json_duplicate_fields_and_unknown_methods_rejected(self):
         for path, body in [("/api/authorize", b'{"a":1,"a":2}'), ("/api/authorize", b"[]"),

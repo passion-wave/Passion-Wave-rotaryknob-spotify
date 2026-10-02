@@ -106,6 +106,15 @@ Die App-ID steht einmal in `helper.py`; Tests verwenden diesen Wert. Bei einer
 freigegebenen App-Umstellung muss sie mit `pw_spotify.h` übereinstimmen. Kunden
 geben keine eigene App-ID ein; es gibt keinen frei überschreibbaren OAuth-Endpunkt.
 
+Die von Spotify zurückkommende Antwort wird gesondert geprüft: Unbekannte
+Zusatzparameter werden entsprechend [RFC 6749 §4.1.2](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.1.2)
+ignoriert, nicht an das Gerät weitergereicht oder als Einstellungen übernommen.
+Das gilt nicht für die oben beschriebene Autorisierungs-URL vom Gerät, deren
+Profilprüfung unverändert strikt bleibt. Doppelte Parameter (auch nach
+URL-Dekodierung), gleichzeitig `code` und `error`, falscher/fehlender State,
+Überlänge und Wiederholung bleiben abgelehnt. Maximal vier Rückgabeparameter
+und 4096 Zeichen Anfragepfad; zum Gerät gelangen ausschließlich Code und State.
+
 Der 48-stellige Hex-State bleibt maximal zehn Minuten und nur für die beginnende
 Browsersitzung/den ausgewählten Port gültig. Eine parallele Sitzung darf ihn nicht
 ersetzen. Er wird vor USB-Übergabe einmalig verbraucht, auch bei Fehlern. Weil der
@@ -114,7 +123,7 @@ der vorher autorisierte unvorhersagbare State den lokalen Vorgang. Es entsteht
 keine neue Sitzung durch den Callback. Die Antwort ist stets `303 /`, ohne Code
 oder State in Zieladresse, HTML oder Logs. Ein anschließender gleichseitiger Fetch
 erkennt wieder den ursprünglichen Strict-Cookie; dieser Ablauf wird in Chromium
-getestet. Status bestätigt den tatsächlichen Gerätezustand, nicht den Redirect.
+und WebKit getestet. Status bestätigt den tatsächlichen Gerätezustand, nicht den Redirect.
 
 Autorisierungscode und State sind kurzzeitig in RAM. Python bietet keine
 garantierte Nullung unveränderlicher Strings. Der Helfer schreibt keine Codes,
@@ -128,17 +137,23 @@ qualifizierter mobiler Produkteinrichtungsweg.
 
 ```sh
 python3 -m unittest discover -s tools/spotify_setup/tests -p 'test_*.py' -v
-# Separates Testenvironment: Playwright 1.58.0 und dessen Chromium installieren.
-python3 tools/spotify_setup/tests/browser_check.py
+# Separates Testenvironment: Playwright 1.58.0 samt Chromium/WebKit installieren.
+python3 tools/spotify_setup/tests/browser_check.py --browser chromium
+python3 tools/spotify_setup/tests/browser_check.py --browser webkit
 ```
 
 Die Python-Tests prüfen das echte HTTP-Verhalten auf Loopback und reale
 Serial-Framinglogik gegen einen Fakeport: korrelierte IDs, verworfene Logs,
 Überlänge, Timeout, falscher Chip, physisches Fenster, Session/CSRF/Origin/Host,
 Scope-/Redirectprüfung, Einmaligkeit/TTL/Abbruch und keine Secret-Reflexion.
-Der Browsertest verwendet den echten HTTP-Helfer in einem isolierten Chromium-
-Profil. USB ist simuliert; jede Spotify-Navigation wird lokal abgefangen, kein
-echtes Konto benutzt. Er prüft speziell Strict-Cookie/Rückleitung, ausstehenden
+Der Browsertest verwendet den echten HTTP-Handler in isolierten Chromium-/WebKit-
+Profilen. Der Testserver erhält einen eigenen kurzlebigen Loopbackport; sämtliche
+Browseranfragen werden abgefangen und nur an ihn beziehungsweise die synthetische
+Spotify-Seite weitergereicht. Der reale Helfer auf Port 8766 und echtes USB werden
+nicht angesprochen. Nur im isolierten Testprozess verwenden Origin und Redirect
+den Testport; Browserheader und Cookies erreichen den HTTP-Handler unverändert.
+Die feste Produktbindung wird separat geprüft. Er prüft speziell zusätzliche Callbackparameter,
+Strict-Cookie/Rückleitung, ausstehenden
 Callback gegenüber bestätigtem Status, Bedienbarkeit bei 390 px und leere
 Webstorage-APIs. Screenshots werden ausschließlich in ein temporäres Verzeichnis
 geschrieben. Reale USB-/OAuth-/Kontowechsel-/Treiberprüfungen sind separat offen.

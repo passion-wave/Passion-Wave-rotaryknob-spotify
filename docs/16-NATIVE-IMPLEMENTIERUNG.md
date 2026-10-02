@@ -346,3 +346,34 @@ unverändert. 21 App-/Serial-Tests einschließlich Diagnose-Geheimnisfreiheit,
 Frameworkprüfungen bestanden. Keine neue Firmware wurde dafür geschrieben.
 Der Helfer wurde für einen frischen realen Versuch gestartet; dessen Diagnose,
 der ursächliche Fix und die erfolgreiche Spotify-Verknüpfung sind noch offen.
+
+### Korrektur der OAuth-Antwortprüfung
+
+Die nächsten beiden realen Versuche meldeten jeweils `fields_invalid` bei drei
+Parametern, 366 druckbaren ASCII-Codezeichen und passendem USB-Port. Ein zu
+langer Code oder falscher State war damit nicht der Ablehnungsgrund. Die
+Diagnose protokolliert bewusst keine Namen unbekannter Felder oder deren Werte;
+die alte Diagnose unterschied außerdem ein zusätzliches `error` nicht von
+einem unbekannten Feld. Eine erfolgreiche Verknüpfung ist noch nicht belegt.
+
+Die bisherige pauschale Ablehnung unbekannter OAuth-Antwortfelder wurde nach
+[RFC 6749 §4.1.2](https://www.rfc-editor.org/rfc/rfc6749.html#section-4.1.2)
+korrigiert. Solche Zusatzfelder werden jetzt ignoriert; nur geprüfte Code-/State-
+Werte gelangen über USB. Die Autorisierungs-URL vom S3 bleibt exakt an das
+Spotify-Profil gebunden. Doppelte Felder, `code` gleichzeitig mit `error`, falscher
+State, Wiederholung, TTL sowie Größen- und Portgrenzen bleiben unverändert
+abgesichert. Zwei neue boolesche Diagnosewerte unterscheiden Code- und
+Fehlerfeld, ohne deren Inhalt auszugeben. Es ist kein Firmwareupdate erforderlich.
+
+Die lokalen Helper-/HTTP-Tests verwenden nun ausschließlich eigene kurzlebige
+Loopbackports, damit ein echter laufender Einrichtungshelfer nicht mit einer
+simulierten Sitzung verwechselt werden kann. Isolierte Browser leiten jede
+Testanfrage dorthin oder zur synthetischen Spotify-Seite um; der echte Port 8766
+wird dabei nie angesprochen. Nur im Testprozess werden Origin und Redirect auf
+den Testport gesetzt; Browserheader und Cookies bleiben unverändert. 29 Helfer-
+und HTTP-Tests sowie beide Browserabläufe in Chromium und WebKit bestanden:
+zusätzliches Rückgabefeld, einmalige Code-/State-Übergabe, fehlender Strict-Cookie
+beim tatsächlichen Cross-Site-Callback und erst anschließende Statusbestätigung.
+Die 51 Frameworkprüfungen bestanden ebenfalls. Beide Browser werden künftig im
+Browserprüfjob ausgeführt. Der korrigierte echte Helfer läuft für den angefragten
+Retest; dessen erfolgreicher Geräteabschluss bleibt separat zu bestätigen.
