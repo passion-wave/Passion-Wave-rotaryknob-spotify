@@ -184,6 +184,31 @@ void pw_spotify_secret_json_delete(cJSON *j) {
     secret_tree_wipe(j);
     cJSON_Delete(j);
 }
+/* Called only after pw_spotify_text has validated the entire source and bounded
+ * the result. Keep visible names intact, including their spacing/formatting. */
+static bool device_name_visible(const char *name) {
+    const unsigned char *p = (const unsigned char *)name;
+    while (*p) {
+        uint32_t cp = *p++;
+        if (cp >= 0xC0) {
+            unsigned remaining = cp < 0xE0 ? 1 : cp < 0xF0 ? 2 : 3;
+            cp &= remaining == 1 ? 31 : remaining == 2 ? 15 : 7;
+            while (remaining--)
+                cp = (cp << 6) | (*p++ & 63);
+        }
+        /* Unicode spaces and common zero-width/directional/variation markers
+         * alone cannot provide a useful output label. */
+        if (!(cp <= 0x20 || cp == 0xA0 || cp == 0xAD || cp == 0x034F || cp == 0x061C ||
+              cp == 0x115F || cp == 0x1160 || cp == 0x1680 ||
+              (cp >= 0x180B && cp <= 0x180F) || (cp >= 0x2000 && cp <= 0x200F) ||
+              (cp >= 0x2028 && cp <= 0x202F) || (cp >= 0x205F && cp <= 0x206F) ||
+              cp == 0x3000 || (cp >= 0xFE00 && cp <= 0xFE0F) || cp == 0xFEFF ||
+              cp == 0xE0001 || (cp >= 0xE0020 && cp <= 0xE007F) ||
+              (cp >= 0xE0100 && cp <= 0xE01EF)))
+            return true;
+    }
+    return false;
+}
 static bool device(const cJSON *j, pw_spotify_device_t *d) {
     if (!cJSON_IsObject(j))
         return false;
@@ -195,6 +220,8 @@ static bool device(const cJSON *j, pw_spotify_device_t *d) {
     if (!pw_spotify_text(d->name, sizeof(d->name), str(field(j, "name"))) ||
         !pw_spotify_text(d->type, sizeof(d->type), str(field(j, "type"))))
         return false;
+    if (!device_name_visible(d->name))
+        strcpy(d->name, "Ausgabe ohne Namen");
     const cJSON *active = field(j, "is_active"), *restricted = field(j, "is_restricted"),
                 *support = field(j, "supports_volume");
     if (!cJSON_IsBool(active) || !cJSON_IsBool(restricted))

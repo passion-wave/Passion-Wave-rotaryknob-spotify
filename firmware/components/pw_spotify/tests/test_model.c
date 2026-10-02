@@ -153,6 +153,117 @@ static void test_devices(void) {
   CHECK(snapshot.devices_truncated);
   cJSON_Delete(j);
 }
+static cJSON *named_device(const char *id, const char *name) {
+  cJSON *d = parse(device_json);
+  CHECK(d);
+  CHECK(cJSON_ReplaceItemInObjectCaseSensitive(d, "id", cJSON_CreateString(id)));
+  CHECK(cJSON_ReplaceItemInObjectCaseSensitive(d, "name", cJSON_CreateString(name)));
+  return d;
+}
+static void test_device_names(void) {
+  memset(&snapshot, 0, sizeof(snapshot));
+  cJSON *j = cJSON_CreateObject();
+  cJSON *list = cJSON_AddArrayToObject(j, "devices");
+  cJSON *phone = named_device("phone-1", "iPhone");
+  cJSON *unnamed = named_device("unnamed-2", "");
+  cJSON_ReplaceItemInObjectCaseSensitive(phone, "is_active", cJSON_CreateFalse());
+  cJSON_AddItemToArray(list, phone);
+  cJSON_AddItemToArray(list, unnamed);
+  CHECK(pw_spotify_parse_devices(j, &snapshot));
+  CHECK(snapshot.device_count == 2 && !snapshot.devices_truncated);
+  CHECK(!strcmp(snapshot.devices[0].name, "iPhone"));
+  CHECK(!strcmp(snapshot.devices[0].id, "phone-1"));
+  CHECK(!snapshot.devices[0].active);
+  CHECK(!strcmp(snapshot.devices[1].name, "Ausgabe ohne Namen"));
+  CHECK(!strcmp(snapshot.devices[1].id, "unnamed-2"));
+  CHECK(snapshot.devices[1].active && !snapshot.devices[1].restricted);
+  CHECK(snapshot.devices[1].supports_volume && snapshot.devices[1].volume_known &&
+        snapshot.devices[1].volume == 42);
+  snapshot.enabled = snapshot.linked = snapshot.connected = true;
+  snapshot.state = PW_SPOTIFY_READY;
+  strcpy(snapshot.selected_device_id, "unnamed-2");
+  pw_spotify_disallows_t dis = {0};
+  pw_spotify_capabilities(&snapshot, &dis, true);
+  CHECK(snapshot.selected_present && !snapshot.selected_restricted);
+  CHECK(!strcmp(snapshot.selected_device_name, "Ausgabe ohne Namen"));
+  CHECK(!strcmp(snapshot.selected_device_id, "unnamed-2"));
+  CHECK(snapshot.can_play && snapshot.can_volume && snapshot.selected_volume == 42);
+  cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "is_restricted", cJSON_CreateTrue());
+  cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "supports_volume", cJSON_CreateFalse());
+  cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "volume_percent", cJSON_CreateNull());
+  CHECK(pw_spotify_parse_devices(j, &snapshot));
+  pw_spotify_capabilities(&snapshot, &dis, true);
+  CHECK(snapshot.selected_restricted && !snapshot.selected_supports_volume &&
+        !snapshot.selected_volume_known);
+  CHECK(!snapshot.can_play && !snapshot.can_pause && !snapshot.can_volume);
+
+  const char *blank[] = {
+      "", " \t\r\n\x7F\xC2\x85", "\xC2\xA0", "\xE1\x9A\x80",
+      "\xE2\x80\x80\xE2\x80\x8A", /* en quad/hair space */
+      "\xE2\x80\xA8\xE2\x80\xA9\xE2\x80\xAF", /* separators/narrow NBSP */
+      "\xE2\x81\x9F\xE3\x80\x80", /* medium mathematical/ideographic space */
+      "\xE2\x80\x8B\xE2\x80\x8C\xE2\x80\x8D", /* zero-width space/joiners */
+      "\xD8\x9C\xE2\x80\x8E\xE2\x80\x8F", /* directional marks */
+      "\xE2\x80\xAA\xE2\x80\xAE\xE2\x81\xA6\xE2\x81\xA9", /* bidi controls */
+      "\xE2\x81\xA0\xEF\xBB\xBF", /* word joiner/BOM */
+      "\xC2\xAD\xCD\x8F", /* soft hyphen/combining grapheme joiner */
+      "\xE1\x85\x9F\xE1\x85\xA0\xE1\xA0\x8B\xE1\xA0\x8E\xE1\xA0\x8F",
+      "\xEF\xB8\x80\xEF\xB8\x8F\xF3\xA0\x84\x80\xF3\xA0\x87\xAF", /* selectors */
+      "\xF3\xA0\x80\x81\xF3\xA0\x80\xA0\xF3\xA0\x81\xBF" /* tags */};
+  for (size_t i = 0; i < sizeof(blank) / sizeof(*blank); i++) {
+    cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "name", cJSON_CreateString(blank[i]));
+    CHECK(pw_spotify_parse_devices(j, &snapshot));
+    CHECK(snapshot.device_count == 2);
+    CHECK(!strcmp(snapshot.devices[1].name, "Ausgabe ohne Namen"));
+    CHECK(!strcmp(snapshot.devices[1].id, "unnamed-2"));
+    CHECK(snapshot.devices[1].active && snapshot.devices[1].restricted);
+  }
+  const char *visible[] = {"iPhone", "Küche", "東京", "🎵", "👩‍👩‍👧‍👦",
+                           "  Küche \xE2\x81\xA0", "\xE2\x80\x8BiPhone", ""};
+  for (size_t i = 0; i < sizeof(visible) / sizeof(*visible); i++) {
+    cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "name", cJSON_CreateString(visible[i]));
+    CHECK(pw_spotify_parse_devices(j, &snapshot));
+    CHECK(!strcmp(snapshot.devices[1].name, visible[i]));
+  }
+  char truncated[160];
+  memset(truncated, ' ', 128);
+  strcpy(truncated + 128, "Küche");
+  cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "name", cJSON_CreateString(truncated));
+  CHECK(pw_spotify_parse_devices(j, &snapshot));
+  CHECK(!strcmp(snapshot.devices[1].name, "Ausgabe ohne Namen"));
+  strcpy(truncated + 128, "\xC0\x80");
+  cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "name", cJSON_CreateString(truncated));
+  CHECK(!pw_spotify_parse_devices(j, &snapshot));
+  cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "name", cJSON_CreateString("\xED\xA0\x80"));
+  CHECK(!pw_spotify_parse_devices(j, &snapshot));
+  cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "name", cJSON_CreateNull());
+  CHECK(!pw_spotify_parse_devices(j, &snapshot));
+  cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "name", cJSON_CreateNumber(7));
+  CHECK(!pw_spotify_parse_devices(j, &snapshot));
+  cJSON_DeleteItemFromObjectCaseSensitive(unnamed, "name");
+  CHECK(!pw_spotify_parse_devices(j, &snapshot));
+  cJSON_Delete(j);
+
+  /* Playback uses the same device parser and must retain addressing/permissions. */
+  j = cJSON_CreateObject();
+  unnamed = named_device("unnamed-2", "\xE2\x80\x8B");
+  cJSON_AddItemToObject(j, "device", unnamed);
+  cJSON_AddBoolToObject(j, "is_playing", true);
+  CHECK(pw_spotify_parse_playback(j, &snapshot, &dis));
+  CHECK(snapshot.playback_known && snapshot.playing);
+  CHECK(!strcmp(snapshot.active_device_id, "unnamed-2"));
+  CHECK(!strcmp(snapshot.active_device_name, "Ausgabe ohne Namen"));
+  CHECK(snapshot.supports_volume && snapshot.volume_known && snapshot.volume == 42);
+  CHECK(!dis.pause && !dis.resume && !dis.next && !dis.previous);
+  cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "is_restricted", cJSON_CreateTrue());
+  CHECK(pw_spotify_parse_playback(j, &snapshot, &dis));
+  CHECK(dis.pause && dis.resume && dis.next && dis.previous);
+  CHECK(!strcmp(snapshot.active_device_id, "unnamed-2"));
+  CHECK(!strcmp(snapshot.active_device_name, "Ausgabe ohne Namen"));
+  cJSON_ReplaceItemInObjectCaseSensitive(unnamed, "name", cJSON_CreateNull());
+  CHECK(!pw_spotify_parse_playback(j, &snapshot, &dis));
+  cJSON_Delete(j);
+}
 static void test_playback_and_commands(void) {
   char input[2048];
   snprintf(
@@ -345,6 +456,7 @@ int main(void) {
   test_json();
   test_text_and_uri();
   test_devices();
+  test_device_names();
   test_playback_and_commands();
   test_tokens_and_storage();
   test_pkce();

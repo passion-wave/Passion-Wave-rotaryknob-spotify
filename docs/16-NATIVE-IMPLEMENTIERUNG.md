@@ -1,6 +1,6 @@
 # Native Implementierung und Geräteabnahme
 
-Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.9`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
+Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.10`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
 
 ## Reale Implementierung
 
@@ -545,3 +545,39 @@ ist, noch ihre Anzeige oder Auswahl auf dem Knob. Der Nutzer bestätigte separat
 hörbare Roam-Wiedergabe über die Spotify-App. Auswahl und hörbare Steuerung
 durch den Knob werden noch geprüft; auch die alleinige Ursache des zuvor
 fehlenden Sonos ist damit noch nicht abschließend belegt.
+
+### Leerer Geräteeintrag / dev.10
+
+Der Nutzer sieht auf dev.9 einen iPhone-Eintrag und eine weitere Schaltfläche
+ohne lesbaren Namen. Das beweist weiterhin nicht, dass der zweite Eintrag der
+Roam ist. Der genaue Roam-Name in Spotify und die Anzeige nach Auswahl der
+leeren Schaltfläche wurden zur Eingrenzung abgefragt; eine bloße Auswahl
+startet beziehungsweise verschiebt keine Wiedergabe.
+
+Ein reproduzierbarer Fehler im bisherigen Modell ist die unveränderte Übernahme
+leerer beziehungsweise ausschließlich unsichtbarer Gerätenamen. dev.10 ergänzt
+dafür zentral den neutralen Ersatztext `Ausgabe ohne Namen`, damit Geräteliste,
+Wiedergabezustand und die daraus gespeiste Website keine leere Gerätebezeichnung
+erhalten. Geräte-ID und Steuerrechte bleiben unverändert; weder Hersteller noch
+Modell werden aus dem fehlenden Namen geraten. Sichtbare gültige UTF-8-Namen
+bleiben erhalten. Fehlende, nicht-stringförmige und ungültig kodierte Namensfelder
+bleiben Antwortfehler. Das konkrete Verhalten am betroffenen Gerät ist noch zu
+prüfen; dev.10 ist noch nicht installiert.
+
+
+Vor dem Flash bestanden 419 Modell- und 791 Worker-Assertions mit ASan/UBSan,
+21 Picker-Assertions und 51 Frameworkprüfungen. Der Modelltest deckt insbesondere
+zwei Einträge (`iPhone` plus namenlose Ausgabe), Leerraum/Formatmarker,
+sichtbare Unicode-Namen, ungültiges UTF-8 sowie unveränderte IDs und Rechte ab.
+Ein isolierter Renderer mit den echten LVGL-9.2.2-Helfern und DE-Schriften zeigt
+auch die zweite Zeile für `Sonos Roam`, `Küche`, einen gekürzten langen ASCII-Namen
+und den Ersatztext korrekt. Das prüft Layout und Schrift im nativen Vollbild;
+es ist kein Nachweis des physischen Display-Teilrefreshs oder der tatsächlich
+von Spotify gelieferten Namen. Ein vorläufiger Host-Teilrefresh zeigte bei
+späteren Frames fehlende andere statische Elemente und bleibt als separate,
+nicht auf das Gerät übertragene Beobachtung offen.
+
+Alle drei ESP-IDF-Builds bestanden; CMake-Metadaten und binäre Appdeskriptoren
+melden dev.10. Standard-S3: **2.711.552 Byte**, Labor-S3: **2.723.600 Byte**,
+Companion: **278.064 Byte**. Laborimage-SHA-256:
+`86d11b72bde5d41b0d7d9da9f1329db72b99fec4609b2aa40503907faee160e3`.
