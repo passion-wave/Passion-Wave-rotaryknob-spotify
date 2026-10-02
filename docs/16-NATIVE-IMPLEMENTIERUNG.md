@@ -431,7 +431,22 @@ und Rückkehr aus `app_main`. USB-HELLO bestätigte dev.8 und aktives Laborprofi
 das Einrichtungsfenster ist nach dem Neustart erwartungsgemäß geschlossen.
 Dies ist eine Startmessung, keine TLS-Spitzen- oder Dauerlaufmessung.
 
-Erfolgreicher TLS-Aufbau, Verknüpfung, Tokenpersistenz nach Neustart und hörbare
-Connect-Ausgabe bleiben getrennte Gerätenachweise für den nächsten frischen
-Anmeldeversuch. Die letzte vollständige CI vor diesem Firmwarefix bestand für
-`c3cc5ad`; das ist kein CI-Nachweis für dev.8.
+Die vollständige CI für dev.8-Commit `c197e16` bestand anschließend in beiden
+Läufen: [36988465681](https://github.com/passion-wave/Passion-Wave-rotaryknob-spotify/actions/runs/36988465681)
+und [36988462086](https://github.com/passion-wave/Passion-Wave-rotaryknob-spotify/actions/runs/36988462086).
+Jeweils erfolgreich waren Vertrags-/Modellprüfungen, native Tests und
+Firmwarebuilds sowie Website- und USB-Anmeldetests mit simuliertem Gerät/Spotify
+in Chromium und WebKit. Dies bestätigt keine echte Spotify-Verknüpfung.
+
+Beim Wechsel vom erfolgreichen Bootmonitor zum Einrichtungshelfer liefen
+HELLO-Anfragen zunächst in einen Timeout. Ein anschließendes zwölfsekündiges
+Lesefenster empfing keine Bytes; auch die ROM-Synchronisation mit esptool erhielt
+keine Antwort. Nach vom Nutzer bestätigtem Abziehen und Wiedereinstecken in
+derselben Orientierung wurde direkt der Helfer als einziger USB-Besitzer
+gestartet. Die echte HELLO-Antwort bestätigte wieder dev.8,
+`lab_enabled: true` und `setup_open: false`. Die Ursache der USB-Unterbrechung
+ist nicht bewiesen; dafür wurde keine zusätzliche Firmwareänderung vorgenommen.
+
+Der frische OAuth-Retest läuft. Erfolgreicher TLS-Aufbau, Verknüpfung,
+Tokenpersistenz nach Neustart und hörbare Connect-Ausgabe bleiben getrennte
+Gerätenachweise; bislang ist kein erfolgreicher Abschluss belegt.
