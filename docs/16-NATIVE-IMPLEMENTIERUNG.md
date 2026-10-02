@@ -377,3 +377,21 @@ beim tatsächlichen Cross-Site-Callback und erst anschließende Statusbestätigu
 Die 51 Frameworkprüfungen bestanden ebenfalls. Beide Browser werden künftig im
 Browserprüfjob ausgeführt. Der korrigierte echte Helfer läuft für den angefragten
 Retest; dessen erfolgreicher Geräteabschluss bleibt separat zu bestätigen.
+
+### Callback angenommen, geräteseitige Verbindung noch fehlerhaft
+
+Die beiden nächsten realen Callbacks wurden angenommen: jeweils drei Parameter,
+366 druckbare ASCII-Codezeichen, passender State/USB-Anschluss, `has_error: false`.
+Damit ist die zuvor abgelehnte zusätzliche Rückgabeangabe für diese Versuche
+behoben. Der Knob meldete anschließend jedoch `linked: false`,
+`connected: true`, `state: unlinked`, `error: network`; die neue Verknüpfung
+wurde nicht bestätigt. Das grenzt den Fehler auf den Gerätetransport ein,
+beweist aber noch keine Ursache bei DNS, TCP, TLS oder beim Antwortempfang.
+
+Der Helfer ergänzt deshalb bei ausdrücklich aktivierter Diagnose die bereits
+vorhandenen, vollständig gefilterten IDF-Fehlernummern und Änderungen des
+tokenfreien Status. USB-Rohlogs und Zugangsdaten bleiben ausgeschlossen. Ein
+Netzwerkfehler beim Abschluss erhält einen zutreffenden eigenen Hinweis.
+40 isolierte Helfer-, HTTP- und Diagnoseprüfungen bestanden. dev.7 bleibt
+unverändert installiert; der eigentliche Netzwerkfehler und eine erfolgreiche
+Verknüpfung sind noch zu bestätigen beziehungsweise zu beheben.

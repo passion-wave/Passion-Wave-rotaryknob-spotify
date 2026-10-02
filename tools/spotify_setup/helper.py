@@ -18,6 +18,11 @@ import time
 from urllib.parse import parse_qsl, urlsplit
 import webbrowser
 
+if __package__:
+    from .diagnostics import parse_firmware_diagnostic
+else:
+    from diagnostics import parse_firmware_diagnostic
+
 HOST = "127.0.0.1:8766"
 ORIGIN = "http://" + HOST
 REDIRECT = ORIGIN + "/callback"
@@ -48,6 +53,7 @@ ERRORS = {
     "callback_code_too_long": "Diese Version unterstützt die Länge der Spotify-Rückmeldung noch nicht. Dafür ist ein Softwareupdate erforderlich.",
     "callback_port_changed": "Der USB-Anschluss wurde während der Anmeldung geändert. Bitte Spotify erneut verbinden.",
     "auth_failed": "Die neue Anmeldung wurde vom Knob nicht bestätigt. Bitte Spotify erneut verbinden.",
+    "auth_network": "Der Knob konnte die Verbindung zu Spotify nicht abschließen. Die Internetverbindung des Knobs muss geprüft werden.",
     "device_rejected": "Das Gerät konnte den Vorgang nicht annehmen. Gerätestatus prüfen und erneut versuchen.",
     "not_ready": "Der Knob ist noch nicht bereit. WLAN, Uhrzeit und geöffnetes Einrichtungsfenster prüfen.",
     "busy": "Der Knob bearbeitet noch einen Vorgang. Kurz warten und erneut prüfen.",
@@ -61,6 +67,10 @@ CALLBACK_DIAGNOSTIC_REASONS = frozenset({
     "expired", "port_changed", "fields_invalid", "code_too_long", "code_invalid",
     "rejected", "accepted", "device_error", "internal",
 })
+SPOTIFY_STATES = frozenset({"disabled", "unlinked", "waiting_network", "waiting_clock", "authorizing", "ready",
+                          "reauth_required", "rate_limited", "error", "suspended", "disconnecting"})
+SPOTIFY_ERRORS = frozenset({"none", "storage", "network", "auth", "forbidden", "no_device", "rate_limit",
+                          "response", "memory", "stale", "unsupported"})
 
 
 class SetupError(Exception):
@@ -111,7 +121,7 @@ def validate_authorization_url(url: str) -> str:
 
 class SerialDevice:
     """A single selected serial port; opening never deliberately toggles reset lines."""
-    def __init__(self, port=None, serial_module=None, port_provider=None):
+    def __init__(self, port=None, serial_module=None, port_provider=None, diagnostics=False):
         if serial_module is None:
             import serial
             from serial.tools import list_ports
@@ -121,6 +131,18 @@ class SerialDevice:
         self.selected = port
         self.serial = None
         self.request_id = secrets.randbelow(1_000_000) + 1
+        self.diagnostics = diagnostics
+
+    def diagnostic_line(self, raw):
+        if not self.diagnostics:
+            return
+        record = parse_firmware_diagnostic(raw)
+        if record is not None:
+            try:
+                print("PWSET_DEVICE_TRANSPORT " + json.dumps(record, separators=(",", ":")),
+                      file=sys.stderr, flush=True)
+            except (OSError, ValueError):
+                pass
 
     def ports(self):
         result = []
@@ -205,7 +227,8 @@ class SerialDevice:
                 raw = bytes(line).rstrip(b"\r")
                 line.clear()
                 if not raw.startswith(PREFIX):
-                    continue  # Discard firmware logs without printing or retaining them.
+                    self.diagnostic_line(raw)  # Only allowlisted enums/numbers, never raw logs.
+                    continue
                 try:
                     response = parse_json(raw[len(PREFIX):].decode("utf-8"))
                 except (ValueError, UnicodeError, RecursionError):
@@ -248,14 +271,10 @@ def validate_usb_response(method, response):
         fields.add("spotify")
         spotify = response.get("spotify")
         expected = {"linked", "state", "error", "connected", "session", "authorization_id", "http_status"}
-        states = {"disabled", "unlinked", "waiting_network", "waiting_clock", "authorizing", "ready",
-                  "reauth_required", "rate_limited", "error", "suspended", "disconnecting"}
-        errors = {"none", "storage", "network", "auth", "forbidden", "no_device", "rate_limit",
-                  "response", "memory", "stale", "unsupported"}
         if (not isinstance(spotify, dict) or set(spotify) != expected or
                 any(type(spotify.get(k)) is not bool for k in ("linked", "connected")) or
-                not isinstance(spotify.get("state"), str) or spotify["state"] not in states or
-                not isinstance(spotify.get("error"), str) or spotify["error"] not in errors or
+                not isinstance(spotify.get("state"), str) or spotify["state"] not in SPOTIFY_STATES or
+                not isinstance(spotify.get("error"), str) or spotify["error"] not in SPOTIFY_ERRORS or
                 type(spotify.get("session")) is not int or not 0 <= spotify["session"] <= 0xffffffff or
                 type(spotify.get("http_status")) is not int or not 0 <= spotify["http_status"] <= 599 or
                 not isinstance(spotify.get("authorization_id"), str) or
@@ -284,6 +303,7 @@ class Session:
     confirming_state: str = ""
     confirming_until: float = 0
     authorization_status: str = "none"
+    last_diagnostic: str = ""
 
 
 @dataclass
@@ -337,8 +357,8 @@ class SetupApp:
                 spotify = raw.get("spotify")
                 if not isinstance(spotify, dict) or any(type(spotify.get(k)) is not bool for k in ("linked", "connected")):
                     raise SetupError("usb_protocol")
-                if any(not isinstance(spotify.get(k), str) or not re.fullmatch(r"[a-z_]{1,40}", spotify[k])
-                       for k in ("state", "error")):
+                if (not isinstance(spotify.get("state"), str) or spotify["state"] not in SPOTIFY_STATES or
+                        not isinstance(spotify.get("error"), str) or spotify["error"] not in SPOTIFY_ERRORS):
                     raise SetupError("usb_protocol")
                 confirmation = spotify.get("authorization_id")
                 if not isinstance(confirmation, str) or not re.fullmatch(r"(?:[0-9a-f]{48})?", confirmation):
@@ -351,15 +371,36 @@ class SetupApp:
                     elif spotify["state"] != "authorizing" or self.clock() >= session.confirming_until:
                         session.authorization_status = "failed"
                         session.confirming_state = ""
-                        session.notice = "auth_failed"
+                        session.notice = "auth_network" if spotify["error"] == "network" else "auth_failed"
                 if spotify["linked"] and spotify["state"] == "ready" and session.authorization_status in {"none", "confirmed"}:
                     session.notice = ""
+                self.status_diagnostic(session, spotify)
         except SetupError as error:
             result["error"] = error.code
             result["message"] = ERRORS[error.code]
         result["notice"] = ERRORS.get(session.notice, "")
         result["authorization_status"] = session.authorization_status
         return result
+
+    def status_diagnostic(self, session, spotify):
+        if not self.diagnostics:
+            return
+        if (not isinstance(spotify.get("state"), str) or spotify["state"] not in SPOTIFY_STATES or
+                not isinstance(spotify.get("error"), str) or spotify["error"] not in SPOTIFY_ERRORS or
+                any(type(spotify.get(key)) is not bool for key in ("linked", "connected"))):
+            return
+        code = spotify.get("http_status")
+        record = {"state": spotify["state"], "error": spotify["error"],
+                  "linked": spotify["linked"], "network_connected": spotify["connected"],
+                  "http_status": code if type(code) is int and 0 <= code <= 599 else None,
+                  "attempt_confirmed": session.authorization_status == "confirmed"}
+        value = json.dumps(record, separators=(",", ":"))
+        if value != session.last_diagnostic:
+            session.last_diagnostic = value
+            try:
+                print("PWSET_DEVICE_STATUS " + value, file=sys.stderr, flush=True)
+            except (OSError, ValueError):
+                pass
 
     def require_open(self):
         identity = device_identity(self.device.request("hello"))
@@ -662,7 +703,7 @@ def main():
     args = parser.parse_args()
     device = None
     try:
-        device = SerialDevice(args.port)
+        device = SerialDevice(args.port, diagnostics=args.diagnostics)
         server = SetupServer(SetupApp(device, diagnostics=args.diagnostics))
     except ImportError:
         print("Bitte zuerst die Abhängigkeit aus tools/spotify_setup/requirements.txt installieren.")

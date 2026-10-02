@@ -54,6 +54,15 @@ erhalten unterscheidbare Hinweise. Diese Diagnose verändert weder die
 Stateprüfung noch PKCE, Einmaligkeit oder die Firmwaregrenzen; sie bestätigt
 keine erfolgreiche Anmeldung.
 
+Die Option erfasst außerdem Änderungen des tokenfreien Gerätestatus einschließlich
+HTTP-Status sowie ausgewählte vorhandene ESP-IDF-Transportfehler. Aus diesen
+USB-Logzeilen bleiben ausschließlich feste Ereignisnamen und begrenzte numerische
+Fehlercodes erhalten; Originalzeilen, Hosts und unbekannte Meldungen werden
+verworfen. Diese Ereignisse identifizieren nicht den aufrufenden Gerätedienst:
+Auch andere HTTPS-Funktionen können sie auslösen. Ein Netzwerkfehler beim
+Anmeldeabschluss erhält einen eigenen Hinweis statt der pauschalen Aufforderung,
+sich erneut anzumelden. Die Diagnose behebt selbst keinen Verbindungsfehler.
+
 ## Verbindung und Fehler
 
 - Ohne angeschlossenes Gerät oder mit mehreren Kandidaten werden keine Ports

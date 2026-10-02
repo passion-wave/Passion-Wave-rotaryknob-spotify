@@ -32,6 +32,8 @@ class FakeDevice:
         self.role = "controller_s3"
         self.linked = False
         self.state = "unlinked"
+        self.error = "none"
+        self.http_status = 0
         self.authorization_id = ""
         self.failure = None
         self.url = authorization_url()
@@ -50,7 +52,9 @@ class FakeDevice:
         if method in {"hello", "status"}:
             return {"ok": True, "role": self.role, "hardware": helper.HARDWARE, "version": "test-fixture",
                     "lab_enabled": self.lab, "setup_open": self.setup,
-                    "spotify": {"linked": self.linked, "connected": self.linked, "state": self.state, "error": "none", "authorization_id": self.authorization_id},
+                    "spotify": {"linked": self.linked, "connected": self.linked, "state": self.state,
+                                "error": self.error, "http_status": self.http_status,
+                                "authorization_id": self.authorization_id},
                     "access_token": "MUST-NEVER-BE-RETURNED"}
         if method == "authorize":
             return {"ok": True, "authorization_url": self.url}
@@ -63,6 +67,50 @@ class FakeDevice:
 
 
 class AppTests(unittest.TestCase):
+    def test_failed_network_exchange_has_specific_notice_and_safe_diagnostic(self):
+        self.app.authorize(self.sid)
+        self.app.callback(urlencode({"state": "ab" * 24, "code": "PRIVATE-CODE"}))
+        self.device.state, self.device.error = "unlinked", "network"
+        self.app.diagnostics = True
+        output = io.StringIO()
+        with redirect_stderr(output):
+            result = self.app.status(self.sid)
+            self.app.status(self.sid)
+        self.assertEqual(result["authorization_status"], "failed")
+        self.assertEqual(result["notice"], helper.ERRORS["auth_network"])
+        self.assertFalse(result["spotify"]["linked"])
+        self.assertNotIn("http_status", result["spotify"])
+        lines = output.getvalue().splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(json.loads(lines[0].split(" ", 1)[1]), {
+            "state": "unlinked", "error": "network", "linked": False,
+            "network_connected": False, "http_status": 0, "attempt_confirmed": False,
+        })
+        for secret in ("PRIVATE-CODE", self.sid, self.session.csrf, "ab" * 24, "MUST-NEVER"):
+            self.assertNotIn(secret, output.getvalue())
+
+    def test_status_diagnostic_is_opt_in_and_rejects_free_text(self):
+        output = io.StringIO()
+        with redirect_stderr(output):
+            self.app.status(self.sid)
+        self.assertEqual(output.getvalue(), "")
+        self.app.diagnostics = True
+        with redirect_stderr(output):
+            for key in ("state", "error", "linked", "connected"):
+                value = {"state": "ready", "error": "none", "linked": True, "connected": True}
+                value[key] = "PRIVATE-TOKEN"
+                self.app.status_diagnostic(self.session, value)
+        self.assertEqual(output.getvalue(), "")
+
+    def test_status_diagnostic_sink_failure_does_not_change_device_result(self):
+        self.app.diagnostics = True
+        for failure in (OSError, ValueError):
+            self.session.last_diagnostic = ""
+            with patch("builtins.print", side_effect=failure("PRIVATE-VALUE")):
+                result = self.app.status(self.sid)
+            self.assertEqual(result["spotify"]["state"], "unlinked")
+            self.assertNotIn("error", result)
+
     def test_existing_account_does_not_falsely_confirm_failed_new_login(self):
         self.device.linked, self.device.state = True, "ready"
         self.app.authorize(self.sid)
@@ -235,10 +283,13 @@ class AppTests(unittest.TestCase):
                 self.assertIsNone(self.app.pending)
                 callbacks = [values for method, values in self.device.calls if method == "callback"]
                 self.assertEqual(callbacks, [{"code": "PRIVATE-CODE", "state": "ab" * 24}])
-                status = json.dumps(self.app.status(self.sid))
+                output = io.StringIO()
+                with redirect_stderr(output):
+                    status = json.dumps(self.app.status(self.sid))
                 self.assertNotIn("PRIVATE-VALUE", status)
                 self.assertNotIn("PRIVATE-CODE", status)
                 self.assertNotIn("PRIVATE-FIELD", status)
+                self.assertNotIn("PRIVATE", output.getvalue())
 
     def test_callback_extensions_do_not_replace_state_or_allow_replay(self):
         self.app.authorize(self.sid)
@@ -340,6 +391,31 @@ class AppTests(unittest.TestCase):
 
 
 class SerialTests(unittest.TestCase):
+    def test_transport_diagnostics_only_emit_allowlisted_values(self):
+        def response(request):
+            identity = {"id": request["id"], "ok": True, "role": "controller_s3",
+                        "hardware": helper.HARDWARE, "version": "test-fixture",
+                        "lab_enabled": True, "setup_open": True}
+            return (b"I (9) wifi: PRIVATE-PASSWORD\n"
+                    b"E (10) esp-tls-mbedtls: mbedtls_ssl_handshake returned -0x7F00\n" +
+                    helper.PREFIX + json.dumps(identity).encode() + b"\n")
+        device = self.make_device(response)
+        output = io.StringIO()
+        with redirect_stderr(output):
+            self.assertTrue(device.request("hello")["setup_open"])
+        self.assertEqual(output.getvalue(), "")
+        device.diagnostics = True
+        with redirect_stderr(output):
+            self.assertTrue(device.request("hello")["setup_open"])
+        lines = output.getvalue().splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertTrue(lines[0].startswith("PWSET_DEVICE_TRANSPORT "))
+        self.assertNotIn("PRIVATE", output.getvalue())
+        self.assertNotIn("esp-tls-mbedtls", output.getvalue())
+        for failure in (OSError, ValueError):
+            with patch("builtins.print", side_effect=failure("PRIVATE-VALUE")):
+                self.assertTrue(device.request("hello")["setup_open"])
+
     def make_device(self, response, ports=1):
         self.events, self.buffer, self.writes = [], bytearray(), []
         owner = self
