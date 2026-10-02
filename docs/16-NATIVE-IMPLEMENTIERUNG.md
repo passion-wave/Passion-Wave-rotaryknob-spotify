@@ -1,6 +1,6 @@
 # Native Implementierung und Geräteabnahme
 
-Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.7`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
+Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.8`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
 
 ## Reale Implementierung
 
@@ -395,3 +395,43 @@ Netzwerkfehler beim Abschluss erhält einen zutreffenden eigenen Hinweis.
 40 isolierte Helfer-, HTTP- und Diagnoseprüfungen bestanden. dev.7 bleibt
 unverändert installiert; der eigentliche Netzwerkfehler und eine erfolgreiche
 Verknüpfung sind noch zu bestätigen beziehungsweise zu beheben.
+
+### TLS-Speicherfehler und Korrektur dev.8
+
+Der nächste reale Versuch lieferte `tls_setup: -32512` (`-0x7F00`), danach
+`connection_open` und erneut `linked: false`, `error: network`, HTTP-Status 0.
+Die gepinnte mbedTLS-Version bezeichnet diesen Code als
+`MBEDTLS_ERR_SSL_ALLOC_FAILED`: Der TLS-Kontext konnte keinen Speicher
+reservieren. Es ist damit kein belegter Spotify-Konto- oder Callbackfehler.
+
+Beide S3-Profile verwenden ab dev.8 die von ESP-IDF vorgesehene
+`CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC`-Strategie für den vorhandenen 8-MiB-PSRAM.
+Der Companion bleibt unverändert bei internem Speicher. PSRAM-Initialisierung
+bleibt zwingend; TLS-Taskstacks und DMA-Deskriptoren bleiben intern. Vollständige
+Zertifikatsprüfung und bisherige TLS-Recordgrößen werden beibehalten. Ein
+Startlog nennt ausschließlich Allokator und freie/größte PSRAM-Blöcke.
+Der Schalter betrifft alle mbedTLS-Nutzer des S3, auch Wetter und Signaturprüfung.
+Das Laborgerät hat weiterhin keinen physischen Flash-/PSRAM-Ausleseschutz;
+keine eFuses werden dafür geändert.
+
+51 Framework-/Vertragstests und alle drei ESP-IDF-Builds bestanden; die tatsächlichen
+App-Binaries und Metadaten tragen dev.8. Standard-S3: **2.711.472 Byte**,
+Labor-S3: **2.722.752 Byte**, Companion: **278.064 Byte**. Die wirksamen
+S3-Konfigurationen bestätigen externen TLS-Speicher, unveränderte Zertifikats-
+und Recordeinstellungen sowie weiterhin deaktiviertes AMPDU; der Companion
+verwendet unverändert internen TLS-Speicher.
+
+Nach erneuter Chipidentifikation und Hashprüfung des verifizierten Originalbackups
+wurde ausschließlich die S3-App bei `0x10000` geschrieben und vollständig gegen
+den Flash verglichen. Laborimage-SHA-256:
+`35e24a9191a66fa1fa4a1969d9f587863a8aab72ceda4b1fb70b66ca7bb02020`.
+Einstellungen und Schlüssel bleiben erhalten. Der reale Start bestätigte
+`TLS allocator=PSRAM`, **8.335.568 Byte frei**, größter Block **8.257.536 Byte**
+und Rückkehr aus `app_main`. USB-HELLO bestätigte dev.8 und aktives Laborprofil;
+das Einrichtungsfenster ist nach dem Neustart erwartungsgemäß geschlossen.
+Dies ist eine Startmessung, keine TLS-Spitzen- oder Dauerlaufmessung.
+
+Erfolgreicher TLS-Aufbau, Verknüpfung, Tokenpersistenz nach Neustart und hörbare
+Connect-Ausgabe bleiben getrennte Gerätenachweise für den nächsten frischen
+Anmeldeversuch. Die letzte vollständige CI vor diesem Firmwarefix bestand für
+`c3cc5ad`; das ist kein CI-Nachweis für dev.8.

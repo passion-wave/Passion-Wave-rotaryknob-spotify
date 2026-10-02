@@ -1,58 +1,69 @@
-# Firmware-Verträge
+# Native Firmware
 
-Dieser Ordner enthält ausschließlich den C++17-Schnittstellenvertrag [pw_framework.hpp](include/pw_framework.hpp). Es gibt noch keine implementierten Treiber, Spotify-Anbindung, verschlüsselte Speicherung, OTA-Übertragung, Buildkonfiguration oder flashbare Firmware. Der Header ist neu erstellt; bestehender RotaryKnob-Code wurde noch nicht kopiert. Die [Übernahmekarte](../docs/06-UPSTREAM.md) benennt Herkunft und Portierungsaufwand.
+Dieser Ordner enthält zwei baubare ESP-IDF-Anwendungen und ihre Implementierungen
+für Board, Bedienung, Gerätewebsite, Speicherung, Wetter und Updateprüfung.
+Der direkte Spotify-Provider ist ausschließlich im ausdrücklich gewählten
+S3-Laborprofil aktiviert; das Standardprofil hält Spotify deaktiviert.
+Buildbefehle, Toolchain, tatsächlich ausgeführte Prüfungen und Gerätebefunde stehen
+in [Native Implementierung und Geräteabnahme](../docs/16-NATIVE-IMPLEMENTIERUNG.md).
+Beide Images beziehen ihre Produktversion aus der gemeinsamen Datei `VERSION`.
 
-## Zielaufteilung
+## Struktur und Zuständigkeiten
 
-Der ESP32-S3 besitzt WLAN, Website, Produktzustand, Zugangsdaten, Provider, Display, Touch und EC1. Der klassische ESP32 übernimmt ausschließlich die benötigten Begleitfunktionen, beispielsweise DAC-Mute, EC2-Diagnose und seinen lokalen Updateempfänger. Im Normalbetrieb gibt es ein WLAN-Gerät und eine IP-Adresse. Die Schnittstellen sagen keine bestimmte Spotify-SDK-Funktion und keine Produktfreigabe zu.
-
-Der S3 bleibt für Website und Mediensteuerung erreichbar. Display-Abschaltung und geeignetes WLAN-Energiesparen ersetzen den bisherigen normalen Tiefschlaf; expliziter Tiefschlaf bedeutet, dass diese Dienste offline sind. Eingabe und Rendering dürfen nicht auf TLS, JSON, Audio oder Flash-Schreibvorgänge warten.
-
-## Geplante Struktur nach den Machbarkeitsprüfungen
-
-| Späterer Pfad | Verantwortung |
+| Pfad | Verantwortung |
 | --- | --- |
-| `firmware/s3/` | Echte ESP-IDF-Anwendung für den Produktcontroller |
-| `firmware/companion/` | Echte ESP-IDF-Anwendung für den klassischen ESP32 |
-| `firmware/components/board/` | Revisionsabhängiges Display, Touch, PCNT, Haptik und Audio-Routing |
-| `firmware/components/product/` | Serialisierte Befehle, Favoritenfreigabe, Generationen, konsistente Zustandsansicht |
-| `firmware/components/provider/` | Tatsächlich freigegebener Spotify-Adapter; optional getrenntes Radio-Audio |
-| `firmware/components/web/` | Lokaler Assetserver, geschützte API und Sitzungen |
-| `firmware/components/security/` | Zugangsdaten, Schlüssel, Vertrauenskette und sichere Löschung |
-| `firmware/components/peer/` | Neues Produktprotokoll, UART-Framing und begrenzte Updateübertragung |
-| `firmware/components/ota/` | Signaturprüfung, A/B-Slots, Journal, Healthchecks und Wiederherstellung |
+| `s3/` | ESP-IDF-Anwendung für den S3: WLAN, Produktzustand, Website, Provider und Bedienung |
+| `companion/` | ESP-IDF-Anwendung für den klassischen ESP32 mit UART-Protokoll und Updateempfänger |
+| `components/pw_board/`, `components/pw_ui/` | Boardtreiber und LVGL-Oberfläche |
+| `components/pw_app/`, `components/pw_storage/` | Gerätezustand, geschützte HTTP-API und persistente Einstellungen |
+| `components/pw_spotify/`, `components/pw_setup_usb/` | Spotify-Laborprovider und lokales USB-PKCE-Setup |
+| `components/pw_weather/`, `components/pw_assets/` | Wettermodell/-abruf, Bilder und Avatar |
+| `components/pw_protocol/` | Begrenztes UART-Framing und Nachrichtenprüfung |
+| `components/pw_update_verify/`, `components/pw_update_service/`, `components/pw_companion_update/` | Signatur-/Kompatibilitätsprüfung, Staging, Journal und Companion-Empfang |
+| `web/` | In das S3-Image eingebettete Gerätewebsite |
+| `include/` | Plattformunabhängiger C++17-Schnittstellenvertrag |
 
-Diese Verzeichnisse und eine scheinbar baubare ESP-IDF-Anwendung werden erst angelegt, wenn passende Abhängigkeiten und Partitionen erprobt sind.
+Der S3 ist der einzige WLAN-Teilnehmer des Produkts. Displayruhe lässt Website
+und Steuerung weiterlaufen; Tiefschlaf würde diese Dienste unterbrechen.
+Die Companion-Anwendung ist gebaut, aber auf dem angeschlossenen Begleitprozessor
+läuft weiterhin die Originalfirmware. Gemeinsamer Gerätebetrieb ist noch zu prüfen.
 
-## Gestufte Gates für Laborbuild, Pilot und Release
+## Implementierung, Verträge und Portquellen
 
-Die Reihenfolge darf keinen Zirkelschluss erzeugen: P2 erstellt zuerst minimale Laborbuilds und synthetische Lastproben. Vollständige Funktions-/OTA-/Mischlastabnahmen folgen an der integrierten Firmware. Kein Laborbuild gilt dadurch als auslieferbar.
+[pw_framework.hpp](include/pw_framework.hpp) beschreibt abstrakte Schnittstellen.
+Seine Syntaxprüfung belegt keine Gerätefunktion. Ausführbarer Firmwarecode liegt
+in den ESP-IDF-Projekten und `components/`; die aktuellen Laborendpunkte erfüllen
+noch nicht den gesamten geplanten Vertrag aus [`contracts/`](../contracts/).
+Die Entwurfsvorschau unter [`../web/`](../web/) verwendet weiterhin Beispieldaten
+und ist von der echten Gerätewebsite in `firmware/web/` getrennt.
 
-1. Tatsächliche Guition-Platinenrevision, Chip-/Flash-/PSRAM-Ausstattung und Pinbelegung bestätigen. Die Audio-Pins aus dem vergleichbaren Waveshare-Schaltplan sind bis dahin Kandidaten.
-2. ESP-IDF-Version, LVGL-Major, Display-/Touch-Treiber und gegebenenfalls zugelassenen Spotify-Adapter gemeinsam auswählen und fixieren. Ein ESP32-Port eines proprietären SDK ist nicht vorausgesetzt.
-3. Reale Partitionstabellen für beide Chips festlegen: Bootloader, Partitionstabelle, OTA-Daten, verschlüsselte NVS/Schlüssel, zwei genügend große App-Slots und Web-/Konfigurationsspeicher. Staging und Webassets dürfen Rollback-Slots nicht verdrängen. Reserven anhand realer Linkerberichte nachweisen.
-4. Internen Heap, größten freien Block, DMA-Puffer, PSRAM, Task-Stacks, TLS-Spitzen und Flash-Schreibpausen messen; Worst Case mit Websitzung, Medienstatus, Cover und Eingabe prüfen. PSRAM ersetzt nicht sämtliche internen RAM-Anforderungen.
-5. Neuer UART-OTA-Empfänger auf dem Begleitprozessor, signierte Rollenprüfung, Stromausfall-Wiederaufnahme, Bootbestätigung und N/N+1-Kompatibilität nachweisen. Ein getrenntes A/B je Chip ist keine sofortige gemeinsame Rückrollfunktion.
-6. USB-C-Recovery für beide Prozessoren dokumentieren und testen. Ein S3-gesteuerter Hardware-Reset/Bootloaderzugriff auf den Begleitprozessor ist im geprüften Schaltplan nicht nachgewiesen; ein nicht startender Begleitprozessor kann physischen USB-Zugriff brauchen.
+Übernommene Quellen, Herkunft und Portumfang dokumentieren die
+[Übernahmekarte](../docs/06-UPSTREAM.md) und
+[Featuretabellen](../docs/13-FEATURE-PORTIERUNG.md). Lizenzhinweise bleiben erhalten;
+die HA-/ESPHome-Laufzeit wird nicht als Produktabhängigkeit übernommen.
 
-Es werden in diesem Framework keine eFuses gesetzt, Geräte geflasht oder realen Zugangsdaten benötigt.
+## Offene Geräte- und Produktabnahmen
 
-## Schnittstellen prüfen
+Erfolgreiche Builds und Hosttests ersetzen keine physische Abnahme. Schneller
+Seitenaufbau und Heim-WLAN-Einrichtung wurden am iPhone bestätigt; daraus folgt
+keine vollständige Feature- oder Produktfreigabe. Offen bleiben insbesondere:
 
-Vom Repository-Wurzelverzeichnis mit einem vorhandenen C++-Compiler über eine minimale Übersetzungseinheit prüfen:
+- Erfolgreicher Spotify-Anmeldeabschluss, hörbare Connect-Ausgabe auf Roam/Move,
+  mobiles Kunden-Onboarding und kommerzielle Controller-Freigabe.
+- Sicherer, jederzeit schreibender Heimnetz-Zugriff (G2); die aktuelle
+  Heimnetz-Website bleibt lesend. Einrichtung erfolgt im geschützten Geräte-AP.
+- Reale Bedien-, Wetter-, Speicher-, TLS- und Mischlastmessungen sowie Dauerlauf.
+- UART-Betrieb beider Chips, provisioniertes Updatevertrauen, vollständige
+  Pair-OTA-Aktivierung und Stromausfall-/Rollback-/Recoverytests. Staging allein
+  ist kein ausgeführtes Update; die Aktivierung bleibt gesperrt.
+- Fertigungsschutz: NVS ist verschlüsselt, der Laborschlüssel aber aus dem Flash
+  auslesbar. Secure Boot und Flashverschlüsselung sind nicht aktiviert.
+- Radar gemäß späterer Lieferstufe sowie optionale Sonos-LAN-, Radioausgabe-
+  und Klinkenfunktionen; Kopfhörertauglichkeit ist nicht nachgewiesen.
 
-```sh
-printf '#include "pw_framework.hpp"\n' | c++ -std=c++17 -Wall -Wextra -Werror -pedantic -Ifirmware/include -x c++ -fsyntax-only -
-```
-
-Dieser Check beweist nur die C++17-Syntax und die Abhängigkeit von Standardheadern. Er beweist weder einen Geräte-Build noch Funktionsfähigkeit, Speichersicherheit der späteren Implementierung, Verschlüsselung oder Spotify-Zulassung. C++-Strukturen dürfen nicht direkt als Binärdaten gespeichert oder über UART kopiert werden; der spätere Codec serialisiert Felder ausdrücklich.
-
-Die Provider-Schnittstelle meldet Annahme und Bestätigung getrennt. Jeder Adapter muss unbekannte/unerlaubte Fähigkeiten ablehnen, alte Generationen verwerfen und den zugelassenen Kontoumfang einhalten. Die abstrakten Speicher- und OTA-Klassen sind Verpflichtungen für die Implementierung, keine vorhandenen Sicherheitsfunktionen.
-
-Die Rollen werden ausdrücklich übersetzt: Wire-/Manifestwert `controller_s3` entspricht C++ `s3_controller` und Python `s3`; `companion_esp32` entspricht C++ `esp32_companion` und Python `companion`. Enum-Zahlen werden nicht direkt auf den Draht kopiert. Inhalts- und Ausgangstypen folgen dem gemeinsamen Vertrag; `partner_local_spotify` ist ausschließlich reserviert. Kopfhörertauglichkeit bleibt eine separat nachzuweisende Hardwarefähigkeit.
-
-Protokoll- und Konfigurationskompatibilität verwenden wie das Manifest `emitted_protocol` sowie geschlossene Min-/Max-Bereiche. Adapter dürfen nur geordnete, positive, kleine Bereiche innerhalb ihres unterstützten Versionsuniversums ins Python-Referenzmodell übertragen; keine ungeprüfte Expansion beliebiger Werte. Leere IDs, Nullprotokolle, unbekannte Rollen und nicht belegte Fähigkeiten sind ungültig. Release-ID, Imagehash und frische Bootidentität binden Update- und Healthnachweise an die tatsächlich erwarteten Artefakte.
-
-## Wetterport
-
-S3-Komponenten für Wetterprovider/-modell, Avatar-Kontext und direkten Radarabruf werden gemäß [Wetterarchitektur](../docs/14-WETTER.md) ergänzt. Bestehende pure Avatar-/Schedulerregeln sind Portquellen, kein ESPHome-Laufzeitimport. Wetterfotos/Avatar komprimiert signiert ausliefern; A/B, Rollback, Puffer und Mischlast in P2/P7/P10/P11 nachweisen. [Featuretabellen](../docs/13-FEATURE-PORTIERUNG.md) und [Arbeitspakete](../docs/08-IMPLEMENTIERUNGSPLAN.md) legen Umfang und Reihenfolge fest.
+Vor jedem erstmaligen Flash eines Chips sind Identifikation und verifiziertes
+Originalbackup erforderlich. Recovery-Daten bleiben privat; keine eFuses auf dem
+Recovery-Gerät ändern. Verbindliche Abnahmen und Lieferstufen stehen in
+[Geräteabnahme](../docs/16-NATIVE-IMPLEMENTIERUNG.md),
+[Produktentscheidungen](../docs/15-OFFENE-PRODUKTENTSCHEIDUNGEN.md) und
+[Implementierungsplan](../docs/08-IMPLEMENTIERUNGSPLAN.md).
