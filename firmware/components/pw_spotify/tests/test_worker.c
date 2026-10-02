@@ -29,11 +29,16 @@ static int64_t clock_us = 10000000;
 static uint32_t rng = 23;
 static unsigned http_count, response_count, commits, erased;
 static bool fail_commit;
-static char last_device_log[256], last_playback_log[256];
+static char last_device_log[256], last_playback_log[256], last_validation_log[256];
+static unsigned validation_logs;
 void pw_test_logi(const char *tag, const char *format, ...) {
     CHECK(!strcmp(tag, "pw_spotify"));
     char *output;
     if (!strncmp(format, "devices ", 8)) output = last_device_log;
+    else if (!strncmp(format, "playback_validation ", 20)) {
+        output = last_validation_log;
+        validation_logs++;
+    }
     else {
         CHECK(!strncmp(format, "playback ", 9));
         output = last_playback_log;
@@ -237,7 +242,8 @@ static void reset(void) {
     http_count = response_count = commits = erased = 0;
     stored_size = 0;
     fail_commit = false;
-    last_device_log[0] = last_playback_log[0] = 0;
+    last_device_log[0] = last_playback_log[0] = last_validation_log[0] = 0;
+    validation_logs = 0;
     clock_us = 10000000;
     CHECK(pw_spotify_init() == ESP_OK);
     pw_spotify_set_network(true);
@@ -515,6 +521,7 @@ static void test_playback_fetch_diagnostics(void) {
     CHECK(!strcmp(last_playback_log,
         "playback http=200 transport=0 valid=1 known=1 playing=1 listed=1 selected=1"));
     CHECK(service.snapshot.playback_known && service.snapshot.playing);
+    CHECK(validation_logs == 0);
     CHECK(!strcmp(service.snapshot.title, "SECRET-TITLE"));
     CHECK(!strstr(last_playback_log, "SECRET") && !strstr(last_playback_log, "speaker-1"));
     switch_target();
@@ -529,6 +536,7 @@ static void test_playback_fetch_diagnostics(void) {
         "playback http=204 transport=0 valid=1 known=0 playing=0 listed=0 selected=0"));
     CHECK(!service.snapshot.playback_known && !service.snapshot.playing);
     CHECK(!service.snapshot.title[0] && !service.snapshot.active_device_id[0]);
+    CHECK(validation_logs == 0);
 
     reset();
     account();
@@ -540,17 +548,22 @@ static void test_playback_fetch_diagnostics(void) {
         "playback http=200 transport=0 valid=0 known=0 playing=0 listed=0 selected=0"));
     CHECK(scratch.playback_known && scratch.playing); /* Stale scratch is never reported. */
     CHECK(service.snapshot.playback_known && service.snapshot.error == PW_SPOTIFY_ERROR_RESPONSE);
+    CHECK(!strcmp(last_validation_log, "playback_validation reason=31"));
+    CHECK(validation_logs == 1);
     fixture(200, "{\"device\":{\"id\":\"speaker-1\",\"name\":\"SECRET\",\"type\":\"speaker\","
                  "\"is_active\":true,\"is_restricted\":false},\"is_playing\":true,\"progress_ms\":-1}");
     poll_playback(service.epoch, &scratch);
     CHECK(!strcmp(last_playback_log,
         "playback http=200 transport=0 valid=0 known=0 playing=0 listed=0 selected=0"));
     CHECK(scratch.playback_known && scratch.playing); /* Partially parsed scratch is masked too. */
+    CHECK(!strcmp(last_validation_log, "playback_validation reason=9"));
+    CHECK(validation_logs == 2);
     fixture(403, "{\"error\":\"SECRET-REASON\",\"access_token\":\"SECRET-TOKEN\"}");
     poll_playback(service.epoch, &scratch);
     CHECK(!strcmp(last_playback_log,
         "playback http=403 transport=0 valid=0 known=0 playing=0 listed=0 selected=0"));
     CHECK(service.snapshot.error == PW_SPOTIFY_ERROR_FORBIDDEN);
+    CHECK(validation_logs == 2);
     fixture(200, "SECRET-UNREAD-BODY");
     responses[4].timeout = true;
     poll_playback(service.epoch, &scratch);

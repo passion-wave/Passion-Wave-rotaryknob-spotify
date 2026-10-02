@@ -22,6 +22,8 @@ def _pattern(tag, message):
 # Each capture is numeric, with a fixed output key, radix, sign and range.
 # DNS hostnames/pointers and socket descriptors are deliberately not captured.
 _RULES = (
+    (_pattern(b"pw_spotify", rb"playback_validation reason=([1-9][0-9]?)"),
+     "spotify_playback_validation", (("reason", 10, 1, 1, 31),)),
     (_pattern(b"pw_spotify", rb"playback http=(0|[1-5][0-9]{2}) transport=(-?[0-9]{1,6}) "
               rb"valid=([01]) known=([01]) playing=([01]) listed=([01]) selected=([01])"),
      "spotify_playback", (("http_status", 10, 1, 0, 599), ("transport", 10, 1, -65535, 65535),

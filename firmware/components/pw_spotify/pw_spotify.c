@@ -793,10 +793,13 @@ static void poll_playback(uint32_t epoch, pw_spotify_snapshot_t *scratch) {
     bool valid = false;
     if (r.transport == ESP_OK && r.status == 200) {
         cJSON *j = pw_spotify_json(r.body, r.size);
-        valid = j && pw_spotify_parse_playback(j, scratch, &dis);
+        pw_spotify_playback_parse_error_t reason = PW_SPOTIFY_PLAYBACK_PARSE_JSON_PARSE;
+        valid = j && pw_spotify_parse_playback_ex(j, scratch, &dis, &reason);
         cJSON_Delete(j);
-        if (!valid)
+        if (!valid) {
+            ESP_LOGI("pw_spotify", "playback_validation reason=%u", (unsigned)reason);
             token_failure(false, PW_SPOTIFY_ERROR_RESPONSE, epoch);
+        }
     } else if (r.transport == ESP_OK && r.status == 204) {
         pw_spotify_clear_playback(scratch);
         valid = true;

@@ -209,29 +209,42 @@ static bool device_name_visible(const char *name) {
     }
     return false;
 }
-static bool device(const cJSON *j, pw_spotify_device_t *d) {
+static bool playback_fail(pw_spotify_playback_parse_error_t *reason,
+                          pw_spotify_playback_parse_error_t value) {
+    if (reason)
+        *reason = value;
+    return false;
+}
+static bool device(const cJSON *j, pw_spotify_device_t *d, bool nullable_id,
+                   pw_spotify_playback_parse_error_t *reason) {
     if (!cJSON_IsObject(j))
-        return false;
+        return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_OBJECT);
     memset(d, 0, sizeof(*d));
-    const char *id = str(field(j, "id"));
-    if (!id || !pw_spotify_ascii(id, sizeof(d->id), false))
-        return false;
-    memcpy(d->id, id, strlen(id) + 1);
-    if (!pw_spotify_text(d->name, sizeof(d->name), str(field(j, "name"))) ||
-        !pw_spotify_text(d->type, sizeof(d->type), str(field(j, "type"))))
-        return false;
+    const cJSON *id_value = field(j, "id");
+    /* A playback device can be known but not addressable. Only explicit JSON
+     * null is accepted here; absent, empty and invalid IDs remain errors. */
+    if (!(nullable_id && cJSON_IsNull(id_value))) {
+        const char *id = str(id_value);
+        if (!id || !pw_spotify_ascii(id, sizeof(d->id), false))
+            return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_ID);
+        memcpy(d->id, id, strlen(id) + 1);
+    }
+    if (!pw_spotify_text(d->name, sizeof(d->name), str(field(j, "name"))))
+        return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_NAME);
+    if (!pw_spotify_text(d->type, sizeof(d->type), str(field(j, "type"))))
+        return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_TYPE);
     if (!device_name_visible(d->name))
         strcpy(d->name, "Ausgabe ohne Namen");
     const cJSON *active = field(j, "is_active"), *restricted = field(j, "is_restricted"),
                 *support = field(j, "supports_volume");
     if (!cJSON_IsBool(active) || !cJSON_IsBool(restricted))
-        return false;
+        return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_FLAGS);
     d->active = cJSON_IsTrue(active);
     d->restricted = cJSON_IsTrue(restricted);
     d->supports_volume = cJSON_IsTrue(support);
     const cJSON *volume = field(j, "volume_percent");
     if (volume && !cJSON_IsNull(volume) && !number(volume, 0, 100))
-        return false;
+        return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_VOLUME);
     d->volume_known = number(volume, 0, 100);
     if (d->volume_known)
         d->volume = volume->valueint;
@@ -249,7 +262,7 @@ bool pw_spotify_parse_devices(const cJSON *j, pw_spotify_snapshot_t *s) {
         if (cJSON_IsObject(a) && cJSON_IsNull(field(a, "id")))
             continue;
         pw_spotify_device_t d;
-        if (!device(a, &d))
+        if (!device(a, &d, false, NULL))
             return false;
         for (unsigned i = 0; i < s->device_count; i++)
             if (!strcmp(s->devices[i].id, d.id))
@@ -274,12 +287,17 @@ void pw_spotify_clear_playback(pw_spotify_snapshot_t *s) {
     s->title[0] = s->artist[0] = s->item_type[0] = s->item_uri[0] = s->context_uri[0] =
         s->active_device_id[0] = s->active_device_name[0] = 0;
 }
-bool pw_spotify_parse_playback(const cJSON *j, pw_spotify_snapshot_t *s,
-                               pw_spotify_disallows_t *dis) {
-    if (!cJSON_IsObject(j) || !cJSON_IsBool(field(j, "is_playing")))
-        return false;
+bool pw_spotify_parse_playback_ex(const cJSON *j, pw_spotify_snapshot_t *s,
+                                  pw_spotify_disallows_t *dis,
+                                  pw_spotify_playback_parse_error_t *reason) {
+    if (reason)
+        *reason = PW_SPOTIFY_PLAYBACK_PARSE_OK;
+    if (!cJSON_IsObject(j))
+        return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_ROOT);
+    if (!cJSON_IsBool(field(j, "is_playing")))
+        return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_IS_PLAYING);
     pw_spotify_device_t d;
-    if (!device(field(j, "device"), &d))
+    if (!device(field(j, "device"), &d, true, reason))
         return false;
     pw_spotify_clear_playback(s);
     memset(dis, 0, sizeof(*dis));
@@ -292,25 +310,25 @@ bool pw_spotify_parse_playback(const cJSON *j, pw_spotify_snapshot_t *s,
     strcpy(s->active_device_name, d.name);
     const cJSON *pos = field(j, "progress_ms");
     if (pos && !cJSON_IsNull(pos) && !number(pos, 0, UINT32_MAX))
-        return false;
+        return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_PROGRESS);
     s->position_known = number(pos, 0, UINT32_MAX);
     if (s->position_known)
         s->position_ms = (uint32_t)pos->valuedouble;
     const cJSON *item = field(j, "item");
     const char *type = str(field(j, "currently_playing_type"));
     if (type && !pw_spotify_text(s->item_type, sizeof(s->item_type), type))
-        return false;
+        return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_ITEM_TYPE);
     if (cJSON_IsObject(item)) {
         const char *name = str(field(item, "name")), *uri = str(field(item, "uri"));
         if (name && !pw_spotify_text(s->title, sizeof(s->title), name))
-            return false;
+            return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_TITLE);
         if (uri && (!pw_spotify_ascii(uri, sizeof(s->item_uri), false)))
-            return false;
+            return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_ITEM_URI);
         if (uri)
             strcpy(s->item_uri, uri);
         const cJSON *duration = field(item, "duration_ms");
         if (duration && !number(duration, 0, UINT32_MAX))
-            return false;
+            return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_DURATION);
         if (duration)
             s->duration_ms = (uint32_t)duration->valuedouble;
         const cJSON *artists = field(item, "artists");
@@ -320,13 +338,13 @@ bool pw_spotify_parse_playback(const cJSON *j, pw_spotify_snapshot_t *s,
         if (!artist)
             artist = str(field(field(item, "show"), "name"));
         if (artist && !pw_spotify_text(s->artist, sizeof(s->artist), artist))
-            return false;
+            return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_ARTIST);
     } else if (item && !cJSON_IsNull(item))
-        return false;
+        return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_ITEM);
     const char *context = str(field(field(j, "context"), "uri"));
     if (context) {
         if (!pw_spotify_ascii(context, sizeof(s->context_uri), false))
-            return false;
+            return playback_fail(reason, PW_SPOTIFY_PLAYBACK_PARSE_CONTEXT);
         strcpy(s->context_uri, context);
     }
     const cJSON *actions = field(j, "actions"), *a = field(actions, "disallows");
@@ -342,13 +360,17 @@ bool pw_spotify_parse_playback(const cJSON *j, pw_spotify_snapshot_t *s,
         dis->pause = dis->resume = dis->next = dis->previous = true;
     return true;
 }
+bool pw_spotify_parse_playback(const cJSON *j, pw_spotify_snapshot_t *s,
+                               pw_spotify_disallows_t *dis) {
+    return pw_spotify_parse_playback_ex(j, s, dis, NULL);
+}
 void pw_spotify_capabilities(pw_spotify_snapshot_t *s, const pw_spotify_disallows_t *d,
                              bool fresh) {
     s->selected_present = s->selected_restricted = s->selected_supports_volume =
         s->selected_volume_known = false;
     s->selected_volume = 0;
     for (unsigned i = 0; i < s->device_count; i++)
-        if (!strcmp(s->devices[i].id, s->selected_device_id)) {
+        if (s->selected_device_id[0] && !strcmp(s->devices[i].id, s->selected_device_id)) {
             const pw_spotify_device_t *p = &s->devices[i];
             s->selected_present = true;
             s->selected_restricted = p->restricted;
@@ -358,7 +380,8 @@ void pw_spotify_capabilities(pw_spotify_snapshot_t *s, const pw_spotify_disallow
             strcpy(s->selected_device_name, p->name);
             break;
         }
-    bool active = s->playback_known && !strcmp(s->active_device_id, s->selected_device_id);
+    bool active = s->playback_known && s->active_device_id[0] &&
+                  !strcmp(s->active_device_id, s->selected_device_id);
     if (active) {
         s->selected_volume_known = s->volume_known;
         s->selected_volume = s->volume;

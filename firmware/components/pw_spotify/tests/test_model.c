@@ -340,6 +340,143 @@ static void test_playback_and_commands(void) {
   CHECK(!snapshot.playback_known && !snapshot.playing && !snapshot.title[0] &&
         !snapshot.active_device_id[0]);
 }
+static cJSON *playback_fixture(void) {
+  char input[1024];
+  snprintf(input, sizeof input,
+      "{\"device\":%s,\"is_playing\":true,\"progress_ms\":1234,"
+      "\"currently_playing_type\":\"track\",\"item\":{\"name\":\"Titel\","
+      "\"uri\":\"spotify:track:4uLU6hMCjMI75M1A2tKUQC\",\"duration_ms\":200000,"
+      "\"artists\":[{\"name\":\"Band\"}]},"
+      "\"context\":{\"uri\":\"spotify:playlist:37i9dQZF1DXcBWIGoYBM5M\"}}", device_json);
+  cJSON *j = parse(input);
+  CHECK(j);
+  return j;
+}
+static void test_nullable_playback_device_id(void) {
+  cJSON *j = playback_fixture();
+  cJSON *d = cJSON_GetObjectItemCaseSensitive(j, "device");
+  CHECK(cJSON_ReplaceItemInObjectCaseSensitive(d, "id", cJSON_CreateNull()));
+  CHECK(cJSON_ReplaceItemInObjectCaseSensitive(d, "volume_percent", cJSON_CreateNumber(87)));
+  memset(&snapshot, 0, sizeof snapshot);
+  snapshot.enabled = snapshot.linked = snapshot.connected = true;
+  snapshot.state = PW_SPOTIFY_READY;
+  snapshot.session = 7;
+  snapshot.selection_generation = 3;
+  pw_spotify_disallows_t dis = {0};
+  pw_spotify_playback_parse_error_t reason = PW_SPOTIFY_PLAYBACK_PARSE_JSON_PARSE;
+  CHECK(pw_spotify_parse_playback_ex(j, &snapshot, &dis, &reason));
+  CHECK(reason == PW_SPOTIFY_PLAYBACK_PARSE_OK);
+  CHECK(snapshot.playback_known && snapshot.playing && !snapshot.active_device_id[0]);
+  CHECK(!strcmp(snapshot.active_device_name, "Küche"));
+  CHECK(!strcmp(snapshot.title, "Titel") && !strcmp(snapshot.artist, "Band"));
+  CHECK(snapshot.position_known && snapshot.position_ms == 1234 && snapshot.duration_ms == 200000);
+  CHECK(snapshot.supports_volume && snapshot.volume_known && snapshot.volume == 87);
+  CHECK(pw_spotify_parse_playback(j, &snapshot, &dis)); /* Legacy wrapper accepts the same response. */
+  pw_spotify_capabilities(&snapshot, &dis, true);
+  CHECK(!snapshot.selected_present && !snapshot.selected_volume_known && !snapshot.selected_supports_volume);
+  CHECK(!snapshot.can_play && !snapshot.can_pause && !snapshot.can_next &&
+        !snapshot.can_previous && !snapshot.can_volume);
+
+  cJSON *devices = parse("{\"devices\":[]}");
+  CHECK(devices);
+  cJSON *list = cJSON_GetObjectItemCaseSensitive(devices, "devices");
+  CHECK(cJSON_AddItemToArray(list, cJSON_Duplicate(d, true)));
+  CHECK(pw_spotify_parse_devices(devices, &snapshot));
+  CHECK(snapshot.device_count == 0); /* Null-ID entries still never become selectable. */
+  CHECK(cJSON_AddItemToArray(list, parse(device_json)));
+  CHECK(pw_spotify_parse_devices(devices, &snapshot));
+  CHECK(snapshot.device_count == 1 && !strcmp(snapshot.devices[0].id, "speaker-1"));
+  strcpy(snapshot.selected_device_id, "speaker-1");
+  pw_spotify_capabilities(&snapshot, &dis, true);
+  CHECK(snapshot.selected_present && snapshot.selected_volume == 42);
+  CHECK(snapshot.can_play && snapshot.can_volume); /* Existing addressable target retains its own rights. */
+  CHECK(!snapshot.can_pause && !snapshot.can_next && !snapshot.can_previous);
+  pw_spotify_command_t command = {.kind = PW_SPOTIFY_PLAY, .session = 7, .selection_generation = 3};
+  CHECK(!pw_spotify_command_valid(&command, &snapshot));
+  strcpy(command.device_id, "speaker-1");
+  CHECK(pw_spotify_command_valid(&command, &snapshot));
+  command.kind = PW_SPOTIFY_PAUSE;
+  CHECK(!pw_spotify_command_valid(&command, &snapshot));
+  command.kind = PW_SPOTIFY_NEXT;
+  CHECK(!pw_spotify_command_valid(&command, &snapshot));
+
+  CHECK(cJSON_ReplaceItemInObjectCaseSensitive(d, "is_restricted", cJSON_CreateTrue()));
+  CHECK(pw_spotify_parse_playback_ex(j, &snapshot, &dis, &reason));
+  CHECK(reason == PW_SPOTIFY_PLAYBACK_PARSE_OK);
+  CHECK(dis.pause && dis.resume && dis.next && dis.previous);
+  CHECK(!snapshot.active_device_id[0]);
+  pw_spotify_capabilities(&snapshot, &dis, true);
+  CHECK(!snapshot.can_pause && !snapshot.can_next && !snapshot.can_previous);
+  CHECK(snapshot.selected_volume == 42); /* Never borrow nullable-ID playback volume. */
+
+  cJSON *listed = cJSON_GetArrayItem(list, 1);
+  CHECK(cJSON_ReplaceItemInObjectCaseSensitive(listed, "id", cJSON_CreateString("")));
+  CHECK(!pw_spotify_parse_devices(devices, &snapshot));
+  cJSON_DeleteItemFromObjectCaseSensitive(listed, "id");
+  CHECK(!pw_spotify_parse_devices(devices, &snapshot));
+  cJSON_Delete(devices);
+  cJSON_Delete(j);
+}
+static void test_playback_validation_reasons(void) {
+  const struct {
+    const char *parent, *key, *value;
+    pw_spotify_playback_parse_error_t reason;
+  } cases[] = {
+      {NULL, "is_playing", "null", PW_SPOTIFY_PLAYBACK_PARSE_IS_PLAYING},
+      {NULL, "device", "false", PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_OBJECT},
+      {"device", "id", "\"\"", PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_ID},
+      {"device", "id", NULL, PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_ID},
+      {"device", "id", "17", PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_ID},
+      {"device", "id", "\"bad\\nID\"", PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_ID},
+      {"device", "name", "\"\xC0\x80\"", PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_NAME},
+      {"device", "name", "null", PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_NAME},
+      {"device", "type", "\"\xC0\x80\"", PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_TYPE},
+      {"device", "is_active", "0", PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_FLAGS},
+      {"device", "is_restricted", "null", PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_FLAGS},
+      {"device", "volume_percent", "101", PW_SPOTIFY_PLAYBACK_PARSE_DEVICE_VOLUME},
+      {NULL, "progress_ms", "-1", PW_SPOTIFY_PLAYBACK_PARSE_PROGRESS},
+      {NULL, "currently_playing_type", "\"\xC0\x80\"", PW_SPOTIFY_PLAYBACK_PARSE_ITEM_TYPE},
+      {"item", "name", "\"\xC0\x80\"", PW_SPOTIFY_PLAYBACK_PARSE_TITLE},
+      {"item", "uri", "\"bad\\nURI\"", PW_SPOTIFY_PLAYBACK_PARSE_ITEM_URI},
+      {"item", "duration_ms", "-1", PW_SPOTIFY_PLAYBACK_PARSE_DURATION},
+      {"artist", "name", "\"\xC0\x80\"", PW_SPOTIFY_PLAYBACK_PARSE_ARTIST},
+      {NULL, "item", "true", PW_SPOTIFY_PLAYBACK_PARSE_ITEM},
+      {"context", "uri", "\"bad\\nURI\"", PW_SPOTIFY_PLAYBACK_PARSE_CONTEXT}};
+  pw_spotify_disallows_t dis = {0};
+  pw_spotify_playback_parse_error_t reason = PW_SPOTIFY_PLAYBACK_PARSE_OK;
+  CHECK(!pw_spotify_parse_playback_ex(NULL, &snapshot, &dis, &reason));
+  CHECK(reason == PW_SPOTIFY_PLAYBACK_PARSE_ROOT);
+  cJSON *j = parse("[]");
+  CHECK(!pw_spotify_parse_playback_ex(j, &snapshot, &dis, &reason));
+  CHECK(reason == PW_SPOTIFY_PLAYBACK_PARSE_ROOT);
+  cJSON_Delete(j);
+  for (size_t i = 0; i < sizeof cases / sizeof *cases; ++i) {
+    j = playback_fixture();
+    cJSON *parent = cases[i].parent ? cJSON_GetObjectItemCaseSensitive(j, cases[i].parent) : j;
+    if (cases[i].parent && !strcmp(cases[i].parent, "artist"))
+      parent = cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(
+          cJSON_GetObjectItemCaseSensitive(j, "item"), "artists"), 0);
+    CHECK(parent);
+    if (cases[i].value) {
+      cJSON *value = parse(cases[i].value);
+      CHECK(value);
+      CHECK(cJSON_ReplaceItemInObjectCaseSensitive(parent, cases[i].key, value));
+    } else cJSON_DeleteItemFromObjectCaseSensitive(parent, cases[i].key);
+    reason = PW_SPOTIFY_PLAYBACK_PARSE_OK;
+    CHECK(!pw_spotify_parse_playback_ex(j, &snapshot, &dis, &reason));
+    CHECK(reason == cases[i].reason);
+    CHECK(!pw_spotify_parse_playback(j, &snapshot, &dis));
+    CHECK(reason > 0 && reason <= 31);
+    cJSON_Delete(j);
+  }
+  j = playback_fixture();
+  reason = PW_SPOTIFY_PLAYBACK_PARSE_JSON_PARSE;
+  CHECK(pw_spotify_parse_playback_ex(j, &snapshot, &dis, &reason));
+  CHECK(reason == PW_SPOTIFY_PLAYBACK_PARSE_OK);
+  CHECK(pw_spotify_parse_playback_ex(j, &snapshot, &dis, NULL));
+  CHECK(PW_SPOTIFY_PLAYBACK_PARSE_JSON_PARSE == 31);
+  cJSON_Delete(j);
+}
 static void test_tokens_and_storage(void) {
   const char *good =
       "{\"access_token\":\"accessABC\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"refresh_token\":\"refreshDEF\",\"scope\":\"user-read-playback-state user-modify-playback-state\"}";
@@ -458,6 +595,8 @@ int main(void) {
   test_devices();
   test_device_names();
   test_playback_and_commands();
+  test_nullable_playback_device_id();
+  test_playback_validation_reasons();
   test_tokens_and_storage();
   test_pkce();
   printf(

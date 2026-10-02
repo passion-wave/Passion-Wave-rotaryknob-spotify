@@ -1,6 +1,6 @@
 # Native Implementierung und Geräteabnahme
 
-Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.11`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
+Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.12`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
 
 ## Reale Implementierung
 
@@ -662,9 +662,31 @@ fehlende Modellunterstützung noch eine falsche Kontoverknüpfung sind damit bew
 
 
 Die Folgemessung während bestätigter hörbarer Roam-Wiedergabe zeigte unter den
-zehn erfassten Playbackabrufen mehrfach `http_status: 200`, `transport: 0`,
+erfassten Playbackabrufen mehrfach `http_status: 200`, `transport: 0`,
 `valid: 0`; zusätzlich traten einzelne Status-0-/Transport-−1-Fehler auf. Damit
 verwirft der Knob auch erfolgreich übertragene HTTP-200-Antworten. Der JSON-/
 Feldvalidierungspfad wird nun getrennt eingegrenzt. HTTP 0 bedeutet mit dem
 verwendeten IDF nicht zwingend, dass keine Statuszeile empfangen wurde: Der
 öffentliche Status wird erst nach vollständigen Headern gesetzt.
+
+
+### Validierungsgrund und adresslose Playbackgeräte / dev.12
+
+Die Playbackvalidierung erhält feste numerische Fehlergründe, um die tatsächlich
+abgelehnte Feldgruppe ohne Antwortinhalte, Namen oder IDs zu erkennen. Außerdem
+wird die von Spotify dokumentierte nullable Playback-Geräte-ID unterstützt:
+Metadaten eines solchen Geräts dürfen angezeigt werden, verleihen aber keine
+adressierbare Steuerberechtigung. Die Ausgabeliste lässt Geräte ohne ID weiterhin
+aus. Diese getrennt reproduzierbare Vertragskorrektur ist noch nicht als Ursache
+des realen Roam-Problems nachgewiesen. Die vorhandene Transport-/Playbackdiagnose
+bleibt erhalten. 623 Modell- und 1115 Worker-Assertions mit ASan/UBSan, 48 Helfertests und
+51 Frameworktests bestanden. Geprüft sind Anzeige mit explizit nullförmiger ID,
+unveränderte Ablehnung fehlender/leerer/ungültiger IDs und die Trennung von
+Wiedergabemetadaten gegenüber adressierbaren Steuerrechten. Die Grundcodes 1–16
+benennen Feldgruppen; 31 bedeutet abgelehntes JSON vor der Feldvalidierung.
+
+Alle drei ESP-IDF-Profile bauen; binäre Appdeskriptoren und CMake melden dev.12.
+Standard-S3: **2.711.552 Byte**, Labor-S3: **2.724.224 Byte**, Companion:
+**278.064 Byte**. Laborimage-SHA-256:
+`3f3e9c2e8d996a6e5ea0bed88c0f68a8acd3cf1eff8788a7689091496ae757e0`.
+Installation und tatsächlicher Validierungsgrund stehen noch aus.

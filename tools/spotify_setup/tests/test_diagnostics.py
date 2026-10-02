@@ -13,6 +13,30 @@ def log(tag, text, level="E"):
 
 
 class DiagnosticsTests(unittest.TestCase):
+    def test_playback_validation_has_only_bounded_numeric_reason(self):
+        for reason in range(1, 32):
+            with self.subTest(reason=reason):
+                result = parse_firmware_diagnostic(log(
+                    "pw_spotify", f"playback_validation reason={reason}", "W"))
+                self.assertEqual(result, {"event": "spotify_playback_validation", "reason": reason})
+                self.assertIs(type(result["reason"]), int)
+
+    def test_playback_validation_rejects_secrets_types_and_ranges(self):
+        for value in ("", "0", "-1", "32", "99", "100", "65535", "01", "+1",
+                      "1.0", "true", "null", '"1"', "SECRET"):
+            with self.subTest(value=value):
+                self.assertIsNone(parse_firmware_diagnostic(log(
+                    "pw_spotify", f"playback_validation reason={value}", "W")))
+        message = "playback_validation reason=1"
+        known = log("pw_spotify", message, "W")[:-2]
+        for secret in (b"name=SECRET-ROOM", b"id=SECRET-ID", b"Bearer SECRET-TOKEN"):
+            for line in (known + b" " + secret, secret + b" " + known,
+                         known + b"\n" + secret, known + b"\x00" + secret):
+                self.assertIsNone(parse_firmware_diagnostic(line))
+        for line in (log("wrong-tag", message, "W"), known + b" reason=2",
+                     None, True, 1, known.decode("ascii"), bytearray(known)):
+            self.assertIsNone(parse_firmware_diagnostic(line))
+
     def test_playback_metadata_has_only_fixed_bounded_fields(self):
         flags = ("valid", "known", "playing", "listed", "selected")
         for mask in range(32):
