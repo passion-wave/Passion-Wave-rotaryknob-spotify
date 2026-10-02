@@ -10,7 +10,7 @@ Die ESP-IDF-Projekte in `firmware/s3` und `firmware/companion` ersetzen für die
 | --- | --- | --- |
 | Board | ST77916-Initialisierung aus MIT-Referenz, Display/DMA, Touch, Encoder, Haptik; S3 rev0.2 mit 16 MiB Flash und 8 MiB PSRAM über USB identifiziert | Display/Touch/Ausrichtung/Haptik und Latenz am angeschlossenen Board |
 | Bedienung | LVGL-Seiten, physischer Setup-Aufruf, QR-Führung, Helligkeit, Displayruhe bei laufendem Netzwerk | Erstnutzerprobe und reale Reaktions-/Speichermessung |
-| Website | WLAN, persistente Einstellungen, Playlists/Podcasts als Referenzen, Radioverwaltung, Wetter/Avatar | HTTP-/NVS-Gerätetests, Sitzungslaufzeit, WLAN-Wechsel und Stromausfall |
+| Website | WLAN, persistente Einstellungen, Playlists/Podcasts als Referenzen, Radioverwaltung, Wetter/Avatar; dev.7-Seitenaufbau und Heim-WLAN-Einrichtung vom Nutzer am iPhone bestätigt | Weitere HTTP-/NVS-Gerätetests, Sitzungslaufzeit, WLAN-Wechsel und Stromausfall |
 | Standort | 23.297 lokal durchsuchbare deutsche Ort-/PLZ-Einträge, manuelle Koordinaten als Rückfall | Genauigkeit am Pilotstandort; Quellenabdeckung ist nicht vollständig garantiert |
 | Wetter | Direkter MET-Abruf, begrenztes gzip/deflate, Cache/304, Fehler-/Veraltet-Zustände, Stunden/Tage und Avatarentscheidung | Aktueller Abruf auf S3; Flotten-/Quellenqualifikation und DWD-Ausbau bleiben im Wetterplan |
 | Wetterbilder/Avatar | 67 Schlüssel, 55 unveränderte JPEGs, begrenzter Decoderworker, echte Wetterbindung, Fotos/analoge Uhr, Morgenavatar/Haarwahl | Physische Geräte-, Leerlauf- und Speichermessung; Hostdecoder samt unabhängiger Farbprüfung bestanden |
@@ -309,3 +309,20 @@ Bootlog bestätigt **AMPDU RX=0 / TX=0**, lokale Dienste und Rückkehr aus
 `app_main`; USB-HELLO bestätigt dev.7 und offenes Setupfenster. Die Original-
 Recovery-Prüfsumme wurde vor dem Schreiben erneut abgeglichen. Companion bleibt
 auf Originalfirmware. Der angefragte Safari-Vergleich wird separat protokolliert.
+
+
+### Erfolgreicher iPhone-Vergleich und WLAN-Einrichtung
+
+Der Nutzer bestätigte anschließend ausdrücklich **„Ja, jetzt schnell und
+vollständig“** für dev.7. Parallel meldete der reale S3: `index.html` 5.408 Byte
+in **14 ms**, `style.css` 4.570 Byte in **16 ms**, `app.js` 14.582 Byte in
+**1.779 ms**, jeweils `ESP_OK`. Das zuvor wiederholt nach rund elf Sekunden
+abgebrochene JavaScript wurde nun vollständig an den Netzwerkstack übergeben;
+die unabhängige Nutzerbestätigung belegt den vollständigen sichtbaren
+Seitenaufbau. Diese Zeiten messen die Sendefunktion, keine Browser-Renderzeit.
+
+Im anschließenden Schritt bestätigte der Nutzer **„Heim-WLAN erfolgreich
+verbunden“**. Zugangsdaten wurden ausschließlich in der Gerätewebsite eingegeben.
+Damit ist dieser konkrete Ladezeit-/Einrichtungsversuch erfolgreich; andere
+Handys, Funkbedingungen, Dauerlauf und alle übrigen Features sind dadurch nicht
+abgenommen. Die Paketbündelung bleibt für diesen Pilotstand deaktiviert.
