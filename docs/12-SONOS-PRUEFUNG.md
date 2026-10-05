@@ -141,8 +141,13 @@ und Roam werden nicht gleichgesetzt; keine Verallgemeinerung auf alle Sonos-
 Modelle, Firmwarestände oder Konten. Belege und zusätzlich beobachtete HTTP-
 Abbrüche: [Native Geräteprüfung](16-NATIVE-IMPLEMENTIERUNG.md).
 
-Nächste Prüfaufgaben: Titelanzeige separat bestätigen, generischen Spotify-
-Steuerpfad an einer tatsächlich adressierbaren Ausgabe abnehmen und für Sonos
-Gate S0-LAN klären. Eine rein lokale interne Evaluation von Discovery/Status ist
+Nachtrag zur Gerätezuordnung: Der Nutzer identifiziert den Eintrag „Ausgabe ohne
+Namen“ als ältere Yamaha Pianocraft. Dies ist eine Nutzerzuordnung; genaue
+Modellnummer und technische Connect-Anbindung sind noch nicht erfasst. Der
+Eintrag dient damit nicht als Nachweis der Roam-Erkennung.
+
+Titelanzeige während Roam-Wiedergabe und der generische Spotify-Steuerpfad mit
+Pause/Play sowie beiden Titelwechselbefehlen am iPhone wurden unter dev.14 vom
+Nutzer bestätigt. Nächste Sonos-Prüfaufgabe bleibt Gate S0-LAN. Eine rein lokale interne Evaluation von Discovery/Status ist
 von Produktimplementierung und Vertriebsrechten zu trennen. Keine Umgehung der
 Spotify-Sperre durch globale Befehle und kein stiller Wechsel zu Sonos-Steuerung.

@@ -1000,3 +1000,25 @@ Quellbaum vor Installation: `9116bde575c4b13b64b7734092080616270ba5db` auf
 Die neue Anmeldung mit Nutzerzustimmung steht noch aus; eine Behebung des
 realen Tokenproblems wird damit noch nicht behauptet. Die GitHub-CI des
 vorherigen dev.15-Standes `1bfc944` ist inzwischen vollständig erfolgreich.
+
+
+#### Erfolgreiche Neuanmeldung und Zuordnung der namenlosen Ausgabe
+
+Der Nutzer bestätigt unter dev.16 „verbunden“. Die begrenzte Diagnose belegt den
+neuen Vorgang separat von der Altverknüpfung: Callback angenommen, Tokenabruf
+`initial=1`, HTTP 200, Transport 0, Phase 5, 435 ms, `confirmed=1`; danach
+`ready`, `linked=true`, `error=none` und `attempt_confirmed=true` im Helfer.
+Damit ist diese neue Anmeldung am Gerät und durch den Nutzer bestätigt. Dieser
+Versuch brauchte keine verlängerte Empfangswartezeit; er beweist daher nicht,
+dass alle zuvor beobachteten Transportabbrüche ursächlich behoben sind. Einzelne
+spätere Playbackabrufe scheitern noch vor den Headern bzw. im Body; erfolgreiche
+Abrufe danach belegen Erholung. Keine Geheimnisse oder Antwortinhalte protokolliert.
+Beide GitHub-CI-Läufe für Implementierungscommit `48e2431` sind erfolgreich.
+
+Der Nutzer ordnet „Ausgabe ohne Namen“ seiner älteren **Yamaha Pianocraft** zu.
+Das ist eine Nutzerzuordnung, keine aus Spotify-Metadaten abgeleitete Geräte-
+Identität und keine Zuordnung zum Sonos Roam. Exakte Pianocraft-Modellnummer,
+Connect-Empfänger und hörbare Knob-Steuerung dieser Anlage sind damit noch nicht
+nachgewiesen. Die Firmware erhält keine hart codierte Umbenennung oder Geräte-ID-
+Zuordnung. Die echte Playlist-/Podcast-Bibliotheksanzeige wird nach der neuen
+Anmeldung als eigener nächster Schritt geprüft.
