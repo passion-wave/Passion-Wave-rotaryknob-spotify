@@ -1,0 +1,9 @@
+menu "PassionWave Spotify laboratory provider"
+config PW_SPOTIFY_LAB
+    bool "Enable direct Spotify Web API evaluation (laboratory only)"
+    default n
+    help
+        Enables native control of Spotify Connect outputs for authorized test
+        accounts. This is not a commercial product approval. Credentials are
+        linked through the local USB PKCE flow, never through a web token form.
+endmenu

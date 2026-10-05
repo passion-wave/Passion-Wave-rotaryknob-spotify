@@ -1,4 +1,4 @@
-name: Framework checks
+name: Firmware and framework checks
 on: [push, pull_request]
 permissions:
   contents: read
@@ -10,4 +10,83 @@ jobs:
         with:
           persist-credentials: false
       - name: Check examples, models, docs, C++ interfaces and JavaScript
-        run: python3 tools/check.py
+        run: |
+          python3 tools/check.py
+          python3 -m unittest discover -s tests/backup_device -v
+          python3 -m unittest discover -s tests/firmware_versions -v
+  native-and-firmware:
+    runs-on: ubuntu-24.04
+    container: espressif/idf:v5.4.3
+    env:
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Native test dependencies
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends build-essential zlib1g-dev
+      - name: Protocol, settings, weather, Spotify and real OTA signatures
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /opt/esp/idf/export.sh
+          cc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined \
+            -Ifirmware/components/pw_protocol/include \
+            firmware/components/pw_protocol/pw_protocol.c tests/native/test_protocol.c \
+            -o /tmp/pw-protocol-tests
+          /tmp/pw-protocol-tests
+          sh tests/app_native/run.sh
+          sh tests/http_native/run.sh
+          sh tests/lan_native/run.sh
+          python3 tests/lan_native/run_http.py
+          python3 tests/http_response_native/run.py
+          python3 tests/http_client_native/run.py
+          sh tests/storage_native/run.sh
+          sh tests/weather_native/run.sh
+          sh tests/setup_native/run.sh
+          python3 -m unittest discover -s tests/contracts -p 'test_*.py' -v
+          sh firmware/components/pw_spotify/tests/run.sh
+          python3 firmware/components/pw_ui/tests/run_picker.py
+          python tests/update_native/run.py
+          python tests/companion_update_native/run.py
+          python tests/update_service_native/run.py
+      - name: Build both processors with pinned ESP-IDF
+        shell: bash
+        run: |
+          set -euo pipefail
+          . /opt/esp/idf/export.sh
+          idf.py -C firmware/companion -B build/companion build
+          idf.py -C firmware/s3 -B build/s3 -D SDKCONFIG="$PWD/build/s3/sdkconfig" build
+          idf.py -C firmware/s3 -B build/s3-lab -D SDKCONFIG="$PWD/build/s3-lab/sdkconfig" \
+            -D 'SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.spotify-lab' build
+          python tools/check_firmware_versions.py build/companion build/s3 build/s3-lab
+          python tools/check_s3_memory.py build/s3 build/s3-lab
+          python firmware/components/pw_assets/tests/run_host.py \
+            --lvgl firmware/s3/managed_components/lvgl__lvgl --cc cc
+  device-website:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install isolated Chromium and WebKit test environment
+        run: |
+          python3 -m venv "$RUNNER_TEMP/pw-browser-env"
+          "$RUNNER_TEMP/pw-browser-env/bin/python" -m pip install playwright==1.58.0
+          "$RUNNER_TEMP/pw-browser-env/bin/python" -m playwright install --with-deps chromium webkit
+      - name: Real website with simulated device responses
+        run: |
+          "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/device_web.py \
+            --screenshots "$RUNNER_TEMP/pw-browser-artifacts"
+          "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/library_web.py \
+            --screenshots "$RUNNER_TEMP/pw-library-artifacts"
+          "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/compressed_web.py
+      - name: USB login helper with simulated device and Spotify
+        run: |
+          "$RUNNER_TEMP/pw-browser-env/bin/python" -m unittest discover -s tools/spotify_setup/tests -p 'test_*.py'
+          "$RUNNER_TEMP/pw-browser-env/bin/python" tools/spotify_setup/tests/browser_check.py \
+            --browser chromium --screenshots "$RUNNER_TEMP/pw-login-artifacts/chromium"
+          "$RUNNER_TEMP/pw-browser-env/bin/python" tools/spotify_setup/tests/browser_check.py \
+            --browser webkit --screenshots "$RUNNER_TEMP/pw-login-artifacts/webkit"

@@ -40,7 +40,7 @@ Partnerregeln haben Vorrang. Bei einem genehmigten eSDK-Empfänger wird die offi
 
 ### B. Genehmigter Web-API-Controller / Labortest
 
-Authorization Code mit PKCE S256: Gerät erzeugt zufälliges einmaliges `state`, Verifier und Challenge. Nur das Gerät hält den Verifier. Spotify fordert exakt registrierte HTTPS-Redirects; `.local` oder LAN-IP mit HTTP reichen nicht. Loopback zeigt auf den Browserrechner, nicht auf den Knob. [Redirects](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri), [PKCE](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow)
+Authorization Code mit PKCE S256: Gerät erzeugt zufälliges einmaliges `state`, Verifier und Challenge. Nur das Gerät hält den Verifier. Für Web-Rückleitungen verlangt Spotify HTTPS; `.local` oder LAN-IP mit HTTP reichen nicht. Loopback zeigt auf den Browserrechner, nicht auf den Knob. Mobile Custom Schemes werden weiterhin unterstützt; eine zusätzliche Einrichtungs-App ist als Variante angefragt, aber noch nicht ausgewählt. Sichere lokale Gerätebindung und Produktfreigabe müssen auch dann nachgewiesen werden. [Redirects](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri), [PKCE](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow), [App-Rückleitungen](https://developer.spotify.com/blog/2025-02-12-increasing-the-security-requirements-for-integrating-with-spotify)
 
 Die HTTPS-Redirectanforderung ist unter Q01 eine offene technische Hürde, keine bereits gelöste automatische LAN-Rückgabe. P4.4 muss nach G0 einen tatsächlich zugelassenen Partner-/Geräteflow oder einen passenden direkten Rückweg unter den bestätigten Produktvorgaben nachweisen. Eine erreichbare lokale Konfigurationsseite allein löst den Spotify-Callback nicht.
 
@@ -83,3 +83,50 @@ Die [Sonos-Prüfung](12-SONOS-PRUEFUNG.md) beginnt mit Roam und Move als Connect
 Die Tabellen in [Featureportierung](13-FEATURE-PORTIERUNG.md) sind die Prüfliste für alle übernommenen Parameter. Die heutigen JSON-Verträge enthalten noch nicht sämtliche Display-/Wetteroptionen; P3/P6/P10 erweitern Schema, Defaults, Migration, HTTP-API und UI gemeinsam. Der Morgenavatar übernimmt zunächst Ein/Aus und 06–10 Uhr; frei editierbare Fenster sind eine gesonderte Erweiterung.
 
 Direkt angefragte Wetteranbieter erhalten IP und Standortparameter; Ortssuche ist ein eigener Dienst. Stadt-/Rasterpräzision genügt soweit der Provider unterstützt, keine laufende GPS-Ortung. Providerzugänge liegen getrennt von exportierbaren Einstellungen; Standort im Supportexport optional auslassen. Ein Standortwechsel verwirft alte Forecast-, Radar- und Avatarjobs. Siehe [Wetter](14-WETTER.md).
+
+## Autorisierte Pilotausnahme (5. Oktober 2026)
+
+Der Nutzer wählt ausdrücklich die zeitbegrenzte unverschlüsselte Heimnetz-
+Verwaltung für den Pilot. dev.15 ergänzt dafür ausschließlich im Laborprofil
+„Gerät → Web freigeben“. Das Display zeigt Website-QR und sechsstelligen
+Einmalcode. Im Browser eingeben; die Sitzung ist an Client-IP, zufälliges
+HttpOnly-/SameSite-Cookie und CSRF gebunden. Fünf Fehlversuche schließen das
+Fenster. Neue physische Freigabe oder Schließen widerruft die vorige Sitzung;
+die feste Laufzeit beträgt zehn Minuten ab physischem Öffnen, ohne Verlängerung
+durch Browser-Polling. Der Browser kennzeichnet unverschlüsseltes HTTP sichtbar.
+Dies erfüllt nicht G2 und schützt nicht vor einem Angreifer im Transportweg.
+Der sichere Heimnetz-Produktweg bleibt separat offen; das Standardprofil schaltet
+die Ausnahme ab. Backendfelder `secure_write` und `secure_lan_write` bleiben
+für diesen Weg falsch; `write_allowed` bezeichnet nur die Pilotautorisierung.
+
+Die Inhaltsseite bietet zuerst ein natives Dropdown für eigene/gefolgte Playlists
+oder gespeicherte Podcasts, darunter weiterhin Spotify-Links. Die Bibliothek
+wird nur bei Bedarf in Zehnerseiten geholt; weitere Seiten werden ausdrücklich
+geladen. Die Website bleibt während des Providerabrufs bedienbar. Fehlende
+Leserechte führen zu einer Aufforderung zur erneuten Spotify-Anmeldung, nicht
+zur Löschung der bestehenden Verknüpfung. Auswahl hinzufügen und anschließend
+„Auswahl speichern“ ändert nur den lokalen Knob-Katalog, nicht die Spotify-
+Bibliothek. Gespeicherte Podcasts sind damit verwaltbar; ihr Wiedergabepfad ist
+durch diese Änderung noch nicht abgenommen.
+
+
+## Wiederkehrende Ladeprobleme und Freigaberennen (dev.18)
+
+Die Paarung muss nach einem erfolgreichen Code-POST die neue Sitzung abrufen,
+auch wenn noch eine ältere Statusabfrage läuft. Sie wartet nun deren Abschluss
+ab und führt den expliziten Sitzungsabruf anschließend aus. Ein absichtlich
+zurückgehaltener alter Read-only-Status reproduziert den Fehler; Chromium und
+WebKit prüfen, dass die Eingabefelder danach ohne Neuladen freigegeben werden.
+Der QR-/Freigabebildschirm unterdrückt auch im LAN-Modus die automatischen
+Wetter-/Avatarbilder.
+
+Der 64-KiB-Pool von LVGL liegt über ein eigenes Linkerfragment in PSRAM.
+Der Pool bleibt begrenzt; Display-DMA-Puffer und Taskstacks bleiben intern.
+`tools/check_s3_memory.py` prüft im fertigen ELF beider S3-Profile die externe
+Speicherzuordnung. Im HTTP-Laborprofil enthält der öffentliche Status außerdem
+nur numerische Laufzeitwerte: Uptime, freier/größter/minimaler interner Heap,
+WLAN-Signalstärke und Stromsparmodus. Keine Identitäten, Zugangsdaten oder
+Freigabecodes. Diese Werte dienen der Gerätequalifikation, nicht der
+Kundenbedienung. Gemessene schnelle Einzelabrufe direkt nach Neustart reichen
+nicht mehr als Webabnahme; Freigabefenster, parallele Browser und längerer
+Betrieb müssen einbezogen werden. Gerätestand: [Prüfbericht](16-NATIVE-IMPLEMENTIERUNG.md).

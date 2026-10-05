@@ -1,0 +1,8 @@
+menu "PassionWave pilot web access"
+config PW_LAN_HTTP_LAB
+    bool "Physically authorized, unencrypted LAN administration (pilot only)"
+    default n
+    help
+        Explicit pilot exception. A physical code permits one LAN client for
+        ten minutes over HTTP. Not secure LAN transport or a production feature.
+endmenu

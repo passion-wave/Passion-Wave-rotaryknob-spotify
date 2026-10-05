@@ -1,0 +1,1064 @@
+{
+  "schema_version": 1,
+  "generator": "built-in image_gen",
+  "exporter": "tools/export-weather-avatar.py",
+  "native_size": [
+    368,
+    368
+  ],
+  "viewport": [
+    360,
+    360
+  ],
+  "total_file_bytes": 711563,
+  "embedded_unique_bytes": 549141,
+  "decoded_rgb565_double_buffer_bytes": 541696,
+  "sources": {
+    "dry": "0f81d4528e53c737ccea59308529b0995678770f3405b19628b05c3850d28733",
+    "wind": "c28edbabb64036cd8e9eb2f900c53df32fa2b3c31a66963652ef875cf660e332",
+    "wet": "eae29099ab27c4a2cda8a1452c07f925c7106d7817d1fac5ab7db7ab52794582",
+    "snow": "4d5309f1a2cc15b01d616bb451bb822461ac09336b56fc7a26bd867c095e5eb0"
+  },
+  "images": [
+    {
+      "index": 0,
+      "key": "brown_brown/hot-dry",
+      "variant": "brown_brown",
+      "thermal_band": "hot",
+      "protection": "dry",
+      "file": "images/brown_brown/hot-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13823,
+      "sha256": "421c28f5bd61fefd9f370accaa85829eb5fa5afc4eb1f7883253e73fe982f81d",
+      "source": "sources/dry.png",
+      "source_cell": 0,
+      "source_region": [
+        0,
+        0,
+        362,
+        310
+      ]
+    },
+    {
+      "index": 1,
+      "key": "brown_brown/warm-dry",
+      "variant": "brown_brown",
+      "thermal_band": "warm",
+      "protection": "dry",
+      "file": "images/brown_brown/warm-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13885,
+      "sha256": "36bf38be3130d0260fc95d04951a0036320a6f6eb56a6d27f450b58a31f16090",
+      "source": "sources/dry.png",
+      "source_cell": 1,
+      "source_region": [
+        362,
+        0,
+        724,
+        310
+      ]
+    },
+    {
+      "index": 2,
+      "key": "brown_brown/mild-dry",
+      "variant": "brown_brown",
+      "thermal_band": "mild",
+      "protection": "dry",
+      "file": "images/brown_brown/mild-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13614,
+      "sha256": "9140d3b5f96f7d89d4dd8e35618e5242ffd663f96a9a61b6ca2d644ce6da62c3",
+      "source": "sources/dry.png",
+      "source_cell": 2,
+      "source_region": [
+        724,
+        0,
+        1086,
+        310
+      ]
+    },
+    {
+      "index": 3,
+      "key": "brown_brown/cool-dry",
+      "variant": "brown_brown",
+      "thermal_band": "cool",
+      "protection": "dry",
+      "file": "images/brown_brown/cool-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14329,
+      "sha256": "1c536fe43e5999bfee776d1b1f841fa3e8bf502e2f6c032aa078752aa51e2abc",
+      "source": "sources/dry.png",
+      "source_cell": 3,
+      "source_region": [
+        1086,
+        0,
+        1448,
+        310
+      ]
+    },
+    {
+      "index": 4,
+      "key": "brown_brown/cold-dry",
+      "variant": "brown_brown",
+      "thermal_band": "cold",
+      "protection": "dry",
+      "file": "images/brown_brown/cold-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13037,
+      "sha256": "928e45f22d06cc9eace269b19e3dc2ba9dc69d0fec9d594d2a9522c34ab75021",
+      "source": "sources/wind.png",
+      "source_cell": 4,
+      "source_region": [
+        0,
+        360,
+        362,
+        720
+      ]
+    },
+    {
+      "index": 5,
+      "key": "brown_brown/frost-dry",
+      "variant": "brown_brown",
+      "thermal_band": "frost",
+      "protection": "dry",
+      "file": "images/brown_brown/frost-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13085,
+      "sha256": "18d4f45cd16967bb2ae98a28ce069b28df76555069c718977197f841291b1ac4",
+      "source": "sources/wind.png",
+      "source_cell": 5,
+      "source_region": [
+        362,
+        360,
+        724,
+        720
+      ]
+    },
+    {
+      "index": 6,
+      "key": "blond_hazel/hot-dry",
+      "variant": "blond_hazel",
+      "thermal_band": "hot",
+      "protection": "dry",
+      "file": "images/blond_hazel/hot-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13954,
+      "sha256": "5e029359eada5cf7d7d5e1cbc6aa5c29f6e3ea1252344b9e237617d97b22181e",
+      "source": "sources/dry.png",
+      "source_cell": 8,
+      "source_region": [
+        0,
+        615,
+        362,
+        925
+      ]
+    },
+    {
+      "index": 7,
+      "key": "blond_hazel/warm-dry",
+      "variant": "blond_hazel",
+      "thermal_band": "warm",
+      "protection": "dry",
+      "file": "images/blond_hazel/warm-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13903,
+      "sha256": "02a0768acdae5f06cd7b98309e52ceca3e8c4281c2547ea4e6e0dbea6724eca4",
+      "source": "sources/dry.png",
+      "source_cell": 9,
+      "source_region": [
+        362,
+        615,
+        724,
+        925
+      ]
+    },
+    {
+      "index": 8,
+      "key": "blond_hazel/mild-dry",
+      "variant": "blond_hazel",
+      "thermal_band": "mild",
+      "protection": "dry",
+      "file": "images/blond_hazel/mild-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13788,
+      "sha256": "52f44be5123809e3f5732f7d87718d898bbb6418f6edb89d53eeb87955a9b8b4",
+      "source": "sources/dry.png",
+      "source_cell": 10,
+      "source_region": [
+        724,
+        615,
+        1086,
+        925
+      ]
+    },
+    {
+      "index": 9,
+      "key": "blond_hazel/cool-dry",
+      "variant": "blond_hazel",
+      "thermal_band": "cool",
+      "protection": "dry",
+      "file": "images/blond_hazel/cool-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14468,
+      "sha256": "1dd1d3a6fd84dd558f57e5712b3f7ecec014e0573f7158bf23df6ad4d1902f5f",
+      "source": "sources/dry.png",
+      "source_cell": 11,
+      "source_region": [
+        1086,
+        615,
+        1448,
+        925
+      ]
+    },
+    {
+      "index": 10,
+      "key": "blond_hazel/cold-dry",
+      "variant": "blond_hazel",
+      "thermal_band": "cold",
+      "protection": "dry",
+      "file": "images/blond_hazel/cold-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 12995,
+      "sha256": "6b037622a16b899c9b5428ac7a387454b26daa09ce1cd6b38b35b41b6a5cdaf7",
+      "source": "sources/wind.png",
+      "source_cell": 10,
+      "source_region": [
+        724,
+        720,
+        1086,
+        1086
+      ]
+    },
+    {
+      "index": 11,
+      "key": "blond_hazel/frost-dry",
+      "variant": "blond_hazel",
+      "thermal_band": "frost",
+      "protection": "dry",
+      "file": "images/blond_hazel/frost-dry.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 12986,
+      "sha256": "5856a238002f818c928c9d2706bfbded9ad173d74cd6733af42fe3f0a0a8add1",
+      "source": "sources/wind.png",
+      "source_cell": 11,
+      "source_region": [
+        1086,
+        720,
+        1448,
+        1086
+      ]
+    },
+    {
+      "index": 12,
+      "key": "brown_brown/hot-wind",
+      "variant": "brown_brown",
+      "thermal_band": "hot",
+      "protection": "wind",
+      "file": "images/brown_brown/hot-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13235,
+      "sha256": "a6d0f8b24a84bf0dee313595eb3b9782652f6b29cc026428e4f5ef7f09c51edf",
+      "source": "sources/wind.png",
+      "source_cell": 1,
+      "source_region": [
+        362,
+        0,
+        724,
+        360
+      ]
+    },
+    {
+      "index": 13,
+      "key": "brown_brown/warm-wind",
+      "variant": "brown_brown",
+      "thermal_band": "warm",
+      "protection": "wind",
+      "file": "images/brown_brown/warm-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13235,
+      "sha256": "a6d0f8b24a84bf0dee313595eb3b9782652f6b29cc026428e4f5ef7f09c51edf",
+      "source": "sources/wind.png",
+      "source_cell": 1,
+      "source_region": [
+        362,
+        0,
+        724,
+        360
+      ]
+    },
+    {
+      "index": 14,
+      "key": "brown_brown/mild-wind",
+      "variant": "brown_brown",
+      "thermal_band": "mild",
+      "protection": "wind",
+      "file": "images/brown_brown/mild-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13183,
+      "sha256": "4425e66040cac2963fe54c0bf7b27a11798240e75464ead05221d27ab448d8db",
+      "source": "sources/wind.png",
+      "source_cell": 2,
+      "source_region": [
+        724,
+        0,
+        1086,
+        360
+      ]
+    },
+    {
+      "index": 15,
+      "key": "brown_brown/cool-wind",
+      "variant": "brown_brown",
+      "thermal_band": "cool",
+      "protection": "wind",
+      "file": "images/brown_brown/cool-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13694,
+      "sha256": "1ed94e8bd41b8fc9593709b0cce23f8fba26faae93cb38bb949f04772135bc26",
+      "source": "sources/wind.png",
+      "source_cell": 3,
+      "source_region": [
+        1086,
+        0,
+        1448,
+        360
+      ]
+    },
+    {
+      "index": 16,
+      "key": "brown_brown/cold-wind",
+      "variant": "brown_brown",
+      "thermal_band": "cold",
+      "protection": "wind",
+      "file": "images/brown_brown/cold-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13037,
+      "sha256": "928e45f22d06cc9eace269b19e3dc2ba9dc69d0fec9d594d2a9522c34ab75021",
+      "source": "sources/wind.png",
+      "source_cell": 4,
+      "source_region": [
+        0,
+        360,
+        362,
+        720
+      ]
+    },
+    {
+      "index": 17,
+      "key": "brown_brown/frost-wind",
+      "variant": "brown_brown",
+      "thermal_band": "frost",
+      "protection": "wind",
+      "file": "images/brown_brown/frost-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13085,
+      "sha256": "18d4f45cd16967bb2ae98a28ce069b28df76555069c718977197f841291b1ac4",
+      "source": "sources/wind.png",
+      "source_cell": 5,
+      "source_region": [
+        362,
+        360,
+        724,
+        720
+      ]
+    },
+    {
+      "index": 18,
+      "key": "blond_hazel/hot-wind",
+      "variant": "blond_hazel",
+      "thermal_band": "hot",
+      "protection": "wind",
+      "file": "images/blond_hazel/hot-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13334,
+      "sha256": "34cd0f4875723447bd93ec6b5b119876c65df54ab07f7197d0d4035f834ab209",
+      "source": "sources/wind.png",
+      "source_cell": 7,
+      "source_region": [
+        1086,
+        360,
+        1448,
+        720
+      ]
+    },
+    {
+      "index": 19,
+      "key": "blond_hazel/warm-wind",
+      "variant": "blond_hazel",
+      "thermal_band": "warm",
+      "protection": "wind",
+      "file": "images/blond_hazel/warm-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13334,
+      "sha256": "34cd0f4875723447bd93ec6b5b119876c65df54ab07f7197d0d4035f834ab209",
+      "source": "sources/wind.png",
+      "source_cell": 7,
+      "source_region": [
+        1086,
+        360,
+        1448,
+        720
+      ]
+    },
+    {
+      "index": 20,
+      "key": "blond_hazel/mild-wind",
+      "variant": "blond_hazel",
+      "thermal_band": "mild",
+      "protection": "wind",
+      "file": "images/blond_hazel/mild-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13273,
+      "sha256": "711c76868cdcd82029e0ac86af747dc029f0062b5ceac5a1fc2b33817b354ade",
+      "source": "sources/wind.png",
+      "source_cell": 8,
+      "source_region": [
+        0,
+        720,
+        362,
+        1086
+      ]
+    },
+    {
+      "index": 21,
+      "key": "blond_hazel/cool-wind",
+      "variant": "blond_hazel",
+      "thermal_band": "cool",
+      "protection": "wind",
+      "file": "images/blond_hazel/cool-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13832,
+      "sha256": "b30086592873cd2fd36638853ce95be1343ca575e61e6a0327f54cf75d189d6f",
+      "source": "sources/wind.png",
+      "source_cell": 9,
+      "source_region": [
+        362,
+        720,
+        724,
+        1086
+      ]
+    },
+    {
+      "index": 22,
+      "key": "blond_hazel/cold-wind",
+      "variant": "blond_hazel",
+      "thermal_band": "cold",
+      "protection": "wind",
+      "file": "images/blond_hazel/cold-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 12995,
+      "sha256": "6b037622a16b899c9b5428ac7a387454b26daa09ce1cd6b38b35b41b6a5cdaf7",
+      "source": "sources/wind.png",
+      "source_cell": 10,
+      "source_region": [
+        724,
+        720,
+        1086,
+        1086
+      ]
+    },
+    {
+      "index": 23,
+      "key": "blond_hazel/frost-wind",
+      "variant": "blond_hazel",
+      "thermal_band": "frost",
+      "protection": "wind",
+      "file": "images/blond_hazel/frost-wind.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 12986,
+      "sha256": "5856a238002f818c928c9d2706bfbded9ad173d74cd6733af42fe3f0a0a8add1",
+      "source": "sources/wind.png",
+      "source_cell": 11,
+      "source_region": [
+        1086,
+        720,
+        1448,
+        1086
+      ]
+    },
+    {
+      "index": 24,
+      "key": "brown_brown/hot-wet",
+      "variant": "brown_brown",
+      "thermal_band": "hot",
+      "protection": "wet",
+      "file": "images/brown_brown/hot-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13947,
+      "sha256": "8cc46e1de425a42d94477c32169e2b691e3da837838599e6a73b7e110f0f4b90",
+      "source": "sources/wet.png",
+      "source_cell": 0,
+      "source_region": [
+        0,
+        0,
+        241,
+        444
+      ]
+    },
+    {
+      "index": 25,
+      "key": "brown_brown/warm-wet",
+      "variant": "brown_brown",
+      "thermal_band": "warm",
+      "protection": "wet",
+      "file": "images/brown_brown/warm-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14198,
+      "sha256": "69a40ad5dd4fe8384c5010203b6cb1eda780573a053737230d0664f9f1013ff7",
+      "source": "sources/wet.png",
+      "source_cell": 1,
+      "source_region": [
+        241,
+        0,
+        483,
+        444
+      ]
+    },
+    {
+      "index": 26,
+      "key": "brown_brown/mild-wet",
+      "variant": "brown_brown",
+      "thermal_band": "mild",
+      "protection": "wet",
+      "file": "images/brown_brown/mild-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14248,
+      "sha256": "ecb0b9cb252942cb6eb5853fc1db2f178fe82ef1ba5d855a64fc89b6a3a8ce5d",
+      "source": "sources/wet.png",
+      "source_cell": 2,
+      "source_region": [
+        483,
+        0,
+        724,
+        444
+      ]
+    },
+    {
+      "index": 27,
+      "key": "brown_brown/cool-wet",
+      "variant": "brown_brown",
+      "thermal_band": "cool",
+      "protection": "wet",
+      "file": "images/brown_brown/cool-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13579,
+      "sha256": "b15c94df3dda8f8540023f9cb8b70351e2eca0bfd8b1e855e0c7c99b5f63a937",
+      "source": "sources/wet.png",
+      "source_cell": 3,
+      "source_region": [
+        724,
+        0,
+        965,
+        444
+      ]
+    },
+    {
+      "index": 28,
+      "key": "brown_brown/cold-wet",
+      "variant": "brown_brown",
+      "thermal_band": "cold",
+      "protection": "wet",
+      "file": "images/brown_brown/cold-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 12576,
+      "sha256": "e83dad5abeee8cfe53830542abbc9546f6b185c13dd287e8a18d35cba1dd3a87",
+      "source": "sources/wet.png",
+      "source_cell": 4,
+      "source_region": [
+        965,
+        0,
+        1207,
+        444
+      ]
+    },
+    {
+      "index": 29,
+      "key": "brown_brown/frost-wet",
+      "variant": "brown_brown",
+      "thermal_band": "frost",
+      "protection": "wet",
+      "file": "images/brown_brown/frost-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 12308,
+      "sha256": "5da7c36d992475c8ac2fa3a88cfe93a09ada74475aa983ebcb74f63a3760ab78",
+      "source": "sources/wet.png",
+      "source_cell": 5,
+      "source_region": [
+        1207,
+        0,
+        1448,
+        444
+      ]
+    },
+    {
+      "index": 30,
+      "key": "blond_hazel/hot-wet",
+      "variant": "blond_hazel",
+      "thermal_band": "hot",
+      "protection": "wet",
+      "file": "images/blond_hazel/hot-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14019,
+      "sha256": "e1a53458b47bce9c954f6686473314f372685baf0e91bc065c22bcd4f23362d4",
+      "source": "sources/wet.png",
+      "source_cell": 6,
+      "source_region": [
+        0,
+        444,
+        241,
+        875
+      ]
+    },
+    {
+      "index": 31,
+      "key": "blond_hazel/warm-wet",
+      "variant": "blond_hazel",
+      "thermal_band": "warm",
+      "protection": "wet",
+      "file": "images/blond_hazel/warm-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14184,
+      "sha256": "09a67bbf64011e23af23aaa4c8183aec0578c86491a268b673e31ded4d0b7e6f",
+      "source": "sources/wet.png",
+      "source_cell": 7,
+      "source_region": [
+        241,
+        444,
+        483,
+        875
+      ]
+    },
+    {
+      "index": 32,
+      "key": "blond_hazel/mild-wet",
+      "variant": "blond_hazel",
+      "thermal_band": "mild",
+      "protection": "wet",
+      "file": "images/blond_hazel/mild-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14210,
+      "sha256": "19149b11d90504c9f2531ee22c2ebc25f067a4a821e0571217987e33c985afc7",
+      "source": "sources/wet.png",
+      "source_cell": 8,
+      "source_region": [
+        483,
+        444,
+        724,
+        875
+      ]
+    },
+    {
+      "index": 33,
+      "key": "blond_hazel/cool-wet",
+      "variant": "blond_hazel",
+      "thermal_band": "cool",
+      "protection": "wet",
+      "file": "images/blond_hazel/cool-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13639,
+      "sha256": "f66cdeb3d47bf385a591749fe60f6e0b2ed76661e0d64011603c026a3bbb1d88",
+      "source": "sources/wet.png",
+      "source_cell": 9,
+      "source_region": [
+        724,
+        444,
+        965,
+        875
+      ]
+    },
+    {
+      "index": 34,
+      "key": "blond_hazel/cold-wet",
+      "variant": "blond_hazel",
+      "thermal_band": "cold",
+      "protection": "wet",
+      "file": "images/blond_hazel/cold-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 12732,
+      "sha256": "e8498de3c81d3c2e586f166a87c83da5ae87d47e40d0b5f5004dd6c6fd305f36",
+      "source": "sources/wet.png",
+      "source_cell": 10,
+      "source_region": [
+        965,
+        444,
+        1207,
+        875
+      ]
+    },
+    {
+      "index": 35,
+      "key": "blond_hazel/frost-wet",
+      "variant": "blond_hazel",
+      "thermal_band": "frost",
+      "protection": "wet",
+      "file": "images/blond_hazel/frost-wet.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 12404,
+      "sha256": "e50f238f142ceaf15e6cb47ce1c3f9286324f46af8dc768ef6e4870810c2c412",
+      "source": "sources/wet.png",
+      "source_cell": 11,
+      "source_region": [
+        1207,
+        444,
+        1448,
+        875
+      ]
+    },
+    {
+      "index": 36,
+      "key": "brown_brown/hot-snow",
+      "variant": "brown_brown",
+      "thermal_band": "hot",
+      "protection": "snow",
+      "file": "images/brown_brown/hot-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13947,
+      "sha256": "8cc46e1de425a42d94477c32169e2b691e3da837838599e6a73b7e110f0f4b90",
+      "source": "sources/wet.png",
+      "source_cell": 0,
+      "source_region": [
+        0,
+        0,
+        241,
+        444
+      ]
+    },
+    {
+      "index": 37,
+      "key": "brown_brown/warm-snow",
+      "variant": "brown_brown",
+      "thermal_band": "warm",
+      "protection": "snow",
+      "file": "images/brown_brown/warm-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14198,
+      "sha256": "69a40ad5dd4fe8384c5010203b6cb1eda780573a053737230d0664f9f1013ff7",
+      "source": "sources/wet.png",
+      "source_cell": 1,
+      "source_region": [
+        241,
+        0,
+        483,
+        444
+      ]
+    },
+    {
+      "index": 38,
+      "key": "brown_brown/mild-snow",
+      "variant": "brown_brown",
+      "thermal_band": "mild",
+      "protection": "snow",
+      "file": "images/brown_brown/mild-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14999,
+      "sha256": "07c2fddff55a8f1d753287517cec77829fa9b5e14d290521214cc5d358afa0f4",
+      "source": "sources/snow.png",
+      "source_cell": 2,
+      "source_region": [
+        483,
+        0,
+        724,
+        460
+      ]
+    },
+    {
+      "index": 39,
+      "key": "brown_brown/cool-snow",
+      "variant": "brown_brown",
+      "thermal_band": "cool",
+      "protection": "snow",
+      "file": "images/brown_brown/cool-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14830,
+      "sha256": "8614c214a1c40fb0f8aa66d654205f6b4e54195c49efb7ab9b15999cf2246e0e",
+      "source": "sources/snow.png",
+      "source_cell": 3,
+      "source_region": [
+        724,
+        0,
+        965,
+        460
+      ]
+    },
+    {
+      "index": 40,
+      "key": "brown_brown/cold-snow",
+      "variant": "brown_brown",
+      "thermal_band": "cold",
+      "protection": "snow",
+      "file": "images/brown_brown/cold-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13527,
+      "sha256": "90a399a23ca90adc543de924d96aced1108e09d0cba80332717340953bddde09",
+      "source": "sources/snow.png",
+      "source_cell": 4,
+      "source_region": [
+        965,
+        0,
+        1207,
+        460
+      ]
+    },
+    {
+      "index": 41,
+      "key": "brown_brown/frost-snow",
+      "variant": "brown_brown",
+      "thermal_band": "frost",
+      "protection": "snow",
+      "file": "images/brown_brown/frost-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13390,
+      "sha256": "34e292f30e1202b8795f1267e1b4495b1714388a86a6a1f29bb56bef822d8a70",
+      "source": "sources/snow.png",
+      "source_cell": 5,
+      "source_region": [
+        1207,
+        0,
+        1448,
+        460
+      ]
+    },
+    {
+      "index": 42,
+      "key": "blond_hazel/hot-snow",
+      "variant": "blond_hazel",
+      "thermal_band": "hot",
+      "protection": "snow",
+      "file": "images/blond_hazel/hot-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14019,
+      "sha256": "e1a53458b47bce9c954f6686473314f372685baf0e91bc065c22bcd4f23362d4",
+      "source": "sources/wet.png",
+      "source_cell": 6,
+      "source_region": [
+        0,
+        444,
+        241,
+        875
+      ]
+    },
+    {
+      "index": 43,
+      "key": "blond_hazel/warm-snow",
+      "variant": "blond_hazel",
+      "thermal_band": "warm",
+      "protection": "snow",
+      "file": "images/blond_hazel/warm-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14184,
+      "sha256": "09a67bbf64011e23af23aaa4c8183aec0578c86491a268b673e31ded4d0b7e6f",
+      "source": "sources/wet.png",
+      "source_cell": 7,
+      "source_region": [
+        241,
+        444,
+        483,
+        875
+      ]
+    },
+    {
+      "index": 44,
+      "key": "blond_hazel/mild-snow",
+      "variant": "blond_hazel",
+      "thermal_band": "mild",
+      "protection": "snow",
+      "file": "images/blond_hazel/mild-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 15180,
+      "sha256": "e66c2c7bd4ed7d99812a465c31f73403149811254f0444789b60e02990585cf3",
+      "source": "sources/snow.png",
+      "source_cell": 8,
+      "source_region": [
+        483,
+        460,
+        724,
+        930
+      ]
+    },
+    {
+      "index": 45,
+      "key": "blond_hazel/cool-snow",
+      "variant": "blond_hazel",
+      "thermal_band": "cool",
+      "protection": "snow",
+      "file": "images/blond_hazel/cool-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14953,
+      "sha256": "6b60e1cb6581372e5b7b5be7256b4580a1802a80ece56e7813726e2d88c47ccd",
+      "source": "sources/snow.png",
+      "source_cell": 9,
+      "source_region": [
+        724,
+        460,
+        965,
+        930
+      ]
+    },
+    {
+      "index": 46,
+      "key": "blond_hazel/cold-snow",
+      "variant": "blond_hazel",
+      "thermal_band": "cold",
+      "protection": "snow",
+      "file": "images/blond_hazel/cold-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13635,
+      "sha256": "e9d0fd48b8d50fe4d5d949d2639e04afcfe6a0641b79e1f0a32236129e8e037c",
+      "source": "sources/snow.png",
+      "source_cell": 10,
+      "source_region": [
+        965,
+        460,
+        1207,
+        930
+      ]
+    },
+    {
+      "index": 47,
+      "key": "blond_hazel/frost-snow",
+      "variant": "blond_hazel",
+      "thermal_band": "frost",
+      "protection": "snow",
+      "file": "images/blond_hazel/frost-snow.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13461,
+      "sha256": "d4bb92b37b286b7b3ee0d3ec3b2632b2ccdaf8d4a0cdeee55e64665abbd5200e",
+      "source": "sources/snow.png",
+      "source_cell": 11,
+      "source_region": [
+        1207,
+        460,
+        1448,
+        930
+      ]
+    },
+    {
+      "index": 48,
+      "key": "brown_brown/neutral",
+      "variant": "brown_brown",
+      "thermal_band": null,
+      "protection": "neutral",
+      "file": "images/brown_brown/neutral.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13614,
+      "sha256": "9140d3b5f96f7d89d4dd8e35618e5242ffd663f96a9a61b6ca2d644ce6da62c3",
+      "source": "sources/dry.png",
+      "source_cell": 2,
+      "source_region": [
+        724,
+        0,
+        1086,
+        310
+      ]
+    },
+    {
+      "index": 49,
+      "key": "blond_hazel/neutral",
+      "variant": "blond_hazel",
+      "thermal_band": null,
+      "protection": "neutral",
+      "file": "images/blond_hazel/neutral.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 13788,
+      "sha256": "52f44be5123809e3f5732f7d87718d898bbb6418f6edb89d53eeb87955a9b8b4",
+      "source": "sources/dry.png",
+      "source_cell": 10,
+      "source_region": [
+        724,
+        615,
+        1086,
+        925
+      ]
+    },
+    {
+      "index": 50,
+      "key": "brown_brown/hot-sunhat",
+      "variant": "brown_brown",
+      "thermal_band": "hot",
+      "protection": "sunhat",
+      "file": "images/brown_brown/hot-sunhat.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14351,
+      "sha256": "db0cf2dc5c7f45c449c46caee8e8b238a7a7a62bdc38b82e9c5de0a1d1d1b79c",
+      "source": "sources/snow.png",
+      "source_cell": 0,
+      "source_region": [
+        0,
+        0,
+        241,
+        460
+      ]
+    },
+    {
+      "index": 51,
+      "key": "blond_hazel/hot-sunhat",
+      "variant": "blond_hazel",
+      "thermal_band": "hot",
+      "protection": "sunhat",
+      "file": "images/blond_hazel/hot-sunhat.jpg",
+      "width": 368,
+      "height": 368,
+      "bytes": 14353,
+      "sha256": "771f490cb1c5d9762ca0c83bbec5f8a19e5e2da348b7a5c2bd4b6032c8cb7038",
+      "source": "sources/snow.png",
+      "source_cell": 6,
+      "source_region": [
+        0,
+        460,
+        241,
+        930
+      ]
+    }
+  ]
+}

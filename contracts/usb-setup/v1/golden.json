@@ -1,0 +1,662 @@
+{
+  "contract_version": "1.0.0",
+  "wire_major": 1,
+  "fixture_only": true,
+  "fixture_oauth_profile": {
+    "fixture_only": true,
+    "client_id": "00000000000000000000000000000000",
+    "redirect_uri": "http://127.0.0.1:8766/callback",
+    "scopes": [
+      "user-read-playback-state",
+      "user-modify-playback-state",
+      "playlist-read-private",
+      "user-library-read"
+    ]
+  },
+  "description": "All codes, states, sessions and client IDs are synthetic. Each wire_utf8 contains actual wire characters after JSON unescaping; invalid JSON remains inside this valid JSON fixture container.",
+  "requests": {
+    "good": [
+      {
+        "name": "hello",
+        "wire_utf8": "PWSET1 {\"id\":1,\"method\":\"hello\"}\n",
+        "method": "hello"
+      },
+      {
+        "name": "status",
+        "wire_utf8": "PWSET1 {\"id\":2,\"method\":\"status\"}\n",
+        "method": "status"
+      },
+      {
+        "name": "authorize",
+        "wire_utf8": "PWSET1 {\"id\":3,\"method\":\"authorize\"}\n",
+        "method": "authorize"
+      },
+      {
+        "name": "cancel",
+        "wire_utf8": "PWSET1 {\"id\":4,\"method\":\"cancel\"}\n",
+        "method": "cancel"
+      },
+      {
+        "name": "callback",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"callback\",\"code\":\"FAKE.fixture-only_-~\",\"state\":\"0123456789abcdef0123456789abcdef0123456789abcdef\"}\n",
+        "method": "callback"
+      },
+      {
+        "name": "maximum-id",
+        "wire_utf8": "PWSET1 {\"id\":2147483647,\"method\":\"hello\"}\n",
+        "method": "hello"
+      },
+      {
+        "name": "maximum-code",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"callback\",\"code\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\",\"state\":\"0123456789abcdef0123456789abcdef0123456789abcdef\"}\n",
+        "method": "callback"
+      },
+      {
+        "name": "crlf-normalized-by-line-owner",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"hello\"}\r\n",
+        "method": "hello"
+      },
+      {
+        "name": "maximum-line-8191-bytes",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"hello\"}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              \n",
+        "method": "hello"
+      }
+    ],
+    "bad": [
+      {
+        "name": "id-zero",
+        "wire_utf8": "PWSET1 {\"id\":0,\"method\":\"hello\"}\n",
+        "reason": "id must be an integer in 1..2147483647",
+        "stage": "schema"
+      },
+      {
+        "name": "negative-id",
+        "wire_utf8": "PWSET1 {\"id\":-1,\"method\":\"hello\"}\n",
+        "reason": "id must be an integer in 1..2147483647",
+        "stage": "schema"
+      },
+      {
+        "name": "fractional-id",
+        "wire_utf8": "PWSET1 {\"id\":1.25,\"method\":\"hello\"}\n",
+        "reason": "id must be an integer in 1..2147483647",
+        "stage": "schema"
+      },
+      {
+        "name": "id-overflow",
+        "wire_utf8": "PWSET1 {\"id\":2147483648,\"method\":\"hello\"}\n",
+        "reason": "id must be an integer in 1..2147483647",
+        "stage": "schema"
+      },
+      {
+        "name": "boolean-id",
+        "wire_utf8": "PWSET1 {\"id\":true,\"method\":\"hello\"}\n",
+        "reason": "id must be an integer in 1..2147483647",
+        "stage": "schema"
+      },
+      {
+        "name": "string-id",
+        "wire_utf8": "PWSET1 {\"id\":\"17\",\"method\":\"hello\"}\n",
+        "reason": "id must be an integer in 1..2147483647",
+        "stage": "schema"
+      },
+      {
+        "name": "unknown-method",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"disconnect\"}\n",
+        "reason": "unknown or missing request fields/method",
+        "stage": "schema"
+      },
+      {
+        "name": "missing-method",
+        "wire_utf8": "PWSET1 {\"id\":17}\n",
+        "reason": "unknown or missing request fields/method",
+        "stage": "schema"
+      },
+      {
+        "name": "unknown-field",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"hello\",\"approved\":true}\n",
+        "reason": "unknown or missing request fields/method",
+        "stage": "schema"
+      },
+      {
+        "name": "callback-fields-on-hello",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"hello\",\"code\":\"FAKE\"}\n",
+        "reason": "unknown or missing request fields/method",
+        "stage": "schema"
+      },
+      {
+        "name": "callback-missing-code",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"callback\",\"state\":\"0123456789abcdef0123456789abcdef0123456789abcdef\"}\n",
+        "reason": "unknown or missing request fields/method",
+        "stage": "schema"
+      },
+      {
+        "name": "empty-code",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"callback\",\"code\":\"\",\"state\":\"0123456789abcdef0123456789abcdef0123456789abcdef\"}\n",
+        "reason": "code/state bounds or character set",
+        "stage": "schema"
+      },
+      {
+        "name": "code-whitespace",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"callback\",\"code\":\"FAKE code\",\"state\":\"0123456789abcdef0123456789abcdef0123456789abcdef\"}\n",
+        "reason": "code/state bounds or character set",
+        "stage": "schema"
+      },
+      {
+        "name": "code-control",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"callback\",\"code\":\"FAKE\\ncode\",\"state\":\"0123456789abcdef0123456789abcdef0123456789abcdef\"}\n",
+        "reason": "code/state bounds or character set",
+        "stage": "schema"
+      },
+      {
+        "name": "code-unicode",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"callback\",\"code\":\"FAKE\\u00e4\",\"state\":\"0123456789abcdef0123456789abcdef0123456789abcdef\"}\n",
+        "reason": "code/state bounds or character set",
+        "stage": "schema"
+      },
+      {
+        "name": "code-too-long",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"callback\",\"code\":\"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\",\"state\":\"0123456789abcdef0123456789abcdef0123456789abcdef\"}\n",
+        "reason": "code/state bounds or character set",
+        "stage": "schema"
+      },
+      {
+        "name": "short-state",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"callback\",\"code\":\"FAKE\",\"state\":\"0123456789abcdef0123456789abcdef0123456789abcde\"}\n",
+        "reason": "code/state bounds or character set",
+        "stage": "schema"
+      },
+      {
+        "name": "uppercase-state",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"callback\",\"code\":\"FAKE\",\"state\":\"0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF\"}\n",
+        "reason": "code/state bounds or character set",
+        "stage": "schema"
+      },
+      {
+        "name": "state-too-long",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"callback\",\"code\":\"FAKE\",\"state\":\"0123456789abcdef0123456789abcdef0123456789abcdef0\"}\n",
+        "reason": "code/state bounds or character set",
+        "stage": "schema"
+      },
+      {
+        "name": "wrong-prefix",
+        "wire_utf8": "PWSET2 {\"id\":17,\"method\":\"hello\"}\n",
+        "stage": "framing",
+        "reason": "must not dispatch or emit a correlated request ACK"
+      },
+      {
+        "name": "duplicate-id",
+        "wire_utf8": "PWSET1 {\"id\":17,\"id\":18,\"method\":\"hello\"}\n",
+        "stage": "lexical",
+        "reason": "must not dispatch or emit a correlated request ACK"
+      },
+      {
+        "name": "duplicate-method",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"hello\",\"method\":\"authorize\"}\n",
+        "stage": "lexical",
+        "reason": "must not dispatch or emit a correlated request ACK"
+      },
+      {
+        "name": "escaped-nul",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"hello\\u0000authorize\"}\n",
+        "stage": "lexical",
+        "reason": "must not dispatch or emit a correlated request ACK"
+      },
+      {
+        "name": "raw-nul",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"hello\"}\u0000extra\n",
+        "stage": "framing",
+        "reason": "must not dispatch or emit a correlated request ACK"
+      },
+      {
+        "name": "trailing-data",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"hello\"}trailing\n",
+        "stage": "lexical",
+        "reason": "must not dispatch or emit a correlated request ACK"
+      },
+      {
+        "name": "invalid-json",
+        "wire_utf8": "PWSET1 {broken}\n",
+        "stage": "lexical",
+        "reason": "must not dispatch or emit a correlated request ACK"
+      },
+      {
+        "name": "missing-delimiter",
+        "wire_utf8": "PWSET1 {\"id\":17,\"method\":\"hello\"}",
+        "stage": "framing",
+        "reason": "must not dispatch or emit a correlated request ACK"
+      },
+      {
+        "name": "raw-cr-in-payload",
+        "wire_utf8": "PWSET1 {\"id\":17,\r\"method\":\"hello\"}\n",
+        "stage": "framing",
+        "reason": "must not dispatch or emit a correlated request ACK"
+      },
+      {
+        "name": "oversized-line",
+        "wire_utf8": "PWSET1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               {}\n",
+        "stage": "framing",
+        "reason": "must not dispatch or emit a correlated request ACK"
+      }
+    ]
+  },
+  "responses": {
+    "good": [
+      {
+        "name": "hello-window-open",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"role\":\"controller_s3\",\"hardware\":\"JC3636K518C_I_YR1\",\"version\":\"0.1.0-dev.2\",\"lab_enabled\":true,\"setup_open\":true}\n",
+        "request_method": "hello"
+      },
+      {
+        "name": "hello-window-closed",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"role\":\"controller_s3\",\"hardware\":\"JC3636K518C_I_YR1\",\"version\":\"0.1.0-dev.2\",\"lab_enabled\":true,\"setup_open\":false}\n",
+        "request_method": "hello"
+      },
+      {
+        "name": "status-unlinked",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"role\":\"controller_s3\",\"hardware\":\"JC3636K518C_I_YR1\",\"version\":\"0.1.0-dev.2\",\"lab_enabled\":true,\"setup_open\":true,\"spotify\":{\"linked\":false,\"state\":\"unlinked\",\"error\":\"none\",\"connected\":true,\"session\":1001,\"authorization_id\":\"\",\"http_status\":0}}\n",
+        "request_method": "status"
+      },
+      {
+        "name": "status-linked-confirmed",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"role\":\"controller_s3\",\"hardware\":\"JC3636K518C_I_YR1\",\"version\":\"0.1.0-dev.2\",\"lab_enabled\":true,\"setup_open\":true,\"spotify\":{\"linked\":true,\"state\":\"ready\",\"error\":\"none\",\"connected\":true,\"session\":1001,\"authorization_id\":\"0123456789abcdef0123456789abcdef0123456789abcdef\",\"http_status\":200}}\n",
+        "request_method": "status"
+      },
+      {
+        "name": "authorize",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"authorization_url\":\"https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef\",\"expires_in_seconds\":600}\n",
+        "request_method": "authorize"
+      },
+      {
+        "name": "callback-accepted-only",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"accepted\":true}\n",
+        "request_method": "callback"
+      },
+      {
+        "name": "cancel",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true}\n",
+        "request_method": "cancel"
+      },
+      {
+        "name": "error-setup_closed",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":false,\"error\":\"setup_closed\"}\n",
+        "request_method": "status"
+      },
+      {
+        "name": "error-lab_disabled",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":false,\"error\":\"lab_disabled\"}\n",
+        "request_method": "status"
+      },
+      {
+        "name": "error-not_ready",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":false,\"error\":\"not_ready\"}\n",
+        "request_method": "status"
+      },
+      {
+        "name": "error-invalid_request",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":false,\"error\":\"invalid_request\"}\n",
+        "request_method": "status"
+      },
+      {
+        "name": "error-busy",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":false,\"error\":\"busy\"}\n",
+        "request_method": "status"
+      },
+      {
+        "name": "error-device_error",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":false,\"error\":\"device_error\"}\n",
+        "request_method": "status"
+      }
+    ],
+    "bad": [
+      {
+        "name": "wrong-role",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"role\":\"companion_esp32\",\"hardware\":\"JC3636K518C_I_YR1\",\"version\":\"0.1.0-dev.2\",\"lab_enabled\":true,\"setup_open\":true}\n",
+        "stage": "schema",
+        "reason": "not the controller S3"
+      },
+      {
+        "name": "wrong-hardware",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"role\":\"controller_s3\",\"hardware\":\"other-board\",\"version\":\"0.1.0-dev.2\",\"lab_enabled\":true,\"setup_open\":true}\n",
+        "stage": "schema",
+        "reason": "wrong board"
+      },
+      {
+        "name": "unknown-error",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":false,\"error\":\"upstream-raw-error\"}\n",
+        "stage": "schema",
+        "reason": "stable error vocabulary only"
+      },
+      {
+        "name": "missing-authorization-id",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"role\":\"controller_s3\",\"hardware\":\"JC3636K518C_I_YR1\",\"version\":\"0.1.0-dev.2\",\"lab_enabled\":true,\"setup_open\":true,\"spotify\":{\"linked\":true,\"state\":\"ready\",\"error\":\"none\",\"connected\":true,\"session\":1001,\"http_status\":200}}\n",
+        "stage": "schema",
+        "reason": "missing RAM-only completion evidence field"
+      },
+      {
+        "name": "invalid-authorization-id",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"role\":\"controller_s3\",\"hardware\":\"JC3636K518C_I_YR1\",\"version\":\"0.1.0-dev.2\",\"lab_enabled\":true,\"setup_open\":true,\"spotify\":{\"linked\":true,\"state\":\"ready\",\"error\":\"none\",\"connected\":true,\"session\":1001,\"authorization_id\":\"123\",\"http_status\":200}}\n",
+        "stage": "schema",
+        "reason": "authorization_id empty or 48 lowercase hex"
+      },
+      {
+        "name": "session-overflow",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"role\":\"controller_s3\",\"hardware\":\"JC3636K518C_I_YR1\",\"version\":\"0.1.0-dev.2\",\"lab_enabled\":true,\"setup_open\":true,\"spotify\":{\"linked\":true,\"state\":\"ready\",\"error\":\"none\",\"connected\":true,\"session\":4294967296,\"authorization_id\":\"0123456789abcdef0123456789abcdef0123456789abcdef\",\"http_status\":200}}\n",
+        "stage": "schema",
+        "reason": "uint32 session bound"
+      },
+      {
+        "name": "string-linked",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"role\":\"controller_s3\",\"hardware\":\"JC3636K518C_I_YR1\",\"version\":\"0.1.0-dev.2\",\"lab_enabled\":true,\"setup_open\":true,\"spotify\":{\"linked\":\"true\",\"state\":\"ready\",\"error\":\"none\",\"connected\":true,\"session\":1001,\"authorization_id\":\"0123456789abcdef0123456789abcdef0123456789abcdef\",\"http_status\":200}}\n",
+        "stage": "schema",
+        "reason": "boolean, not a truthy string"
+      },
+      {
+        "name": "accepted-false",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"accepted\":false}\n",
+        "stage": "schema",
+        "reason": "contradictory accepted reply"
+      },
+      {
+        "name": "token-field-forbidden",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"role\":\"controller_s3\",\"hardware\":\"JC3636K518C_I_YR1\",\"version\":\"0.1.0-dev.2\",\"lab_enabled\":true,\"setup_open\":true,\"access_token\":\"FAKE-NOT-A-TOKEN\"}\n",
+        "stage": "schema",
+        "reason": "no token fields in producer output"
+      },
+      {
+        "name": "wrong-auth-host",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"authorization_url\":\"https://accounts.example.invalid/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef\",\"expires_in_seconds\":600}\n",
+        "stage": "schema",
+        "reason": "fixed Spotify authority"
+      },
+      {
+        "name": "wrong-ttl",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"authorization_url\":\"https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef\",\"expires_in_seconds\":601}\n",
+        "stage": "schema",
+        "reason": "600-second current protocol lifetime"
+      }
+    ]
+  },
+  "semantic_cases": [
+    {
+      "name": "correlated-status",
+      "request": {
+        "id": 17,
+        "method": "status"
+      },
+      "response": {
+        "id": 17,
+        "ok": true,
+        "role": "controller_s3",
+        "hardware": "JC3636K518C_I_YR1",
+        "version": "0.1.0-dev.2",
+        "lab_enabled": true,
+        "setup_open": true,
+        "spotify": {
+          "linked": true,
+          "state": "ready",
+          "error": "none",
+          "connected": true,
+          "session": 1001,
+          "authorization_id": "0123456789abcdef0123456789abcdef0123456789abcdef",
+          "http_status": 200
+        }
+      },
+      "expected": "accept"
+    },
+    {
+      "name": "different-id-is-not-our-response",
+      "request": {
+        "id": 18,
+        "method": "status"
+      },
+      "response": {
+        "id": 17,
+        "ok": true,
+        "role": "controller_s3",
+        "hardware": "JC3636K518C_I_YR1",
+        "version": "0.1.0-dev.2",
+        "lab_enabled": true,
+        "setup_open": true,
+        "spotify": {
+          "linked": true,
+          "state": "ready",
+          "error": "none",
+          "connected": true,
+          "session": 1001,
+          "authorization_id": "0123456789abcdef0123456789abcdef0123456789abcdef",
+          "http_status": 200
+        }
+      },
+      "expected": "ignore"
+    },
+    {
+      "name": "wrong-response-shape-for-method",
+      "request": {
+        "id": 17,
+        "method": "callback"
+      },
+      "response": {
+        "id": 17,
+        "ok": true,
+        "role": "controller_s3",
+        "hardware": "JC3636K518C_I_YR1",
+        "version": "0.1.0-dev.2",
+        "lab_enabled": true,
+        "setup_open": true
+      },
+      "expected": "reject"
+    },
+    {
+      "name": "matching-confirmation",
+      "expected_authorization_id": "0123456789abcdef0123456789abcdef0123456789abcdef",
+      "response": {
+        "id": 17,
+        "ok": true,
+        "role": "controller_s3",
+        "hardware": "JC3636K518C_I_YR1",
+        "version": "0.1.0-dev.2",
+        "lab_enabled": true,
+        "setup_open": true,
+        "spotify": {
+          "linked": true,
+          "state": "ready",
+          "error": "none",
+          "connected": true,
+          "session": 1001,
+          "authorization_id": "0123456789abcdef0123456789abcdef0123456789abcdef",
+          "http_status": 200
+        }
+      },
+      "expected": "confirm-current-attempt"
+    },
+    {
+      "name": "callback-is-not-completion",
+      "expected_authorization_id": "0123456789abcdef0123456789abcdef0123456789abcdef",
+      "response": {
+        "id": 17,
+        "ok": true,
+        "accepted": true
+      },
+      "expected": "wait-not-success"
+    },
+    {
+      "name": "old-link-new-session-after-reboot",
+      "expected_authorization_id": "0123456789abcdef0123456789abcdef0123456789abcdef",
+      "response": {
+        "id": 17,
+        "ok": true,
+        "role": "controller_s3",
+        "hardware": "JC3636K518C_I_YR1",
+        "version": "0.1.0-dev.2",
+        "lab_enabled": true,
+        "setup_open": true,
+        "spotify": {
+          "linked": true,
+          "state": "ready",
+          "error": "none",
+          "connected": true,
+          "session": 2002,
+          "authorization_id": "",
+          "http_status": 200
+        }
+      },
+      "expected": "do-not-confirm"
+    },
+    {
+      "name": "old-account-other-authorization",
+      "expected_authorization_id": "0123456789abcdef0123456789abcdef0123456789abcdef",
+      "response": {
+        "id": 17,
+        "ok": true,
+        "role": "controller_s3",
+        "hardware": "JC3636K518C_I_YR1",
+        "version": "0.1.0-dev.2",
+        "lab_enabled": true,
+        "setup_open": true,
+        "spotify": {
+          "linked": true,
+          "state": "ready",
+          "error": "none",
+          "connected": true,
+          "session": 1001,
+          "authorization_id": "fedcba9876543210fedcba9876543210fedcba9876543210",
+          "http_status": 200
+        }
+      },
+      "expected": "do-not-confirm"
+    },
+    {
+      "name": "persisted-but-network-wait",
+      "expected_authorization_id": "0123456789abcdef0123456789abcdef0123456789abcdef",
+      "response": {
+        "id": 17,
+        "ok": true,
+        "role": "controller_s3",
+        "hardware": "JC3636K518C_I_YR1",
+        "version": "0.1.0-dev.2",
+        "lab_enabled": true,
+        "setup_open": true,
+        "spotify": {
+          "linked": true,
+          "state": "waiting_network",
+          "error": "none",
+          "connected": false,
+          "session": 1001,
+          "authorization_id": "0123456789abcdef0123456789abcdef0123456789abcdef",
+          "http_status": 200
+        }
+      },
+      "expected": "link-confirmed-but-not-ready"
+    },
+    {
+      "name": "matching-marker-without-linked",
+      "expected_authorization_id": "0123456789abcdef0123456789abcdef0123456789abcdef",
+      "response": {
+        "id": 17,
+        "ok": true,
+        "role": "controller_s3",
+        "hardware": "JC3636K518C_I_YR1",
+        "version": "0.1.0-dev.2",
+        "lab_enabled": true,
+        "setup_open": true,
+        "spotify": {
+          "linked": false,
+          "state": "ready",
+          "error": "none",
+          "connected": true,
+          "session": 1001,
+          "authorization_id": "0123456789abcdef0123456789abcdef0123456789abcdef",
+          "http_status": 200
+        }
+      },
+      "expected": "do-not-confirm"
+    },
+    {
+      "name": "closed-window-status",
+      "request": {
+        "id": 17,
+        "method": "status"
+      },
+      "setup_open": false,
+      "expected_response": {
+        "id": 17,
+        "ok": false,
+        "error": "setup_closed"
+      }
+    },
+    {
+      "name": "expired-state",
+      "method": "callback",
+      "elapsed_ms_since_authorize": 600000,
+      "state": "0123456789abcdef0123456789abcdef0123456789abcdef",
+      "expected": "reject-not-ready-no-token-exchange"
+    },
+    {
+      "name": "accepted-once",
+      "events": [
+        "authorize",
+        "callback-valid",
+        "callback-identical-again"
+      ],
+      "expected": [
+        "authorization-url",
+        "accepted-async",
+        "reject-not-ready"
+      ]
+    },
+    {
+      "name": "cancel-then-callback",
+      "events": [
+        "authorize",
+        "cancel",
+        "callback-valid"
+      ],
+      "expected": [
+        "authorization-url",
+        "cancel-ok",
+        "reject-not-ready"
+      ]
+    }
+  ],
+  "authorization_urls": {
+    "good": [
+      {
+        "name": "fixture-profile-only",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "expected_state": "0123456789abcdef0123456789abcdef0123456789abcdef"
+      }
+    ],
+    "bad": [
+      {
+        "name": "wrong-redirect",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8767%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "expected": "reject"
+      },
+      {
+        "name": "wrong-client",
+        "url": "https://accounts.spotify.com/authorize?client_id=11111111111111111111111111111111&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "expected": "reject"
+      },
+      {
+        "name": "extra-scope",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read+user-read-email&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "expected": "reject"
+      },
+      {
+        "name": "duplicate-state",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "expected": "reject"
+      },
+      {
+        "name": "plain-pkce",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=plain&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "expected": "reject"
+      },
+      {
+        "name": "verifier-leak",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef&code_verifier=FAKE-NOT-A-VERIFIER",
+        "expected": "reject"
+      }
+    ]
+  }
+}

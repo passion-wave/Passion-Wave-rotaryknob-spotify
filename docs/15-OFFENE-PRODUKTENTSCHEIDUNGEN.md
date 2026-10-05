@@ -35,6 +35,8 @@ Die zwei Pilotgeräte können nacheinander von weiteren Testpersonen benutzt wer
 
 ## Verbleibende Klärungen und nächste Arbeit
 
+Nachtrag während der Implementierung am 30.09.2026: Hardware vom Nutzer als **JC3636K518C_I_YR1, SKU 10160002 (2633), 360×360 Touch** benannt und USB-Flashen autorisiert. Angeschlossen wurde ein ESP32-U4WDH mit 4 MiB Flash identifiziert; Originalspeicher vollständig gesichert und gegen das Gerät verifiziert. Spotify-Dashboardzugang wurde mitgeteilt. Am 01.10.2026 wurde **Development mode** der bisherigen HomeAssistant-App tatsächlich gelesen; Freigabe für den Verkauf fehlt weiterhin. Die getrennte Lab-App wurde am 01.10.2026 nach ausdrücklicher Zustimmung angelegt; Web API und der lokale Loopback-Redirect sind im Dashboard bestätigt. Der Nutzer hat außerdem den USB-Steckerwechsel bestätigt: S3 rev0.2 mit 16 MiB Flash und 8 MiB PSRAM am nativen USB-Serial/JTAG-Anschluss identifiziert. Normale Spotify-Kundenanmeldung ohne Käufer-Entwicklerkonto ist ausdrücklich gefordert. Der Quotenmodus ist damit geklärt. Die Akzeptanz einer mobilen Einrichtungs-App ist noch offen; der implementierte Desktop-USB-Helfer ist zunächst ausschließlich ein Laborweg. Siehe [Kundenanmeldung](02-SPOTIFY.md#käufer-melden-sich-mit-ihrem-normalen-konto-an).
+
 | Punkt | Nächster konkreter Auftrag | Entscheidung / Nachweis |
 | --- | --- | --- |
 | Anmeldung ohne eigenen Hilfsdienst | P1/P4.4: zugelassenen Produktflow und Rückweg auf das Gerät unter dieser Vorgabe qualifizieren | G0/G2; keine Ersatz-Cloud und kein manueller Tokenimport als fertiges Kunden-Onboarding |

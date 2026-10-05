@@ -1,0 +1,11 @@
+# Explicit evaluation profile for authorized Spotify test users.
+# This is not a sales/product approval and does not change the default build.
+CONFIG_PW_SPOTIFY_LAB=y
+# The display S3 is physically exposed as native USB Serial/JTAG (303a:1001).
+# This is not UART0 behind a USB bridge and not the USB-OTG/TinyUSB CDC console.
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+
+# User-authorized pilot exception, 5 October 2026.
+CONFIG_PW_LAN_HTTP_LAB=y
