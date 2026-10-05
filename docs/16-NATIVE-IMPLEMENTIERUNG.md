@@ -852,3 +852,13 @@ Sitzung unter dev.14 physisch bestätigt. Dies ist eine Nutzerbeobachtung, keine
 zusätzliche protokollierte HTTP-Abnahme. Lautstärke, Next/Previous, Playliststart,
 Dauerbetrieb und weitere Ausgaben sind dadurch nicht abgenommen. Die gemessene
 Roam-Restriktion und sporadischen Headerabbrüche bleiben separat offen.
+
+
+Anschließender Titelwechseltest am 5. Oktober: Auf die Aufforderung, mit dem
+iPhone als Ausgabe am Knob „Nächster Titel“ und „Vorheriger Titel“ zu testen,
+bestätigt der Nutzer „funktioniert“. Beide Bedienbefehle sind damit für diese
+Sitzung unter dev.14 durch Nutzerbeobachtung bestätigt; „Vorheriger Titel“ darf
+entsprechend der vorherigen Testanleitung zunächst den aktuellen Titel neu
+starten. Zusammen mit dem vorherigen Kontrolltest sind Pause, Play und beide
+Titelwechselbefehle am iPhone abgenommen. Lautstärke, Playliststart, Dauerbetrieb,
+weitere Ausgaben sowie die Roam-Steuerung bleiben offen.
