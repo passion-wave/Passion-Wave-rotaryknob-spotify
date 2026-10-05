@@ -1,4 +1,4 @@
-idf_component_register(SRCS "pw_app.c" "pw_validation.c" "pw_http_socket.c" INCLUDE_DIRS "include"
+idf_component_register(SRCS "pw_app.c" "pw_validation.c" "pw_http_socket.c" "pw_lan_gate.c" INCLUDE_DIRS "include"
  REQUIRES pw_board pw_weather pw_protocol pw_storage pw_update_service pw_spotify esp_wifi esp_netif esp_http_server esp_http_client esp_timer nvs_flash json mbedtls esp_driver_uart app_update)
 set(PW_WEB "${CMAKE_CURRENT_LIST_DIR}/../../web")
 set(PW_WEB_PACK "${CMAKE_CURRENT_LIST_DIR}/../../../tools/pw_web_pack.py")

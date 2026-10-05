@@ -39,6 +39,8 @@ jobs:
           /tmp/pw-protocol-tests
           sh tests/app_native/run.sh
           sh tests/http_native/run.sh
+          sh tests/lan_native/run.sh
+          python3 tests/lan_native/run_http.py
           python3 tests/http_response_native/run.py
           sh tests/storage_native/run.sh
           sh tests/weather_native/run.sh
@@ -76,6 +78,7 @@ jobs:
         run: |
           "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/device_web.py \
             --screenshots "$RUNNER_TEMP/pw-browser-artifacts"
+          "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/library_web.py
           "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/compressed_web.py
       - name: USB login helper with simulated device and Spotify
         run: |

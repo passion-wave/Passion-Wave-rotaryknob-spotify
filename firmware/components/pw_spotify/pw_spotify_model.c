@@ -562,7 +562,7 @@ bool pw_spotify_auth_begin(pw_spotify_auth_t *a, const uint8_t random[56], int64
         out->url, sizeof(out->url),
         "https://accounts.spotify.com/"
         "authorize?client_id=%s&response_type=code&redirect_uri=%s&scope=user-read-playback-state%%"
-        "20user-modify-playback-state&code_challenge_method=S256&code_challenge=%s&state=%s",
+        "20user-modify-playback-state%%20playlist-read-private%%20user-library-read&code_challenge_method=S256&code_challenge=%s&state=%s",
         PW_SPOTIFY_CLIENT_ID, redirect, challenge, a->state);
     pw_spotify_wipe(digest, sizeof(digest));
     if (n < 0 || (size_t)n >= sizeof(out->url)) {
@@ -602,4 +602,38 @@ uint32_t pw_spotify_retry_after(const char *s) {
             return UINT32_MAX;
     }
     return n ? (uint32_t)n : 1;
+}
+
+/* Consume only one bounded page. Never follow provider-supplied URLs. */
+bool pw_spotify_parse_library(const cJSON *j, bool shows, uint32_t offset,
+                              pw_spotify_library_page_t *out) {
+    if (!out || !cJSON_IsObject(j) || offset > 100000) return false;
+    const cJSON *items = field(j, "items"), *total = field(j, "total"),
+                *at = field(j, "offset"), *next = field(j, "next");
+    if (!cJSON_IsArray(items) || cJSON_GetArraySize(items) > (int)PW_SPOTIFY_LIBRARY_PAGE_SIZE ||
+        !number(total, 0, 1000000) || !number(at, offset, offset) ||
+        !(cJSON_IsNull(next) || cJSON_IsString(next))) return false;
+    memset(out, 0, sizeof(*out)); out->shows = shows; out->offset = offset;
+    out->total = (uint32_t)total->valuedouble;
+    unsigned consumed = 0;
+    for (const cJSON *entry = items->child; entry; entry = entry->next) {
+        consumed++;
+        const cJSON *item = shows ? field(entry, "show") : entry;
+        if (cJSON_IsNull(item)) continue; /* Removed/unavailable library entries. */
+        const char *id = str(field(item, "id")), *name = str(field(item, "name"));
+        if (!id || strlen(id) != 22 || !name) return false;
+        for (unsigned i = 0; i < 22; i++)
+            if (!((id[i] >= 'a' && id[i] <= 'z') || (id[i] >= 'A' && id[i] <= 'Z') ||
+                  (id[i] >= '0' && id[i] <= '9'))) return false;
+        pw_spotify_library_item_t *dest = &out->items[out->count];
+        if (!pw_spotify_text(dest->name, sizeof(dest->name), name)) return false;
+        if (!device_name_visible(dest->name)) strcpy(dest->name, shows ? "Podcast ohne Namen" : "Playlist ohne Namen");
+        snprintf(dest->uri, sizeof(dest->uri), "spotify:%s:%s", shows ? "show" : "playlist", id);
+        out->count++;
+    }
+    out->has_more = cJSON_IsString(next);
+    if (out->has_more && (!consumed || offset + consumed > 100000)) return false;
+    out->next_offset = offset + consumed;
+    out->state = PW_LIBRARY_READY;
+    return true;
 }

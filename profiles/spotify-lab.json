@@ -6,7 +6,9 @@
   "redirect_uri": "http://127.0.0.1:8766/callback",
   "scopes": [
     "user-read-playback-state",
-    "user-modify-playback-state"
+    "user-modify-playback-state",
+    "playlist-read-private",
+    "user-library-read"
   ],
   "mode": "development",
   "product_approved": false,

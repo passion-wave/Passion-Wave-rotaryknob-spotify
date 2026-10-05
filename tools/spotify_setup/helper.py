@@ -27,7 +27,7 @@ HOST = "127.0.0.1:8766"
 ORIGIN = "http://" + HOST
 REDIRECT = ORIGIN + "/callback"
 CLIENT_ID = "b785d8a5f5c840e9bc33e168c53098ca"
-SCOPES = {"user-read-playback-state", "user-modify-playback-state"}
+SCOPES = {"user-read-playback-state", "user-modify-playback-state", "playlist-read-private", "user-library-read"}
 HARDWARE = "JC3636K518C_I_YR1"
 PREFIX = b"PWSET1 "
 LINE_MAX = 8192
@@ -112,7 +112,7 @@ def validate_authorization_url(url: str) -> str:
                 query["redirect_uri"] != REDIRECT or query["code_challenge_method"] != "S256" or
                 not re.fullmatch(r"[A-Za-z0-9_-]{43}", query["code_challenge"]) or
                 not re.fullmatch(r"[0-9a-f]{48}", query["state"]) or
-                len(query["scope"].split(" ")) != 2 or set(query["scope"].split(" ")) != SCOPES):
+                len(query["scope"].split(" ")) != len(SCOPES) or set(query["scope"].split(" ")) != SCOPES):
             raise ValueError("policy")
         return query["state"]
     except (ValueError, KeyError):

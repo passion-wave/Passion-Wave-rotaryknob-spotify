@@ -18,7 +18,7 @@ import helper
 def authorization_url(**changes):
     fields = {"client_id": helper.CLIENT_ID, "response_type": "code", "redirect_uri": helper.REDIRECT,
               "code_challenge_method": "S256", "code_challenge": "A" * 43,
-              "state": "ab" * 24, "scope": "user-read-playback-state user-modify-playback-state"}
+              "state": "ab" * 24, "scope": "user-read-playback-state user-modify-playback-state playlist-read-private user-library-read"}
     fields.update(changes)
     return "https://accounts.spotify.com/authorize?" + urlencode(fields)
 
@@ -140,7 +140,7 @@ class AppTests(unittest.TestCase):
 
     def test_url_policy_rejects_extra_scope_redirect_host_verifier_and_duplicates(self):
         self.assertEqual(helper.validate_authorization_url(authorization_url()), "ab" * 24)
-        bad = [authorization_url(scope="user-read-email"), authorization_url(redirect_uri="http://evil/callback"),
+        bad = [authorization_url(scope="user-read-playback-state user-modify-playback-state"), authorization_url(scope="user-read-email"), authorization_url(redirect_uri="http://evil/callback"),
                authorization_url(code_challenge_method="plain"), authorization_url(state="short"),
                authorization_url(client_id="unapproved"), authorization_url(code_verifier="secret"),
                authorization_url() + "&state=duplicate", authorization_url().replace("accounts.spotify.com", "accounts.spotify.com.evil"),

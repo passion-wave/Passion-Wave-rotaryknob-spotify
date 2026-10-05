@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Passion Wave
 // SPDX-License-Identifier: MIT
 #include "pw_ui.h"
+#include "sdkconfig.h"
 #include "pw_app.h"
 #include "pw_board.h"
 #include "pw_weather.h"
@@ -32,7 +33,7 @@ LV_FONT_DECLARE(pw_font_de_32);
 #define DRAW_BUFFER_BYTES (360 * 20 * 2)
 
 typedef enum { PAGE_MUSIC, PAGE_WEATHER, PAGE_DEVICE } page_t;
-typedef enum { ACTION_OPEN_SETUP, ACTION_CLOSE_SETUP } action_t;
+typedef enum { ACTION_OPEN_SETUP, ACTION_CLOSE_SETUP, ACTION_OPEN_LAN } action_t;
 static const char *TAG = "pw_ui";
 static QueueHandle_t completed_queue, action_queue, action_result_queue;
 static TaskHandle_t ui_task_handle, control_task_handle;
@@ -43,7 +44,7 @@ static lv_indev_t *pointer;
 static lv_obj_t *pages[3], *nav[3], *setup_panel, *qr;
 static lv_obj_t *clock_label, *network_label, *device_detail, *brightness_label;
 static lv_obj_t *weather_temperature, *weather_condition, *weather_metrics, *weather_days, *weather_source;
-static lv_obj_t *setup_title, *setup_detail, *setup_next_text, *setup_timer, *feedback_label;
+static lv_obj_t *setup_title, *setup_detail, *setup_next_text, *setup_timer, *setup_hint, *feedback_label;
 static pw_app_view_t app_view;
 static pw_weather_snapshot_t weather; // Avoid a ~7 KiB snapshot on a task stack.
 static pw_board_input_t input;
@@ -155,12 +156,15 @@ static void queue_action(action_t action) {
         acknowledge();
         lv_obj_remove_flag(feedback_label, LV_OBJ_FLAG_HIDDEN);
         feedback_expires = esp_timer_get_time() + 3000000;
-        label_text(feedback_label, action == ACTION_OPEN_SETUP ? "Einrichtung startet …" : "Wird geschlossen …");
+        label_text(feedback_label, action == ACTION_CLOSE_SETUP ? "Wird geschlossen …" : "Einrichtung startet …");
     } else {
         label_text(feedback_label, "Einen Moment bitte");
     }
 }
 static void open_clicked(lv_event_t *event) { (void)event; queue_action(ACTION_OPEN_SETUP); }
+#ifdef CONFIG_PW_LAN_HTTP_LAB
+static void lan_clicked(lv_event_t *event) { (void)event; queue_action(ACTION_OPEN_LAN); }
+#endif
 static void setup_next_clicked(lv_event_t *event) {
     (void)event;
     acknowledge();
@@ -486,7 +490,14 @@ static void create_ui(void) {
     device_detail = make_label(pages[PAGE_DEVICE], 35, 124, 290, &pw_font_de_18, COLOR_MUTED, "");
     brightness_label = make_label(pages[PAGE_DEVICE], 35, 166, 290, &pw_font_de_24, COLOR_TEXT, "Helligkeit");
     make_label(pages[PAGE_DEVICE], 50, 198, 260, &pw_font_de_18, COLOR_MUTED, "Helligkeit am Ring ändern");
+#ifdef CONFIG_PW_LAN_HTTP_LAB
+    lv_obj_t *wifi_setup = make_button(pages[PAGE_DEVICE], 52, 227, 122, 40, "WLAN-Setup", open_clicked, NULL);
+    lv_obj_t *lan_setup = make_button(pages[PAGE_DEVICE], 182, 227, 126, 40, "Web freigeben", lan_clicked, NULL);
+    lv_obj_set_style_text_font(lv_obj_get_child(wifi_setup, 0), &pw_font_de_14, 0);
+    lv_obj_set_style_text_font(lv_obj_get_child(lan_setup, 0), &pw_font_de_14, 0);
+#else
     make_button(pages[PAGE_DEVICE], 65, 227, 230, 40, "Einrichtung öffnen", open_clicked, NULL);
+#endif
 
     clock_label = make_label(screen, 105, 20, 150, &pw_font_de_18, COLOR_MUTED, "PassionWave");
     nav[0] = make_button(screen, 70, 278, 68, 44, "Musik", nav_clicked, (void *)(uintptr_t)PAGE_MUSIC);
@@ -545,7 +556,7 @@ static void create_ui(void) {
 
     setup_panel = make_panel(screen);
     setup_title = make_label(setup_panel, 64, 36, 232, &pw_font_de_24, COLOR_TEXT, "WLAN verbinden");
-    make_label(setup_panel, 52, 69, 256, &pw_font_de_18, COLOR_MUTED, "Mit dem Handy scannen");
+    setup_hint = make_label(setup_panel, 52, 69, 256, &pw_font_de_18, COLOR_MUTED, "Mit dem Handy scannen");
     lv_obj_t *quiet = lv_obj_create(setup_panel);
     lv_obj_remove_style_all(quiet);
     lv_obj_set_pos(quiet, 92, 90);
@@ -812,7 +823,7 @@ static bool wifi_escape(char *output, size_t capacity, const char *input_text) {
     return true;
 }
 static void refresh_setup(void) {
-    if (!app_view.setup_open) {
+    if (!app_view.setup_open && !app_view.lan_open) {
         if (setup_visible) {
             lv_obj_add_flag(setup_panel, LV_OBJ_FLAG_HIDDEN);
             setup_visible = false;
@@ -829,6 +840,21 @@ static void refresh_setup(void) {
         last_activity = esp_timer_get_time();
     }
     char data[sizeof(qr_payload)], text[80];
+    if (app_view.lan_open && !app_view.setup_open) {
+        snprintf(data, sizeof(data), "http://%s/#content", app_view.ip);
+        label_text(setup_title, "Web freigeben");
+        label_text(setup_hint, "Pilot · unverschlüsselt");
+        snprintf(text, sizeof(text), "%s%s", app_view.lan_code[0] ? "Code: " : "Verbunden", app_view.lan_code);
+        label_text(setup_detail, text);
+        lv_obj_add_flag(lv_obj_get_parent(setup_next_text), LV_OBJ_FLAG_HIDDEN);
+        snprintf(text, sizeof(text), "Heimnetz · %lu:%02lu", (unsigned long)app_view.lan_seconds_left / 60, (unsigned long)app_view.lan_seconds_left % 60);
+        label_text(setup_timer, text);
+        if (strcmp(data, qr_payload) && lv_qrcode_update(qr, data, strlen(data)) == LV_RESULT_OK)
+            snprintf(qr_payload, sizeof(qr_payload), "%s", data);
+        memset(data, 0, sizeof(data)); return;
+    }
+    label_text(setup_hint, "Mit dem Handy scannen");
+    lv_obj_remove_flag(lv_obj_get_parent(setup_next_text), LV_OBJ_FLAG_HIDDEN);
     if (setup_step == 0) {
         char ssid[70], password[50];
         if (!wifi_escape(ssid, sizeof(ssid), app_view.setup_ssid) ||
@@ -942,6 +968,7 @@ static void control_worker(void *context) {
         if (xQueueReceive(action_queue, &action, portMAX_DELAY) != pdTRUE) continue;
         esp_err_t result = ESP_OK;
         if (action == ACTION_OPEN_SETUP) result = pw_app_open_setup();
+        else if (action == ACTION_OPEN_LAN) result = pw_app_open_lan_lab();
         else pw_app_close_setup();
         (void)xQueueSend(action_result_queue, &result, 0);
     }

@@ -669,7 +669,57 @@ static void test_playback_device_and_transport_evidence(void) {
     poll_playback(service.epoch, &scratch);
     CHECK(!strcmp(last_transport_log, "playback_transport phase=3 detail=-65535 errno=0 elapsed=600000"));
 }
+static void test_library_pages(void) {
+    reset(); account();
+    pw_spotify_library_page_t page;
+    uint32_t session = service.snapshot.session;
+    CHECK(pw_spotify_library_request(false, 100001, session) == ESP_ERR_INVALID_ARG);
+    CHECK(pw_spotify_library_request(false, 0, session + 1) == ESP_ERR_INVALID_STATE);
+    CHECK(pw_spotify_library_request(false, 0, session) == ESP_OK);
+    CHECK(http_count == 0); /* HTTP handler enqueue is nonblocking. */
+    CHECK(pw_spotify_library_request(false, 0, session) == ESP_OK);
+    CHECK(pw_spotify_library_request(false, 10, session) == ESP_ERR_INVALID_STATE);
+    fixture(200, "{\"items\":[{\"id\":\"0123456789012345678901\",\"name\":\"My playlist\"}],\"offset\":0,\"total\":2,\"next\":\"https://untrusted.invalid/do-not-follow\"}");
+    poll_library(false, 0, service.epoch);
+    pw_spotify_library_get(false, &page);
+    CHECK(page.state == PW_LIBRARY_READY && page.count == 1 && page.has_more && page.next_offset == 1);
+    CHECK(!strcmp(page.items[0].uri, "spotify:playlist:0123456789012345678901"));
+    CHECK(strstr(calls[0].url, "/v1/me/playlists?limit=10&offset=0"));
+    CHECK(pw_spotify_library_request(true, 0, session) == ESP_OK);
+    fixture(403, "{}");
+    pw_spotify_error_t previous = service.snapshot.error;
+    poll_library(true, 0, service.epoch); pw_spotify_library_get(true, &page);
+    CHECK(page.state == PW_LIBRARY_FORBIDDEN);
+    CHECK(service.snapshot.linked && service.snapshot.error == previous);
+    CHECK(pw_spotify_library_request(true, 0, session) == ESP_OK);
+    fixture(200, "{\"items\":[{\"show\":{\"id\":\"abcdefghijklmnopqrstuv\",\"name\":\"My podcast\"}}],\"offset\":0,\"total\":1,\"next\":null}");
+    poll_library(true, 0, service.epoch); pw_spotify_library_get(true, &page);
+    CHECK(page.state == PW_LIBRARY_READY && page.count == 1 && !page.has_more);
+    CHECK(!strcmp(page.items[0].uri, "spotify:show:abcdefghijklmnopqrstuv"));
+    CHECK(pw_spotify_library_request(false, 1, session) == ESP_OK);
+    fixture(200, "{\"items\":[],\"offset\":0,\"total\":0,\"next\":null}");
+    poll_library(false, 1, service.epoch); pw_spotify_library_get(false, &page);
+    CHECK(page.state == PW_LIBRARY_ERROR); /* Wrong page never accepted. */
+    CHECK(pw_spotify_library_request(false, 0, session) == ESP_OK);
+    fixture(429, "{}"); responses[response_count - 1].retry = "12";
+    poll_library(false, 0, service.epoch); pw_spotify_library_get(false, &page);
+    CHECK(page.retry_after_seconds == 12);
+    CHECK(pw_spotify_library_request(false, 0, session) == ESP_ERR_INVALID_STATE);
+    CHECK(pw_spotify_disconnect() == ESP_OK); pw_spotify_library_get(true, &page);
+    CHECK(page.count == 0 && page.state == PW_LIBRARY_IDLE);
+    /* Removed entries, invalid identifiers, malformed pagination. */
+    const char *bad[] = {
+      "{\"items\":[],\"offset\":0,\"total\":1,\"next\":\"url\"}",
+      "{\"items\":[{\"id\":\"bad\",\"name\":\"x\"}],\"offset\":0,\"total\":1,\"next\":null}",
+      "{\"items\":[],\"offset\":0,\"total\":-1,\"next\":null}"};
+    for (unsigned i = 0; i < sizeof(bad)/sizeof(*bad); i++) {
+        cJSON *j = cJSON_Parse(bad[i]); CHECK(!pw_spotify_parse_library(j, false, 0, &page)); cJSON_Delete(j);
+    }
+    cJSON *j = cJSON_Parse("{\"items\":[null],\"offset\":0,\"total\":1,\"next\":null}");
+    CHECK(pw_spotify_parse_library(j, false, 0, &page) && page.count == 0); cJSON_Delete(j);
+}
 int main(void) {
+    test_library_pages();
     test_targets_and_uncertain_commands();
     test_refresh_rate_limit_and_invalidation();
     test_header_timeout_and_public_http_status();

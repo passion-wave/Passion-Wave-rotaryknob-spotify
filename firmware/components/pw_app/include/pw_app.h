@@ -14,7 +14,9 @@ typedef struct {
     bool avatar_enabled, avatar_blond;
     char screensaver_mode[16];
     uint8_t brightness;
-    uint32_t revision, setup_seconds_left;
+    uint32_t revision, setup_seconds_left, lan_seconds_left;
+    bool lan_open;
+    char lan_code[7];
     char network_error[64];
 } pw_app_view_t;
 esp_err_t pw_app_init(void);
@@ -22,6 +24,8 @@ void pw_app_get_view(pw_app_view_t *view);
 /* Called only by the physical UI gesture. Opens a protected ten-minute window. */
 esp_err_t pw_app_open_setup(void);
 void pw_app_close_setup(void);
+/* Physical UI only; explicitly opted-in pilot, never enabled by network request. */
+esp_err_t pw_app_open_lan_lab(void);
 /* Coalesced physical UI settings; no flash write per encoder step. */
 void pw_app_adjust_brightness(int delta);
 typedef struct {

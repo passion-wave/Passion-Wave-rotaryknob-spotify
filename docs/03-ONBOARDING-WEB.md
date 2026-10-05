@@ -83,3 +83,28 @@ Die [Sonos-Prüfung](12-SONOS-PRUEFUNG.md) beginnt mit Roam und Move als Connect
 Die Tabellen in [Featureportierung](13-FEATURE-PORTIERUNG.md) sind die Prüfliste für alle übernommenen Parameter. Die heutigen JSON-Verträge enthalten noch nicht sämtliche Display-/Wetteroptionen; P3/P6/P10 erweitern Schema, Defaults, Migration, HTTP-API und UI gemeinsam. Der Morgenavatar übernimmt zunächst Ein/Aus und 06–10 Uhr; frei editierbare Fenster sind eine gesonderte Erweiterung.
 
 Direkt angefragte Wetteranbieter erhalten IP und Standortparameter; Ortssuche ist ein eigener Dienst. Stadt-/Rasterpräzision genügt soweit der Provider unterstützt, keine laufende GPS-Ortung. Providerzugänge liegen getrennt von exportierbaren Einstellungen; Standort im Supportexport optional auslassen. Ein Standortwechsel verwirft alte Forecast-, Radar- und Avatarjobs. Siehe [Wetter](14-WETTER.md).
+
+## Autorisierte Pilotausnahme (5. Oktober 2026)
+
+Der Nutzer wählt ausdrücklich die zeitbegrenzte unverschlüsselte Heimnetz-
+Verwaltung für den Pilot. dev.15 ergänzt dafür ausschließlich im Laborprofil
+„Gerät → Web freigeben“. Das Display zeigt Website-QR und sechsstelligen
+Einmalcode. Im Browser eingeben; die Sitzung ist an Client-IP, zufälliges
+HttpOnly-/SameSite-Cookie und CSRF gebunden. Fünf Fehlversuche schließen das
+Fenster. Neue physische Freigabe oder Schließen widerruft die vorige Sitzung;
+die feste Laufzeit beträgt zehn Minuten ab physischem Öffnen, ohne Verlängerung
+durch Browser-Polling. Der Browser kennzeichnet unverschlüsseltes HTTP sichtbar.
+Dies erfüllt nicht G2 und schützt nicht vor einem Angreifer im Transportweg.
+Der sichere Heimnetz-Produktweg bleibt separat offen; das Standardprofil schaltet
+die Ausnahme ab. Backendfelder `secure_write` und `secure_lan_write` bleiben
+für diesen Weg falsch; `write_allowed` bezeichnet nur die Pilotautorisierung.
+
+Die Inhaltsseite bietet zuerst ein natives Dropdown für eigene/gefolgte Playlists
+oder gespeicherte Podcasts, darunter weiterhin Spotify-Links. Die Bibliothek
+wird nur bei Bedarf in Zehnerseiten geholt; weitere Seiten werden ausdrücklich
+geladen. Die Website bleibt während des Providerabrufs bedienbar. Fehlende
+Leserechte führen zu einer Aufforderung zur erneuten Spotify-Anmeldung, nicht
+zur Löschung der bestehenden Verknüpfung. Auswahl hinzufügen und anschließend
+„Auswahl speichern“ ändert nur den lokalen Knob-Katalog, nicht die Spotify-
+Bibliothek. Gespeicherte Podcasts sind damit verwaltbar; ihr Wiedergabepfad ist
+durch diese Änderung noch nicht abgenommen.

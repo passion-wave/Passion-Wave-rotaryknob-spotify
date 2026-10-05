@@ -3,10 +3,14 @@
   const $ = (id) => document.getElementById(id);
   const API = "/api/v1";
   const state = { status: null, session: null, busy: false, catalog: { favorites: [], stations: [] }, catalogDirty: false, catalogRevision: null, formRevision: {}, initialized: false, online: false, polling: false, wifiPending: false, wifiTarget: "", conflict: false, places: null, placesLoading: null, selectedPlace: null, update: null, updatePolling: false, updateUploading: false, spotify: null, spotifyDevices: [], spotifyPolling: false, spotifyDeviceSignature: null };
+  const library = { playlist: { items: [], next: 0, more: false, loaded: false }, show: { items: [], next: 0, more: false, loaded: false }, busy: false, epoch: 0, session: null };
+  let sessionRefreshedAt = 0;
+  // Serialize background reads. User writes use a separate connection and never wait behind a stalled poll.
+  let requestQueue = Promise.resolve();
   const kinds = { spotify_playlist: "Playlist", spotify_show: "Podcast", spotify_episode: "Episode" };
   let spotifyReadEpoch = 0, spotifyChanging = false;
   const text = (id, value) => { $(id).textContent = value; };
-  const canWrite = () => state.online && state.status?.secure_write !== false && state.session?.secure_write === true && typeof state.session.csrf === "string" && state.session.csrf.length > 0;
+  const canWrite = () => state.online && (state.status?.write_allowed === true || state.status?.secure_write !== false) && (state.session?.write_allowed === true || state.session?.secure_write === true) && typeof state.session.csrf === "string" && state.session.csrf.length > 0;
   const cloneCatalog = (catalog) => ({ favorites: (catalog?.favorites || []).map((x) => ({ id: x.id, kind: x.kind, name: x.name, uri: x.uri, enabled: x.enabled === true })), stations: (catalog?.stations || []).map((x) => ({ id: x.id, name: x.name, url: x.url, enabled: x.enabled === true })) });
 
   function message(value, error = false) {
@@ -20,9 +24,19 @@
     document.querySelectorAll("[data-write], [data-write-button]").forEach((element) => { element.disabled = blocked; });
     $("save-catalog").disabled = blocked || !state.catalogDirty;
     $("discard-catalog").disabled = !state.catalogDirty || state.busy;
-    $("security-notice").hidden = !state.online || canWrite();
+    const labLan = state.status?.capabilities?.lab_lan_http === true;
+    $("security-notice").hidden = !state.online || canWrite() || labLan;
+    $("lan-pairing").hidden = !state.online || canWrite() || !labLan;
+    $("lan-active").hidden = !canWrite() || state.session?.unprotected_lab !== true;
+    text("lan-remaining", Number.isFinite(state.status?.lab_seconds_left) ? "Noch etwa " + Math.ceil(state.status.lab_seconds_left / 60) + " Minuten." : "");
     $("update-fields").disabled = blocked || state.update?.upload_enabled !== true || state.update?.busy === true;
     spotifyControls();
+    libraryControls();
+    const locked = state.online && !canWrite();
+    $("content-access").hidden = !locked;
+    text("content-access", labLan ? "Zum Bearbeiten oben den Code aus „Gerät → Web freigeben“ eingeben. Deine Eingaben bleiben beim erneuten Freigeben erhalten." : state.status?.network?.setup_open
+      ? "Im Heim-WLAN ist diese Version nur lesbar. Öffne am Knob die Einrichtung und verbinde dich für Änderungen mit seinem PassionWave-WLAN."
+      : "Änderungen sind gesperrt. Öffne am Knob die Einrichtung und verbinde dich mit seinem PassionWave-WLAN. Deine bisherigen Eingaben bleiben erhalten.");
   }
   function errorText(error) {
     state.conflict = error.code === "conflict" || error.status === 409 || error.status === 412;
@@ -32,9 +46,15 @@
     if (error.publicMessage) return error.publicMessage.slice(0, 240);
     return "Die Verbindung zum RotaryKnob wurde unterbrochen. Prüfe dein WLAN und versuche es erneut.";
   }
-  async function request(path, options = {}) {
+  function request(path, options = {}) {
+    if (options.method && options.method !== "GET") return performRequest(path, options);
+    const operation = requestQueue.then(() => performRequest(path, options));
+    requestQueue = operation.catch(() => {});
+    return operation;
+  }
+  async function performRequest(path, options = {}) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 18000);
+    const timer = setTimeout(() => controller.abort(), 6000);
     try {
       const response = await fetch(API + path, { ...options, credentials: "same-origin", cache: "no-store", signal: controller.signal, headers: { Accept: "application/json", ...options.headers } });
       let data = {};
@@ -51,7 +71,7 @@
       return data;
     } finally { clearTimeout(timer); }
   }
-  async function refreshSession() { state.session = await request("/session"); setWritingControls(); }
+  async function refreshSession(urgent = false) { state.session = await (urgent ? performRequest : request)("/session"); sessionRefreshedAt = Date.now(); setWritingControls(); }
   async function mutate(path, method, payload, revision) {
     if (state.busy) throw Object.assign(new Error(), { publicMessage: "Bitte warte, bis das Speichern abgeschlossen ist." });
     if (!canWrite()) throw Object.assign(new Error(), { status: 403 });
@@ -59,7 +79,7 @@
     state.busy = true;
     setWritingControls();
     try {
-      await refreshSession();
+      if (Date.now() - sessionRefreshedAt > 120000) await refreshSession(true);
       if (!canWrite()) throw Object.assign(new Error(), { status: 403 });
       const result = await request(path, { method, headers: { "Content-Type": "application/json", "X-CSRF-Token": state.session.csrf, "If-Match": String(revision) }, body: JSON.stringify(payload) });
       const newRevision = result.config_revision ?? result.revision;
@@ -78,6 +98,7 @@
     if (location.hash !== "#" + page) history.replaceState(null, "", "#" + page);
     if (page === "weather") loadPlaces();
     if (page === "device") refreshUpdates();
+    if (page === "content" && state.initialized) ensureLibrary();
     if (focus) { $("main").focus({ preventScroll: true }); window.scrollTo({ top: 0, behavior: "auto" }); }
   }
   document.querySelectorAll("[data-page], [data-go]").forEach((button) => button.addEventListener("click", () => navigate(button.dataset.page || button.dataset.go)));
@@ -104,7 +125,8 @@
     if (status.catalog && !state.catalogDirty) {
       state.catalog = cloneCatalog(status.catalog);
       state.catalogRevision = status.config_revision;
-      renderCatalog();
+      const signature = JSON.stringify(state.catalog);
+      if (signature !== state.catalogSignature) { state.catalogSignature = signature; renderCatalog(); }
     }
   }
   const number = (value, digits = 0) => typeof value === "number" && Number.isFinite(value) ? value.toLocaleString("de-DE", { maximumFractionDigits: digits }) : null;
@@ -185,7 +207,7 @@
     if (state.polling) return;
     state.polling = true;
     try {
-      if (session || !state.session) await refreshSession();
+      if (session || !state.session || Date.now() - sessionRefreshedAt > 120000) await refreshSession();
       const status = await request("/status");
       if (!status || typeof status !== "object" || !status.device || !status.network) throw new Error("Invalid device status");
       state.status = status; state.online = true;
@@ -202,13 +224,26 @@
       if (!silent && state.initialized) message(errorText(error), true);
     } finally { state.polling = false; setWritingControls(); }
   }
+  $("lan-pair-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = $("lan-pair-form").querySelector("button"), code = $("lan-code").value.trim();
+    if (!/^\d{6}$/.test(code)) return;
+    button.disabled = true; text("lan-pair-status", "Freigabe wird geprüft …");
+    try {
+      await request("/session/pair", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) });
+      $("lan-code").value = "";
+      await refreshStatus({ session: true });
+      if (canWrite()) message("Website freigegeben. Du kannst jetzt deine Auswahl bearbeiten.");
+    } catch (error) { text("lan-pair-status", error.publicMessage || "Freigabe nicht möglich. Öffne „Web freigeben“ am Knob erneut und verwende den neuen Code."); }
+    finally { button.disabled = false; }
+  });
   $("retry-connection").addEventListener("click", () => refreshStatus({ session: true }));
   $("reload-config").addEventListener("click", async () => {
     const button = $("reload-config"); button.disabled = true;
     try {
       const status = await request("/status");
       if (!status?.device || !status?.network) throw new Error("Invalid device status");
-      state.status = status; state.catalogDirty = false; state.formRevision = {}; state.online = true; state.conflict = false;
+      state.status = status; state.catalogDirty = false; state.catalogSignature = null; state.formRevision = {}; state.online = true; state.conflict = false;
       renderStatus(status); message("Der aktuelle Gerätestand ist geladen. Deine ungespeicherten Änderungen wurden verworfen.");
     } catch (error) { message(errorText(error), true); }
     finally { button.disabled = false; setWritingControls(); }
@@ -398,7 +433,7 @@
     } catch (error) { message(errorText(error), true); }
     finally { state.busy = false; state.updateUploading = false; setWritingControls(); await refreshUpdates(); }
   });
-  setInterval(() => { if (!document.hidden && !$("page-device").hidden && canWrite()) refreshUpdates(); }, 2000);
+  setInterval(() => { if (!document.hidden && !state.busy && !$("page-device").hidden && canWrite()) refreshUpdates(); }, 10000);
 
   function spotifyOn() { return state.status?.capabilities?.spotify === true && canWrite(); }
   function spotifyTarget() {
@@ -466,16 +501,28 @@
   }
   async function refreshSpotify(afterMutation = false) {
     if (state.spotifyPolling) { await state.spotifyPolling; if (!afterMutation) return; }
-    if (!spotifyOn()) { state.spotify = null; state.spotifyDevices = []; renderSpotify(); return; }
+    if (!spotifyOn()) {
+      library.epoch++; library.session = null;
+      library.playlist = { items: [], next: 0, more: false, loaded: false };
+      library.show = { items: [], next: 0, more: false, loaded: false };
+      renderLibrary(); state.spotify = null; state.spotifyDevices = []; renderSpotify(); return;
+    }
     const epoch = spotifyReadEpoch;
     const operation = (async () => {
     try {
       const [snapshot, devices] = await Promise.all([request("/spotify/snapshot"), request("/spotify/devices")]);
       if (typeof snapshot?.state !== "string" || !Array.isArray(devices?.devices)) throw new Error("Invalid Spotify status");
       if (!spotifyOn() || epoch !== spotifyReadEpoch) return;
+      if (library.session !== snapshot.session) {
+        library.epoch++; library.session = snapshot.session;
+        library.playlist = { items: [], next: 0, more: false, loaded: false };
+        library.show = { items: [], next: 0, more: false, loaded: false };
+        renderLibrary();
+      }
       state.spotify = snapshot;
       state.spotifyDevices = devices.session === snapshot.session ? devices.devices.slice(0, 16).filter((d) => typeof d.id === "string" && typeof d.name === "string") : [];
       renderSpotify();
+      if (!$("page-content").hidden) ensureLibrary();
     } catch (error) {
       if (epoch !== spotifyReadEpoch) return;
       state.spotify = null; state.spotifyDevices = [];
@@ -519,7 +566,7 @@
     try { await mutate("/spotify/disconnect", "POST", {}, state.status?.config_revision); text("spotify-message", "Spotify wird vom Knob getrennt."); await refreshSpotify(); }
     catch (error) { text("spotify-message", errorText(error)); }
   });
-  setInterval(() => { if (!document.hidden && !state.busy && spotifyOn()) refreshSpotify(); }, 3000);
+  setInterval(() => { if (!document.hidden && !state.busy && spotifyOn() && (!$("page-overview").hidden || !$("page-content").hidden)) refreshSpotify(); }, 10000);
 
   function spotifyLink(value) {
     let match = /^spotify:(playlist|show|episode):([A-Za-z0-9]{22})$/.exec(value.trim());
@@ -534,6 +581,77 @@
     }
     return match ? { kind: "spotify_" + match[1], uri: "spotify:" + match[1] + ":" + match[2] } : null;
   }
+  function libraryControls() {
+    const current = library[$("library-kind").value];
+    const blocked = !spotifyOn() || !state.spotify?.linked || state.busy;
+    $("library-choice").disabled = blocked || !current.items.length;
+    $("library-add").disabled = blocked || !$("library-choice").value;
+    $("library-refresh").disabled = blocked || library.busy;
+    $("library-more").disabled = blocked || library.busy;
+    $("library-more").hidden = !current.more || current.items.length >= 1000;
+  }
+  function renderLibrary() {
+    const current = library[$("library-kind").value], select = $("library-choice"), previous = select.value;
+    select.replaceChildren(new Option(current.items.length ? "Bitte auswählen …" : "Noch keine Einträge geladen", ""));
+    for (const item of current.items) select.add(new Option(item.name, item.uri));
+    if (current.items.some((item) => item.uri === previous)) select.value = previous;
+    libraryControls();
+  }
+  function ensureLibrary() {
+    if (spotifyOn() && state.spotify?.linked && !library.busy && !library[$("library-kind").value].loaded)
+      loadLibrary(false);
+  }
+  async function loadLibrary(more = false) {
+    if (library.busy || !spotifyOn() || !state.spotify?.linked) return;
+    const kind = $("library-kind").value, current = library[kind], offset = more ? current.next : 0;
+    const session = state.spotify.session, epoch = library.epoch;
+    library.busy = true; current.loaded = true; libraryControls();
+    text("library-status", "Deine Spotify-Bibliothek wird geladen … Die Website bleibt bedienbar.");
+    try {
+      if (Date.now() - sessionRefreshedAt > 120000) await refreshSession(true);
+      if (!canWrite()) throw Object.assign(new Error(), { status: 403 });
+      await request("/spotify/library", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": state.session.csrf, "If-Match": String(state.status.config_revision) }, body: JSON.stringify({ kind, offset, session }) });
+      for (let attempt = 0; attempt < 24; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (epoch !== library.epoch || !canWrite()) return;
+        const page = await request("/spotify/library?kind=" + kind);
+        if (epoch !== library.epoch || !canWrite()) return;
+        if (page.state === "forbidden") throw Object.assign(new Error(), { publicMessage: "Spotify erlaubt den Bibliotheksabruf noch nicht. Bitte verbinde Spotify über die Einrichtungs-App erneut und bestätige den Zugriff auf Playlists und gespeicherte Podcasts. Bis dahin kannst du Links hinzufügen." });
+        if (page.state === "error") throw Object.assign(new Error(), { publicMessage: page.retry_after_seconds ? "Spotify braucht eine Pause. Bitte später erneut laden." : "Spotify konnte die Liste nicht laden. Bitte erneut versuchen; deine Auswahl bleibt erhalten." });
+        if (page.state !== "ready" || page.session !== session || page.offset !== offset) continue;
+        if (page.kind !== kind || !Array.isArray(page.items) || page.items.length > 10 || !Number.isSafeInteger(page.next_offset) || page.next_offset <= offset && page.has_more) throw new Error("Invalid library");
+        const items = page.items.map((item) => {
+          const link = typeof item.uri === "string" && spotifyLink(item.uri);
+          if (!link || link.kind !== "spotify_" + kind || typeof item.name !== "string" || !item.name || new TextEncoder().encode(item.name).length > 80) throw new Error("Invalid library item");
+          return { name: item.name, uri: item.uri };
+        });
+        const merged = more ? [...current.items] : [];
+        for (const item of items) if (!merged.some((old) => old.uri === item.uri)) merged.push(item);
+        current.items = merged.slice(0, 1000); current.next = page.next_offset; current.more = page.has_more === true;
+        renderLibrary();
+        text("library-status", current.items.length ? `${current.items.length} Einträge geladen.${current.more ? " Weitere Einträge über „Weitere laden“." : ""}` : "Keine gespeicherten Einträge gefunden. Du kannst unten einen Link hinzufügen.");
+        return;
+      }
+      throw Object.assign(new Error(), { publicMessage: "Spotify antwortet gerade langsam. Bitte erneut laden. Du kannst währenddessen einen Link hinzufügen." });
+    } catch (error) { if (epoch === library.epoch) text("library-status", errorText(error)); }
+    finally { library.busy = false; libraryControls(); if (kind !== $("library-kind").value && !$("page-content").hidden) ensureLibrary(); }
+  }
+  function addFavorite(favorite, name) {
+    if (!canWrite()) return false;
+    if (state.catalog.favorites.length >= 64) { message("Du kannst bis zu 64 Favoriten speichern.", true); return false; }
+    if (state.catalog.favorites.some((item) => item.uri === favorite.uri)) { message("Dieser Favorit ist bereits in deiner Auswahl.", true); return false; }
+    state.catalog.favorites.push({ id: makeId("favorite"), name, ...favorite, enabled: true }); markCatalogDirty();
+    message("Favorit hinzugefügt. Speichere deine Auswahl, wenn du fertig bist."); return true;
+  }
+  $("library-kind").addEventListener("change", () => { renderLibrary(); ensureLibrary(); });
+  $("library-choice").addEventListener("change", libraryControls);
+  $("library-refresh").addEventListener("click", () => loadLibrary(false));
+  $("library-more").addEventListener("click", () => loadLibrary(true));
+  $("library-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const item = library[$("library-kind").value].items.find((item) => item.uri === $("library-choice").value);
+    if (item) addFavorite(spotifyLink(item.uri), item.name);
+  });
   function streamUrl(value) {
     try { const url = new URL(value.trim()); return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password && !url.hash && !/\s/.test(value.trim()) && new TextEncoder().encode(url.href).length <= 1024 ? url.href : null; } catch { return null; }
   }
@@ -590,9 +708,7 @@
     const favorite = spotifyLink($("favorite-link").value), name = $("favorite-name").value.trim();
     if (!favorite) { message("Bitte verwende einen Spotify-Link zu einer Playlist, einem Podcast oder einer Episode.", true); return; }
     if (!name) { message("Gib deinem Favoriten bitte einen Namen.", true); return; }
-    if (state.catalog.favorites.length >= 64) { message("Du kannst bis zu 64 Favoriten speichern.", true); return; }
-    if (state.catalog.favorites.some((item) => item.uri === favorite.uri)) { message("Dieser Favorit ist bereits in deiner Auswahl.", true); return; }
-    state.catalog.favorites.push({ id: makeId("favorite"), name, ...favorite, enabled: true }); markCatalogDirty(); $("favorite-form").reset(); message("Favorit hinzugefügt. Speichere deine Auswahl, wenn du fertig bist.");
+    if (addFavorite(favorite, name)) $("favorite-form").reset();
   });
   $("station-form").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -627,7 +743,7 @@
       state.catalogDirty = false; message("Deine Auswahl ist auf dem RotaryKnob gespeichert."); await refreshStatus({ silent: true }); updateCatalogSaveState();
     } catch (error) { message(errorText(error), true); }
   });
-  $("discard-catalog").addEventListener("click", async () => { state.catalogDirty = false; await refreshStatus({ silent: true }); if (!state.online && state.status) { state.catalog = cloneCatalog(state.status.catalog); renderCatalog(); } });
+  $("discard-catalog").addEventListener("click", async () => { state.catalogDirty = false; state.catalogSignature = null; await refreshStatus({ silent: true }); if (!state.online && state.status) { state.catalog = cloneCatalog(state.status.catalog); renderCatalog(); } });
   window.addEventListener("beforeunload", (event) => { if (state.updateUploading || state.catalogDirty || Object.keys(state.formRevision).length) { event.preventDefault(); event.returnValue = ""; } });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshStatus({ session: true, silent: true }); });
   refreshStatus({ session: true, silent: true });

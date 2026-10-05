@@ -130,8 +130,8 @@ lokale Website. Maximal acht Clients/Sitzungen; Anfragen und Bodygrößen sind b
 
 Anmeldung startet ausschließlich nach POST mit CSRF. Der Helfer validiert die vom
 S3 erhaltene URL auf **genau** `https://accounts.spotify.com/authorize`, feste
-Client-ID, festen Redirect, Code-Flow, S256-Challenge und genau die beiden Scopes
-`user-read-playback-state user-modify-playback-state`. Zusätzliche Rechte,
+Client-ID, festen Redirect, Code-Flow, S256-Challenge und genau die vier Scopes
+`user-read-playback-state user-modify-playback-state playlist-read-private user-library-read`. Zusätzliche Rechte,
 Redirects, URL-Fragmente, Credentials und doppelte Queryfelder werden abgelehnt.
 Die App-ID steht einmal in `helper.py`; Tests verwenden diesen Wert. Bei einer
 freigegebenen App-Umstellung muss sie mit `pw_spotify.h` übereinstimmen. Kunden
@@ -195,3 +195,8 @@ Treiberprüfungen bleiben offen.
 Primärquellen: [Spotify PKCE](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow),
 [Spotify Redirectregeln](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri),
 [pySerial 3.5 API und DTR/RTS-Hinweise](https://pyserial.readthedocs.io/en/latest/pyserial_api.html).
+
+Ab dev.15 fordert eine neue Anmeldung zusätzlich Leserechte für private Playlists
+und gespeicherte Podcasts an. Vorhandene Tokens bleiben für die Wiedergabesteuerung
+nutzbar; ein Bibliotheks-403 trennt das Konto nicht. Für die Dropdowns ggf. einmal
+erneut anmelden. Gerätefirmware und Helper müssen dabei beide aktualisiert sein.

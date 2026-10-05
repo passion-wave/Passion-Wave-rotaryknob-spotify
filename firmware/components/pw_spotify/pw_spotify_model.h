@@ -63,3 +63,6 @@ bool pw_spotify_auth_begin(pw_spotify_auth_t *, const uint8_t[56], int64_t,
 bool pw_spotify_auth_accept(pw_spotify_auth_t *, const char *, const char *, int64_t);
 void pw_spotify_auth_cancel(pw_spotify_auth_t *);
 uint32_t pw_spotify_retry_after(const char *);
+
+bool pw_spotify_parse_library(const cJSON *, bool shows, uint32_t offset,
+                              pw_spotify_library_page_t *out);

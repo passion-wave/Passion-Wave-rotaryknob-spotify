@@ -1,6 +1,6 @@
 # Native Implementierung und Geräteabnahme
 
-Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.14`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
+Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.15`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
 
 ## Reale Implementierung
 
@@ -23,7 +23,7 @@ Die ESP-IDF-Projekte in `firmware/s3` und `firmware/companion` ersetzen für die
 
 Der physisch geöffnete Geräte-AP hat ein individuell erzeugtes WPA2-Passwort, einen Teilnehmer und ein zeitlich begrenztes Einrichtungsfenster. Die Daten erscheinen am Display. HTTP-Schreibzugriffe prüfen zusätzlich Host/Origin, tatsächliche AP-Zuordnung des TCP-Peers, Sitzung, CSRF und Konfigurationsrevision. Ungültige/mehrdeutige JSON-Eingaben werden vor der atomaren Speicherung abgewiesen. WLAN-Zugangsdaten werden erst nach bestätigter Verbindung gemeinsam gespeichert.
 
-Im normalen Heimnetz ist dieser Stand **nur lesbar und ohne private Konfigurations-/Standortdaten**. Das erfüllt die geforderte sichere, jederzeit schreibbare Heimnetz-Website (Q02/G2) noch nicht. Ein selbstsigniertes Zertifikat mit Browserwarnung wird nicht als fertiges Kunden-Onboarding ausgegeben. Die vorgeschlagene mobile Spotify-Einrichtungs-App ist eine offene Nutzerentscheidung und löst G2 nicht automatisch.
+Im Standardprofil ist dieser Stand im normalen Heimnetz **nur lesbar und ohne private Konfigurations-/Standortdaten**. Die ausdrücklich autorisierte dev.15-Pilotausnahme mit physischer Freigabe ist unten beschrieben. Das erfüllt die geforderte sichere, jederzeit schreibbare Heimnetz-Website (Q02/G2) noch nicht. Ein selbstsigniertes Zertifikat mit Browserwarnung wird nicht als fertiges Kunden-Onboarding ausgegeben. Die vorgeschlagene mobile Spotify-Einrichtungs-App ist eine offene Nutzerentscheidung und löst G2 nicht automatisch.
 
 `pw_storage` hält NVS-Verschlüsselung eingeschaltet und initialisiert `nvs`, `settings` und `journal` ausdrücklich mit AES-XTS. Vor der Initialisierung ersetzt es den registrierten Standardprovider durch lokale Flash-Key-Callbacks. Schlüssel entstehen mit aktivierter Hardware-Entropie vor Board-/ADC-/WLAN-Start; kein HMAC-/eFuse-Schlüssel wird erzeugt. Der IDF-Standardgenerator für Flashverschlüsselung wird hier nicht verwendet, da er ohne diese Verschlüsselung feste Rohmuster ergeben würde. Neue Schlüssel werden nur bei vollständig gelöschter Keypartition und drei vollständig gelöschten Ziel-NVS-Partitionen erzeugt; vorhandene Schlüssel benötigen den eigenen Formatmarker. Sonst stoppt der Start, bevor fremde Daten entschlüsselt werden. Kein automatischer Factory-Erase oder Schlüsselersatz. Der IDF-NVS-Treiber kann im regulären Betrieb intern beschädigte Seiten reparieren/verwerfen; er ist kein unveränderlicher Backup-Speicher. **Der Schlüssel liegt im Labor noch in einer auslesbaren Flashpartition.** Schutz gegen physisches Auslesen, Secure Boot, Flashverschlüsselung und sichere Produktion bleiben ein separates Fertigungsgate. Diese irreversiblen Funktionen werden nicht auf einem Recovery-Gerät aktiviert.
 
@@ -862,3 +862,99 @@ entsprechend der vorherigen Testanleitung zunächst den aktuellen Titel neu
 starten. Zusammen mit dem vorherigen Kontrolltest sind Pause, Play und beide
 Titelwechselbefehle am iPhone abgenommen. Lautstärke, Playliststart, Dauerbetrieb,
 weitere Ausgaben sowie die Roam-Steuerung bleiben offen.
+
+
+### dev.15: Bibliotheksauswahl, Website und autorisierter Heimnetz-Pilot
+
+Ausgangsbefund am realen S3 unter dev.14, Adresse vom Nutzer bestätigt:
+Drei sequenzielle LAN-Messreihen zeigten beim 14.582-Byte-JavaScript einen
+20-Sekunden-Timeout sowie 9,931/7,066 Sekunden. HTML benötigte 0,178 bis 19,971
+Sekunden, CSS 0,043 bis 2,048 Sekunden. Session-/Statusantworten lagen bei
+0,032–0,076 Sekunden. Die gesperrten Felder im Heimnetz waren zusätzlich eine
+bewusste Zugriffsbeschränkung der bisherigen Firmware, kein Touchdefekt.
+
+Änderungen: USB-orientierter WLAN-Betrieb ohne Modemschlaf (`WIFI_PS_NONE`),
+weiterhin AMPDU RX/TX aus; Hintergrund-JSON-Lesezugriffe serialisiert, direkte
+Nutzer-Schreibaktionen warten nicht hinter einem ausstehenden Statusabruf.
+Spotify-/OTA-Polling auf zehn Sekunden reduziert und auf sichtbare Bereiche
+beschränkt; AP-Sitzung vor Ablauf erneuert, physisch geöffnetes AP-Fenster bei
+autorisierter Nutzung als Inaktivitätsfenster verlängert. Der Heimnetz-Pilot
+bleibt dagegen fest auf zehn Minuten begrenzt. Unveränderte Katalogdaten bauen
+keine Eingabefelder neu auf. 16-Pixel-Eingabeschrift verhindert Safari-Fokuszoom,
+native Dropdowns und Schaltflächen umbrechen auf kleinen Displays.
+
+Spotify-Bibliothek: `POST /api/v1/spotify/library` reiht `{kind, offset, session}`
+ein; `GET /api/v1/spotify/library?kind=playlist|show` liest einen RAM-Snapshot.
+Der Spotify-Worker lädt feste `/v1/me/playlists`-/`/v1/me/shows`-Pfade mit zehn
+Elementen; fremde `next`-URLs werden nie verfolgt. Pagination, URI-Typ, IDs,
+UTF-8 und Größen werden validiert. Browser-Auswahl bis 1.000 Einträge pro Typ,
+lokaler Katalog weiterhin maximal 64 Favoriten. Neue Anmeldung fordert zusätzlich
+`playlist-read-private` und `user-library-read`; 403 der Bibliothek sperrt nicht
+die bestehende Wiedergabesteuerung. OAuth-Profil, Helper und Golden Fixtures
+sind abgestimmt. Quellen: [Playlists](https://developer.spotify.com/documentation/web-api/reference/get-a-list-of-current-users-playlists),
+[gespeicherte Podcasts](https://developer.spotify.com/documentation/web-api/reference/get-users-saved-shows).
+
+Der Nutzer autorisierte explizit die unverschlüsselte Pilotverwaltung im Heimnetz.
+`CONFIG_PW_LAN_HTTP_LAB` aktiviert die physische Taste „Web freigeben“, Einmalcode,
+feste Ablaufzeit und getrennte LAN-Cookies/CSRF. Der Zugriff verlangt lokale
+STA-Adresse, gleiches IPv4-Subnetz, gebundene Client-IP, korrekten Host und bei
+Änderungen passenden Origin/CSRF. Fünf Fehlversuche schließen die Freigabe. Keine
+Freigabe durch Remote-Aufruf. Die Website bietet die Code-Eingabe und kennzeichnet
+den unverschlüsselten Transport. Produktprofil ohne diese Option; G2 bleibt offen.
+
+Prüfung bisher: 623 Modell-/1470 Worker-Assertions, sieben reale HTTP-Parserfälle,
+50 Helpertests, elf USB-Vertragstests, 51 Frameworktests; 25 HTTP-Response-Szenarien
+und 20 exakte gzip-Roundtrips mit realem IDF-Sendecode. Native Pilot-Gate-Tests
+prüfen Ablauf, Wiederholung, Fehlversuche und Widerruf; extrahierte reale HTTP-
+Autorisierung prüft Host, Origin, CSRF, Cookie, Peer, Subnetz und lokalen Socket.
+Chromium/WebKit bestehen neue Bibliotheks-/Link-/Pagination-/403-/Fokus-/Pilot-
+Pairing-Prüfungen bei 360, 390 und 1280 Pixeln; bestehende Browserregression sowie
+komprimierte WebKit-HTTP-Auslieferung bestehen. Diese Browserantworten sind
+simuliert und kein physischer Performancebeleg. Alle drei Firmwareprofile bauen.
+
+Die reale Nachmessung nach Abschalten des Modemschlafs allein zeigte weiterhin
+0,788–4,886 Sekunden für JavaScript. TCP-Metadaten zeigten sofortige Bestätigungen
+vom Rechner, trotzdem etwa einsekündige Pausen nach dem ersten Sendefenster.
+Der finale HTTP-Sendeadapter begrenzt Schreibportionen auf 1440 Byte und gibt
+nach einem vollen Segment für zwei Millisekunden Rechenzeit frei. IDFs reale
+`send_all`-Schleife übernimmt partielle Writes; Content-Length und gzip bleiben
+exakt. Der Hosttest führt auch diesen Adapter aus, begrenzt die simulierten
+Socket-Writes und prüft weiterhin Abbrüche sowie vollständige HTTP-Antworten.
+Dies ist ein am Pilot vermessener Workaround; die genaue Ursache im WLAN-/TCP-
+Zusammenspiel ist damit noch nicht abschließend bewiesen.
+
+Finaler lokaler Diagnosekandidat: 2.733.344 Bytes, SHA-256
+`ff557e105ceeaddae01f64fdac5c42179f52c3afdf84f28c5cee0fbc1cc7fcc4`,
+gebaut aus Quellbaum `ba0351d6666b95df055312f260b6692597d9c6d6`
+auf Basis `3d4216c`. Nach erneuter S3-/16-MiB-Identifikation ausschließlich
+Appbereich `0x10000` geschrieben; separater vollständiger Flashvergleich und
+USB-HELLO mit `0.1.0-dev.15` bestanden. NVS/Schlüssel, Bootloader und Partitionen
+wurden nicht überschrieben; der Begleitchip trägt weiterhin die Originalfirmware.
+Originalbackup vor dem ersten dev.15-Flash erneut per SHA-256 geprüft. Die
+installierte Binärdatei, Quellpatches und Messprotokolle bleiben im privaten
+Recoveryverzeichnis, nicht im Repository.
+
+Fünf sequenzielle LAN-Messrunden am laufenden Gerät ergaben:
+
+| Abruf | Übertragene gzip-/JSON-Bytes | Vollständiger Abruf |
+| --- | ---: | ---: |
+| HTML | 5.982 | 43–72 ms |
+| CSS | 4.928 | 39–55 ms |
+| JavaScript | 16.771 | 58–74 ms |
+| Sitzung | 68 | 28–34 ms |
+| Status | 468 | 28–39 ms |
+
+Alle 25 Abrufe HTTP 200, kein Timeout; die 15 Assetantworten nach gzip-
+Dekompression bytegenau gegen die Quellen geprüft. Drei vollständige mobile
+Chromium-Läufe direkt gegen das Gerät mit jeweils neuem Browserkontext waren
+nach 0,875 / 0,256 / 0,268 Sekunden bereit. Kein horizontaler Überlauf,
+JavaScriptfehler oder fehlgeschlagener Request; Freigabeformular bedienbar,
+private Felder vor Paarung korrekt gesperrt. Screenshot visuell geprüft.
+Der isolierte WebKit-Prozess erhielt am Mac keinen direkten LAN-Zugriff;
+WebKit-Layout/Bedienung ist bisher gegen simulierte Antworten geprüft.
+Der Nutzer bestätigte anschließend auf seinem iPhone in Safari im Heim-WLAN
+nach „Gerät → Web freigeben“ und Code-Eingabe: „Ja, schnell und Felder
+bedienbar“. Damit sind der schnelle Seitenaufbau und die Pilotfreigabe in dieser
+Sitzung auch physisch beobachtet. Anzeige der echten Bibliothek nach Zustimmung
+zu den zusätzlichen Spotify-Leserechten bleibt separat zu bestätigen. Keine
+Aussage über jede WLAN-Umgebung oder Dauerbetrieb.

@@ -98,6 +98,21 @@ typedef struct {
     uint32_t expires_in_seconds;
 } pw_spotify_auth_start_t;
 
+#define PW_SPOTIFY_LIBRARY_PAGE_SIZE 10u
+typedef enum { PW_LIBRARY_IDLE, PW_LIBRARY_LOADING, PW_LIBRARY_READY,
+               PW_LIBRARY_FORBIDDEN, PW_LIBRARY_ERROR } pw_spotify_library_state_t;
+typedef struct { char name[81], uri[64]; } pw_spotify_library_item_t;
+typedef struct {
+    pw_spotify_library_state_t state;
+    uint32_t session, offset, next_offset, total, retry_after_seconds;
+    bool shows, has_more;
+    unsigned count;
+    pw_spotify_library_item_t items[PW_SPOTIFY_LIBRARY_PAGE_SIZE];
+} pw_spotify_library_page_t;
+/* Enqueue a bounded read; never block the local HTTP server on Spotify. */
+esp_err_t pw_spotify_library_request(bool shows, uint32_t offset, uint32_t session);
+void pw_spotify_library_get(bool shows, pw_spotify_library_page_t *out);
+
 esp_err_t pw_spotify_init(void); /* after encrypted settings NVS initialization */
 void pw_spotify_set_network(bool connected);
 void pw_spotify_set_suspended(bool suspended);

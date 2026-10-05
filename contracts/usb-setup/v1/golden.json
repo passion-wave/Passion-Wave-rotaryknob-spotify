@@ -8,7 +8,9 @@
     "redirect_uri": "http://127.0.0.1:8766/callback",
     "scopes": [
       "user-read-playback-state",
-      "user-modify-playback-state"
+      "user-modify-playback-state",
+      "playlist-read-private",
+      "user-library-read"
     ]
   },
   "description": "All codes, states, sessions and client IDs are synthetic. Each wire_utf8 contains actual wire characters after JSON unescaping; invalid JSON remains inside this valid JSON fixture container.",
@@ -261,7 +263,7 @@
       },
       {
         "name": "authorize",
-        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"authorization_url\":\"https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef\",\"expires_in_seconds\":600}\n",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"authorization_url\":\"https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef\",\"expires_in_seconds\":600}\n",
         "request_method": "authorize"
       },
       {
@@ -362,13 +364,13 @@
       },
       {
         "name": "wrong-auth-host",
-        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"authorization_url\":\"https://accounts.example.invalid/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef\",\"expires_in_seconds\":600}\n",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"authorization_url\":\"https://accounts.example.invalid/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef\",\"expires_in_seconds\":600}\n",
         "stage": "schema",
         "reason": "fixed Spotify authority"
       },
       {
         "name": "wrong-ttl",
-        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"authorization_url\":\"https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef\",\"expires_in_seconds\":601}\n",
+        "wire_utf8": "PWSET1 {\"id\":17,\"ok\":true,\"authorization_url\":\"https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef\",\"expires_in_seconds\":601}\n",
         "stage": "schema",
         "reason": "600-second current protocol lifetime"
       }
@@ -620,39 +622,39 @@
     "good": [
       {
         "name": "fixture-profile-only",
-        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
         "expected_state": "0123456789abcdef0123456789abcdef0123456789abcdef"
       }
     ],
     "bad": [
       {
         "name": "wrong-redirect",
-        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8767%2Fcallback&scope=user-read-playback-state+user-modify-playback-state&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8767%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
         "expected": "reject"
       },
       {
         "name": "wrong-client",
-        "url": "https://accounts.spotify.com/authorize?client_id=11111111111111111111111111111111&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "url": "https://accounts.spotify.com/authorize?client_id=11111111111111111111111111111111&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
         "expected": "reject"
       },
       {
         "name": "extra-scope",
-        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+user-read-email&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read+user-read-email&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
         "expected": "reject"
       },
       {
         "name": "duplicate-state",
-        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef&state=0123456789abcdef0123456789abcdef0123456789abcdef",
         "expected": "reject"
       },
       {
         "name": "plain-pkce",
-        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state&code_challenge_method=plain&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=plain&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef",
         "expected": "reject"
       },
       {
         "name": "verifier-leak",
-        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef&code_verifier=FAKE-NOT-A-VERIFIER",
+        "url": "https://accounts.spotify.com/authorize?client_id=00000000000000000000000000000000&response_type=code&redirect_uri=http%3A%2F%2F127.0.0.1%3A8766%2Fcallback&scope=user-read-playback-state+user-modify-playback-state+playlist-read-private+user-library-read&code_challenge_method=S256&code_challenge=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&state=0123456789abcdef0123456789abcdef0123456789abcdef&code_verifier=FAKE-NOT-A-VERIFIER",
         "expected": "reject"
       }
     ]

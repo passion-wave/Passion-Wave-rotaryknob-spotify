@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Include current production functions; simulate only IDF boundaries and send().
 #include <stdbool.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +13,8 @@
 #define ssize_t int32_t
 
 typedef int esp_err_t;
+typedef void *httpd_handle_t;
+enum { HTTPD_SOCK_ERR_INVALID = -1, HTTPD_SOCK_ERR_TIMEOUT = -3, HTTPD_SOCK_ERR_FAIL = -2 };
 enum { ESP_OK, ESP_FAIL = -1, ESP_ERR_INVALID_ARG = -2,
        ESP_ERR_HTTPD_INVALID_REQ = -3, ESP_ERR_HTTPD_RESP_HDR = -4,
        ESP_ERR_HTTPD_RESP_SEND = -5, HTTP_SERVER_EVENT_HEADERS_SENT,
@@ -40,11 +43,14 @@ static bool valid_host = true;
     fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, #expression); exit(1); \
 } } while (0)
 
-static int send_sink(void *handle, int fd, const char *data, size_t size, int flags) {
-    (void)handle; (void)fd; (void)flags;
+static void vTaskDelay(unsigned ticks) { CHECK(ticks == 2); }
+#define pdMS_TO_TICKS(value) (value)
+
+static int bounded_send_sink(int fd, const char *data, size_t size, int flags) {
+    (void)fd; (void)flags;
+    CHECK(size <= 1440);
     send_calls++;
-    if (wire_length >= fail_after)
-        return -1;
+    if (wire_length >= fail_after) { errno = EIO; return -1; }
     if (limit && size > limit)
         size = limit;
     if (size > fail_after - wire_length)
@@ -91,7 +97,9 @@ static const char *esp_err_to_name(esp_err_t error_code) { return error_code ? "
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"
+#define send bounded_send_sink
 #include "production.inc"
+#undef send
 #pragma GCC diagnostic pop
 
 static unsigned char *read_asset(const char *directory, const char *name, size_t *length) {
@@ -115,7 +123,7 @@ static esp_err_t run_response(const char *uri, size_t partial, size_t stop) {
     wire_length = send_calls = events = nodelay_calls = 0;
     limit = partial;
     fail_after = stop;
-    struct session session = {.fd = 123, .send_fn = send_sink};
+    struct session session = {.fd = 123, .send_fn = http_socket_send};
     struct httpd_req_aux aux = {.sd = &session, .status = "200 OK", .req_hdrs_count = 4};
     httpd_req_t request = {.aux = &aux, .uri = uri};
     esp_err_t result = asset_handler(&request);
@@ -152,7 +160,7 @@ int main(int argc, char **argv) {
             CHECK(memcmp(wire + offset, data[i], sizes[i]) == 0);
             CHECK(strstr((const char *)wire, types[i]) != NULL);
             if (!partial[j])
-                CHECK(send_calls == 23); // IDF splits every extra header into four sends.
+                CHECK(send_calls == 22 + (sizes[i] + 1439) / 1440);
             char path[2048];
             CHECK(snprintf(path, sizeof path, "%s/wire-%u--%s--%u.http", argv[1], i,
                            names[i], j) < (int)sizeof path);

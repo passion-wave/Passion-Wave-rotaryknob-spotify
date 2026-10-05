@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-// Laboratory implementation: protected setup AP writes; LAN write trust remains G2.
+// Protected setup AP plus explicitly enabled, physically paired HTTP pilot.
+// Secure product LAN transport remains G2.
 #include "pw_app.h"
 #include "cJSON.h"
 #include "driver/uart.h"
@@ -24,6 +25,8 @@
 #include "nvs_flash.h"
 #include "pw_board.h"
 #include "pw_http_socket.h"
+#include "pw_lan_gate.h"
+#include "sdkconfig.h"
 #include "pw_protocol.h"
 #include "pw_storage.h"
 #include "pw_spotify.h"
@@ -31,6 +34,7 @@
 #include "pw_validation.h"
 #include "pw_weather.h"
 #include <ctype.h>
+#include <errno.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,6 +56,8 @@ static unsigned retry_count;
 static esp_netif_t *station_if, *ap_if;
 static httpd_handle_t server;
 static char session[65], csrf[65];
+static pw_lan_gate_t lan_gate;
+static char lan_session[65], lan_csrf[65];
 static int64_t session_until;
 static pw_weather_snapshot_t weather_copy;
 /* HTTP server owns this copy. Never place a multi-KiB device list on its stack. */
@@ -241,6 +247,9 @@ void pw_app_get_view(pw_app_view_t *out) {
     *out = view;
     int64_t left = setup_until - esp_timer_get_time();
     out->setup_seconds_left = left > 0 ? (uint32_t)(left / 1000000) : 0;
+    out->lan_open = lan_gate.until_us > esp_timer_get_time();
+    out->lan_seconds_left = out->lan_open ? (uint32_t)((lan_gate.until_us - esp_timer_get_time()) / 1000000) : 0;
+    strlcpy(out->lan_code, out->lan_open ? lan_gate.code : "", sizeof out->lan_code);
     out->peer_connected = peer_seen && esp_timer_get_time() - peer_seen < 6000000;
     give();
 }
@@ -256,6 +265,18 @@ void pw_app_adjust_brightness(int delta) {
     brightness_changed = esp_timer_get_time();
     give();
     pw_board_set_brightness((uint8_t)b);
+}
+esp_err_t pw_app_open_lan_lab(void) {
+#ifndef CONFIG_PW_LAN_HTTP_LAB
+    return ESP_ERR_NOT_SUPPORTED;
+#else
+    take();
+    if (!view.connected) { give(); return ESP_ERR_INVALID_STATE; }
+    pw_lan_gate_open(&lan_gate, esp_timer_get_time(), esp_random());
+    mbedtls_platform_zeroize(lan_session, sizeof(lan_session));
+    mbedtls_platform_zeroize(lan_csrf, sizeof(lan_csrf));
+    give(); return ESP_OK;
+#endif
 }
 esp_err_t pw_app_open_setup(void) {
     take();
@@ -290,6 +311,9 @@ void pw_app_close_setup(void) {
     take();
     view.setup_open = false;
     setup_until = 0;
+    pw_lan_gate_close(&lan_gate);
+    mbedtls_platform_zeroize(lan_session, sizeof(lan_session));
+    mbedtls_platform_zeroize(lan_csrf, sizeof(lan_csrf));
     session_until = 0;
     mbedtls_platform_zeroize(session, sizeof session);
     mbedtls_platform_zeroize(csrf, sizeof csrf);
@@ -419,9 +443,36 @@ static esp_err_t error(httpd_req_t *r, const char *status, const char *code, con
     }
     return json_response(r, j);
 }
+static bool lan_peer(httpd_req_t *r, uint32_t *peer) {
+#ifndef CONFIG_PW_LAN_HTTP_LAB
+    (void)r; (void)peer; return false;
+#else
+    struct in_addr local = {0}, remote = {0}; esp_netif_ip_info_t ip;
+    int fd = httpd_req_to_sockfd(r);
+    if (!pw_http_socket_ipv4(fd, false, &local) || !pw_http_socket_ipv4(fd, true, &remote) ||
+        esp_netif_get_ip_info(station_if, &ip) != ESP_OK || local.s_addr != ip.ip.addr ||
+        !remote.s_addr || (remote.s_addr & ip.netmask.addr) != (ip.ip.addr & ip.netmask.addr)) return false;
+    *peer = remote.s_addr; return true;
+#endif
+}
+static bool same_origin(httpd_req_t *r) {
+    char origin[80] = {0}, host[80] = {0}, want[100];
+    if (httpd_req_get_hdr_value_str(r, "Origin", origin, sizeof(origin)) != ESP_OK ||
+        httpd_req_get_hdr_value_str(r, "Host", host, sizeof(host)) != ESP_OK) return false;
+    snprintf(want, sizeof(want), "http://%s", host); return !strcmp(origin, want);
+}
+static bool lan_authorized(httpd_req_t *r, bool mutation) {
+    uint32_t peer; char cookie[160] = {0}, expected[80], token[80] = {0};
+    if (!lan_peer(r, &peer) || httpd_req_get_hdr_value_str(r, "Cookie", cookie, sizeof(cookie)) != ESP_OK) return false;
+    if (mutation && (!same_origin(r) || httpd_req_get_hdr_value_str(r, "X-CSRF-Token", token, sizeof(token)) != ESP_OK)) return false;
+    take(); snprintf(expected, sizeof(expected), "pw_lan=%s", lan_session);
+    bool valid = pw_lan_gate_allows(&lan_gate, esp_timer_get_time(), peer) && lan_session[0] &&
+        same_secret(cookie, expected) && (!mutation || same_secret(token, lan_csrf));
+    give(); return valid;
+}
 static bool authorized(httpd_req_t *r, bool mutation) {
-    if (!host_valid(r) || !is_ap_request(r))
-        return false;
+    if (!host_valid(r)) return false;
+    if (!is_ap_request(r)) return lan_authorized(r, mutation);
     char cookie[160] = {0}, expected[80];
     if (httpd_req_get_hdr_value_str(r, "Cookie", cookie, sizeof cookie) != ESP_OK)
         return false;
@@ -432,8 +483,12 @@ static bool authorized(httpd_req_t *r, bool mutation) {
     give();
     if (!valid)
         return false;
-    if (!mutation)
+    if (!mutation) {
+        take();
+        if (view.setup_open) setup_until = esp_timer_get_time() + SETUP_SECONDS * 1000000LL;
+        give();
         return true;
+    }
     char origin[80] = {0}, token[80] = {0}, host[80] = {0}, want[100];
     httpd_req_get_hdr_value_str(r, "Origin", origin, sizeof origin);
     httpd_req_get_hdr_value_str(r, "Host", host, sizeof host);
@@ -488,8 +543,11 @@ static bool revision_matches(httpd_req_t *r) {
 static esp_err_t session_handler(httpd_req_t *r) {
     char cookie[160];
     bool secure = host_valid(r) && is_ap_request(r);
+    bool lab = host_valid(r) && lan_authorized(r, false);
     cJSON *j = cJSON_CreateObject();
-    if (!j || !cJSON_AddBoolToObject(j, "secure_write", secure)) {
+    if (!j || !cJSON_AddBoolToObject(j, "secure_write", secure) ||
+        !cJSON_AddBoolToObject(j, "write_allowed", secure || lab) ||
+        !cJSON_AddBoolToObject(j, "unprotected_lab", lab)) {
         cJSON_Delete(j);
         return memory_error(r);
     }
@@ -510,6 +568,31 @@ static esp_err_t session_handler(httpd_req_t *r) {
             return memory_error(r);
         }
     }
+    if (lab) {
+        take(); bool added = cJSON_AddStringToObject(j, "csrf", lan_csrf) != NULL; give();
+        if (!added) { cJSON_Delete(j); return memory_error(r); }
+    }
+    return json_response(r, j);
+}
+static esp_err_t lan_pair_handler(httpd_req_t *r) {
+    uint32_t peer;
+    if (!host_valid(r) || !same_origin(r) || !lan_peer(r, &peer))
+        return error(r, "403 Forbidden", "pairing", "Website direkt im Heimnetz öffnen.");
+    cJSON *body = read_body(r, 128);
+    const char *const keys[] = {"code"};
+    const char *code = text(body, "code");
+    bool shape = pw_keys_only(body, keys, 1) && strlen(code) == 6;
+    take();
+    bool paired = pw_lan_gate_pair(&lan_gate, esp_timer_get_time(), peer, shape ? code : "");
+    if (!paired && lan_gate.attempts >= 5) pw_lan_gate_close(&lan_gate);
+    if (paired) { random_hex(lan_session, 32); random_hex(lan_csrf, 32); }
+    char cookie[160];
+    snprintf(cookie, sizeof(cookie), "pw_lan=%s; HttpOnly; SameSite=Strict; Path=/; Max-Age=600", paired ? lan_session : "");
+    give(); cJSON_Delete(body);
+    if (!paired) return error(r, "403 Forbidden", "pairing", "Code ungültig oder abgelaufen. Am Knob „Web freigeben“ öffnen und den angezeigten Code eingeben.");
+    httpd_resp_set_hdr(r, "Set-Cookie", cookie);
+    cJSON *j = cJSON_CreateObject();
+    if (!j || !cJSON_AddBoolToObject(j, "paired", true)) { cJSON_Delete(j); return memory_error(r); }
     return json_response(r, j);
 }
 static const char *spotify_command_name(pw_spotify_command_state_t state) {
@@ -609,6 +692,56 @@ static bool spotify_revision(httpd_req_t *r, uint32_t *revision) {
     *revision = view.revision;
     give();
     return valid;
+}
+static esp_err_t spotify_library_handler(httpd_req_t *r) {
+    if (!authorized(r, r->method == HTTP_POST))
+        return error(r, "403 Forbidden", "pairing", "Geschützte Einrichtung öffnen");
+    bool shows = false;
+    if (r->method == HTTP_POST) {
+        cJSON *body = read_body(r, 256);
+        const char *const keys[] = {"kind", "offset", "session"};
+        uint32_t offset, session_id, revision;
+        const char *kind = text(body, "kind");
+        if (!pw_keys_only(body, keys, 3) || !cJSON_IsNumber(item(body, "offset")) ||
+            !isfinite(number(body, "offset", -1)) || number(body, "offset", -1) < 0 ||
+            number(body, "offset", -1) > 100000 || floor(number(body, "offset", -1)) != number(body, "offset", -1) ||
+            !json_u32(body, "session", &session_id) ||
+            (strcmp(kind, "playlist") && strcmp(kind, "show"))) {
+            cJSON_Delete(body); return error(r, "400 Bad Request", "library", "Auswahl erneut laden.");
+        }
+        offset = (uint32_t)number(body, "offset", 0);
+        shows = !strcmp(kind, "show");
+        if (!spotify_revision(r, &revision)) { cJSON_Delete(body); return error(r, "409 Conflict", "revision", "Gerätestand neu laden."); }
+        cJSON_Delete(body);
+        return spotify_result(r, pw_spotify_library_request(shows, offset, session_id), 0);
+    }
+    char query[32] = {0};
+    if (httpd_req_get_url_query_str(r, query, sizeof(query)) != ESP_OK ||
+        (strcmp(query, "kind=playlist") && strcmp(query, "kind=show")))
+        return error(r, "400 Bad Request", "library", "Playlist oder Podcast wählen.");
+    shows = !strcmp(query, "kind=show");
+    pw_spotify_library_page_t *page = calloc(1, sizeof(*page));
+    if (!page) return memory_error(r);
+    pw_spotify_library_get(shows, page);
+    static const char *states[] = {"idle", "loading", "ready", "forbidden", "error"};
+    cJSON *j = cJSON_CreateObject(), *items = j ? cJSON_AddArrayToObject(j, "items") : NULL;
+    bool ok = items && cJSON_AddStringToObject(j, "state", states[page->state]) &&
+        cJSON_AddStringToObject(j, "kind", shows ? "show" : "playlist") &&
+        cJSON_AddNumberToObject(j, "session", page->session) &&
+        cJSON_AddNumberToObject(j, "offset", page->offset) &&
+        cJSON_AddNumberToObject(j, "next_offset", page->next_offset) &&
+        cJSON_AddNumberToObject(j, "total", page->total) &&
+        cJSON_AddNumberToObject(j, "retry_after_seconds", page->retry_after_seconds) &&
+        cJSON_AddBoolToObject(j, "has_more", page->has_more);
+    for (unsigned i = 0; ok && i < page->count; i++) {
+        cJSON *item = cJSON_CreateObject();
+        if (!item || !cJSON_AddItemToArray(items, item)) { cJSON_Delete(item); ok = false; break; }
+        ok = cJSON_AddStringToObject(item, "name", page->items[i].name) &&
+             cJSON_AddStringToObject(item, "uri", page->items[i].uri);
+    }
+    free(page);
+    if (!ok) { cJSON_Delete(j); return memory_error(r); }
+    return json_response(r, j);
 }
 static esp_err_t spotify_select_handler(httpd_req_t *r) {
     if (!authorized(r, true)) return error(r, "403 Forbidden", "pairing", "Geschützte Einrichtung öffnen");
@@ -749,7 +882,13 @@ static esp_err_t status_handler(httpd_req_t *r) {
          cJSON_AddBoolToObject(c, "radio_playback", false) &&
          cJSON_AddBoolToObject(c, "pair_ota", false) &&
          cJSON_AddBoolToObject(c, "secure_lan_write", false) &&
-         cJSON_AddBoolToObject(j, "secure_write", admin);
+         cJSON_AddBoolToObject(j, "secure_write", admin && is_ap_request(r)) &&
+         cJSON_AddBoolToObject(j, "write_allowed", admin) &&
+         cJSON_AddBoolToObject(j, "unprotected_lab", admin && lan_authorized(r, false));
+#ifdef CONFIG_PW_LAN_HTTP_LAB
+    ok = ok && cJSON_AddBoolToObject(c, "lab_lan_http", true) &&
+         cJSON_AddNumberToObject(j, "lab_seconds_left", v.lan_seconds_left);
+#endif
     if (admin && ok) {
         take();
         ok = add_owned(j, "settings", cJSON_Duplicate(item(config, "settings"), true)) &&
@@ -1225,9 +1364,27 @@ static esp_err_t asset_handler(httpd_req_t *r) {
              esp_err_to_name(result));
     return result;
 }
-static esp_err_t http_socket_open(httpd_handle_t handle, int socket_fd) {
+static int http_socket_send(httpd_handle_t handle, int socket_fd, const char *data,
+                            size_t length, int flags) {
     (void)handle;
-    return pw_http_socket_low_latency(socket_fd) ? ESP_OK : ESP_FAIL;
+    if (!data) return HTTPD_SOCK_ERR_INVALID;
+    /* Bound each blocking lwIP write to one configured TCP MSS. HTTPD's
+     * send_all advances over partial writes, retaining exact Content-Length.
+     * Large writes stalled on the pilot after the initial TCP send window. */
+    const size_t portion = length > 1440 ? 1440 : length;
+    const int result = send(socket_fd, data, portion, flags);
+    if (result >= 0) {
+        /* Yield full-segment bursts so Wi-Fi can drain its transmit buffers.
+         * This bounds application-side pacing to 2 ms per 1440-byte portion. */
+        if (result >= 1440) vTaskDelay(pdMS_TO_TICKS(2));
+        return result;
+    }
+    return errno == EAGAIN || errno == EWOULDBLOCK ? HTTPD_SOCK_ERR_TIMEOUT
+                                                  : HTTPD_SOCK_ERR_FAIL;
+}
+static esp_err_t http_socket_open(httpd_handle_t handle, int socket_fd) {
+    if (!pw_http_socket_low_latency(socket_fd)) return ESP_FAIL;
+    return httpd_sess_set_send_override(handle, socket_fd, http_socket_send);
 }
 static void register_uri(const char *uri, httpd_method_t method,
                          esp_err_t (*handler)(httpd_req_t *)) {
@@ -1457,7 +1614,8 @@ esp_err_t pw_app_init(void) {
              mac[5]);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_start());
-    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
+    /* USB-first product: keep interactive LAN/AP traffic awake. */
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
     char credentials[512] = {0};
     size_t credential_size = sizeof credentials;
     bool saved = false;
@@ -1508,7 +1666,7 @@ esp_err_t pw_app_init(void) {
     ESP_ERROR_CHECK(uart_set_pin(UART_NUM_1, 38, 48, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     ESP_ERROR_CHECK(uart_driver_install(UART_NUM_1, 2048, 0, 0, NULL, 0));
     httpd_config_t hc = HTTPD_DEFAULT_CONFIG();
-    hc.max_uri_handlers = 24;
+    hc.max_uri_handlers = 26;
     hc.stack_size = 12288;
     /* A mobile browser can keep six HTTP/1.1 connections. Reserve separate
      * lwIP capacity for HTTPD control/listener, DNS, NTP and provider clients. */
@@ -1523,11 +1681,14 @@ esp_err_t pw_app_init(void) {
     register_uri("/style.css", HTTP_GET, asset_handler);
     register_uri("/places-de.json", HTTP_GET, asset_handler);
     register_uri("/api/v1/session", HTTP_GET, session_handler);
+    register_uri("/api/v1/session/pair", HTTP_POST, lan_pair_handler);
     register_uri("/api/v1/status", HTTP_GET, status_handler);
     register_uri("/api/v1/wifi/scan", HTTP_GET, scan_handler);
     register_uri("/api/v1/wifi", HTTP_POST, wifi_handler);
     register_uri("/api/v1/spotify/snapshot", HTTP_GET, spotify_snapshot_handler);
     register_uri("/api/v1/spotify/devices", HTTP_GET, spotify_devices_handler);
+    register_uri("/api/v1/spotify/library", HTTP_GET, spotify_library_handler);
+    register_uri("/api/v1/spotify/library", HTTP_POST, spotify_library_handler);
     register_uri("/api/v1/spotify/select", HTTP_POST, spotify_select_handler);
     register_uri("/api/v1/spotify/action", HTTP_POST, spotify_action_handler);
     register_uri("/api/v1/spotify/disconnect", HTTP_POST, spotify_disconnect_handler);
@@ -1538,6 +1699,6 @@ esp_err_t pw_app_init(void) {
     register_uri("/api/v1/updates/upload", HTTP_POST, update_upload_handler);
     if (xTaskCreate(service_task, "pw_service", 6144, NULL, 4, NULL) != pdPASS)
         return ESP_ERR_NO_MEM;
-    ESP_LOGI(TAG, "Local services ready; protected AP writes only, LAN trust not qualified");
+    ESP_LOGI(TAG, "Local services ready; physical setup required, secure product LAN pending");
     return ESP_OK;
 }

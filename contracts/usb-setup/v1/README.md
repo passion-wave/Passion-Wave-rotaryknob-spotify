@@ -166,8 +166,8 @@ neuen fehlgeschlagenen Versuchs als dessen Erfolg ausgegeben werden.
 Für URL-Prüfung gelten das öffentliche qualifizierte Releaseprofil und dessen
 fixe Client-ID, `https://accounts.spotify.com/authorize`, Code-Flow, PKCE S256,
 43-Zeichen-Base64url-Challenge, feste Rückleitung
-`http://127.0.0.1:8766/callback` und genau die beiden Scopes
-`user-read-playback-state user-modify-playback-state`. Doppelte/zusätzliche
+`http://127.0.0.1:8766/callback` und genau die vier Scopes
+`user-read-playback-state user-modify-playback-state playlist-read-private user-library-read`. Doppelte/zusätzliche
 Queryparameter, Credentials, Fragmente und abweichende Ziele werden abgelehnt.
 Das Antwortschema prüft nur URL-Form und Länge, nicht die vollständige Profilbindung.
 Die reale App-ID wird hier absichtlich nicht ein zweites Mal festgeschrieben.

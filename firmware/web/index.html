@@ -24,6 +24,8 @@
     </nav>
     <main id="main" tabindex="-1">
       <div class="notice" id="connection-notice" hidden><p id="connection-message"></p><button class="text-button" type="button" id="retry-connection">Erneut verbinden</button></div>
+      <article class="notice notice-warm" id="lan-pairing" hidden><h2>Website freigeben</h2><p>Tippe am Knob auf „Gerät → Web freigeben“ und gib den angezeigten Code ein. Die Freigabe gilt höchstens zehn Minuten.</p><form id="lan-pair-form"><label for="lan-code">Code vom Knob</label><div class="search-field"><input id="lan-code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" required placeholder="6-stelliger Code"><button class="button primary" type="submit">Freigeben</button></div></form><p class="field-help" id="lan-pair-status" role="status">Pilotbetrieb: Die Verbindung im Heimnetz ist unverschlüsselt. Nur in deinem vertrauenswürdigen Heimnetz verwenden.</p></article>
+      <div class="notice notice-warm" id="lan-active" hidden><p>Heimnetz-Verwaltung freigegeben · Pilotbetrieb über unverschlüsseltes HTTP. <span id="lan-remaining"></span></p></div>
       <div class="notice notice-warm" id="security-notice" hidden><p>Im Heim-WLAN ist in dieser Version nur der Gerätestatus verfügbar. Für die Einrichtung öffne das geschützte Geräte-WLAN am RotaryKnob.</p></div>
       <p class="message" id="message" role="status" aria-live="polite" hidden></p>
       <button class="button secondary conflict-reload" type="button" id="reload-config" hidden>Eigene Änderungen verwerfen und aktuellen Stand laden</button>
@@ -74,7 +76,14 @@
         <div class="page-heading"><p class="eyebrow">DEINE AUSWAHL</p><h1 id="content-title">Weniger suchen.<br>Mehr Lieblingsmusik.</h1><p>Stelle die Inhalte zusammen, die später auf deinem Knob erscheinen.</p></div>
         <div class="info-line" id="content-playback-hint">Wiedergabe ist in dieser Geräteversion noch nicht verfügbar. Deine Auswahl wird auf dem RotaryKnob gespeichert.</div>
         <article class="card">
-          <div class="section-title"><div><h2>Playlists &amp; Podcasts</h2><p>Füge einen geteilten Spotify-Link ein.</p></div><span class="count" id="favorites-count">0 / 64</span></div>
+          <div class="section-title"><div><h2>Playlists &amp; Podcasts</h2><p>Wähle aus deiner Spotify-Bibliothek oder füge darunter einen Link hinzu.</p></div><span class="count" id="favorites-count">0 / 64</span></div>
+          <p id="content-access" class="info-line" role="status" hidden></p>
+          <form id="library-form"><fieldset data-write disabled><legend class="sr-only">Aus Spotify auswählen</legend>
+            <div class="form-grid"><div class="field"><label for="library-kind">Inhalte</label><select id="library-kind"><option value="playlist">Meine Playlists</option><option value="show">Meine Podcasts</option></select></div>
+            <div class="field"><label for="library-choice">Aus deiner Spotify-Bibliothek</label><select id="library-choice" disabled><option value="">Auswahl noch nicht geladen</option></select></div></div>
+            <div class="actions library-actions"><button id="library-add" class="button secondary" type="submit" disabled>+ Zur Auswahl hinzufügen</button><button id="library-refresh" class="text-button" type="button">Listen laden</button><button id="library-more" class="text-button" type="button" hidden>Weitere laden</button></div>
+          </fieldset></form><p id="library-status" class="field-help" role="status">Deine Bibliothek wird erst auf dieser Seite geladen. Du kannst jederzeit einen Link verwenden.</p>
+          <h3 class="link-heading">Oder Spotify-Link hinzufügen</h3>
           <form id="favorite-form"><fieldset data-write disabled><legend class="sr-only">Spotify-Favorit hinzufügen</legend><div class="form-grid"><div class="field"><label for="favorite-link">Spotify-Link</label><input id="favorite-link" type="text" required maxlength="512" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="https://open.spotify.com/playlist/…"></div><div class="field"><label for="favorite-name">Name auf dem Knob</label><input id="favorite-name" required maxlength="80" placeholder="Zum Beispiel: Mein Feierabend"></div></div><button class="button secondary" type="submit">+ Zur Auswahl hinzufügen</button></fieldset></form>
           <div class="catalog-list" id="favorites-list"></div>
         </article>

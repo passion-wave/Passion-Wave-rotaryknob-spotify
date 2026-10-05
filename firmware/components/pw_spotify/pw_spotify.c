@@ -16,6 +16,12 @@ const char *pw_spotify_error_name(pw_spotify_error_t e) {
     return (unsigned)e < sizeof(names) / sizeof(*names) ? names[e] : "response";
 }
 #ifndef CONFIG_PW_SPOTIFY_LAB
+esp_err_t pw_spotify_library_request(bool shows, uint32_t offset, uint32_t session) {
+    (void)shows; (void)offset; (void)session; return ESP_ERR_NOT_SUPPORTED;
+}
+void pw_spotify_library_get(bool shows, pw_spotify_library_page_t *out) {
+    if (out) { memset(out, 0, sizeof(*out)); out->shows = shows; }
+}
 esp_err_t pw_spotify_init(void) {
     return ESP_OK;
 }
@@ -96,6 +102,8 @@ typedef struct {
     char auth_code[PW_SPOTIFY_AUTH_CODE_BYTES];
     char auth_confirmation[PW_SPOTIFY_AUTH_STATE_BYTES];
     pw_spotify_snapshot_t snapshot;
+    pw_spotify_library_page_t library[2];
+    bool library_pending[2];
     pw_spotify_disallows_t disallows;
     pending_t commands[QUEUE_COUNT], volume;
     unsigned head, count;
@@ -350,6 +358,8 @@ esp_err_t pw_spotify_disconnect(void) {
     service.disconnect_pending = true;
     pw_spotify_wipe(service.auth_confirmation, sizeof(service.auth_confirmation));
     service.epoch++;
+    memset(service.library, 0, sizeof(service.library));
+    memset(service.library_pending, 0, sizeof(service.library_pending));
     service.snapshot.session = new_session();
     clear_commands_locked();
     state_locked();
@@ -690,6 +700,8 @@ static bool exchange(const char *code, const char *verifier, uint32_t auth_gener
                         service.devices_at_us = service.playback_at_us = 0;
                         clear_commands_locked();
                         service.epoch++;
+    memset(service.library, 0, sizeof(service.library));
+    memset(service.library_pending, 0, sizeof(service.library_pending));
                     }
                     service.refresh_requested = true;
                     success = true;
@@ -739,6 +751,59 @@ static response_t api(esp_http_client_method_t method, const char *path, const c
     }
     report_response(&r);
     return r; /* Only an explicit 401 can trigger one retry. */
+}
+esp_err_t pw_spotify_library_request(bool shows, uint32_t offset, uint32_t session_id) {
+    if (!service.initialized || offset > 100000) return ESP_ERR_INVALID_ARG;
+    lock(); state_locked();
+    if (session_id != service.snapshot.session || !service.snapshot.linked || service.reauth ||
+        service.auth.pending || service.auth_busy || service.disconnect_pending || service.suspended ||
+        !service.network || now_us() < service.cooldown_us) { unlock(); return ESP_ERR_INVALID_STATE; }
+    pw_spotify_library_page_t *p = &service.library[shows ? 1 : 0];
+    if (p->state == PW_LIBRARY_LOADING) {
+        bool same = p->session == session_id && p->offset == offset;
+        unlock(); return same ? ESP_OK : ESP_ERR_INVALID_STATE;
+    }
+    memset(p, 0, sizeof(*p)); p->state = PW_LIBRARY_LOADING; p->shows = shows;
+    p->session = session_id; p->offset = offset; service.library_pending[shows ? 1 : 0] = true;
+    unlock(); xTaskNotifyGive(service.worker); return ESP_OK;
+}
+void pw_spotify_library_get(bool shows, pw_spotify_library_page_t *out) {
+    if (!out) return;
+    memset(out, 0, sizeof(*out)); out->shows = shows;
+    if (!service.initialized) return;
+    lock();
+    const pw_spotify_library_page_t *p = &service.library[shows ? 1 : 0];
+    if (service.snapshot.linked && !service.auth.pending && !service.auth_busy &&
+        !service.disconnect_pending && p->session == service.snapshot.session) *out = *p;
+    if (service.cooldown_us > now_us())
+        out->retry_after_seconds = (unsigned)((service.cooldown_us - now_us() + 999999) / 1000000);
+    unlock();
+}
+static void poll_library(bool shows, uint32_t offset, uint32_t epoch) {
+    char path[80];
+    snprintf(path, sizeof(path), "/v1/me/%s?limit=10&offset=%lu", shows ? "shows" : "playlists", (unsigned long)offset);
+    response_t r = request(false, HTTP_METHOD_GET, path, NULL, epoch);
+    if (r.transport == ESP_OK && r.status == 401) {
+        response_free(&r);
+        if (exchange(NULL, NULL, 0, epoch)) r = request(false, HTTP_METHOD_GET, path, NULL, epoch);
+        if (r.transport == ESP_OK && r.status == 401) token_failure(true, PW_SPOTIFY_ERROR_AUTH, epoch);
+    }
+    /* Missing library consent must not disable previously working playback. */
+    if (r.status == 429) report_response(&r);
+    pw_spotify_library_page_t *page = calloc(1, sizeof(*page));
+    bool valid = false;
+    if (page && r.transport == ESP_OK && r.status == 200) {
+        cJSON *j = pw_spotify_json(r.body, r.size);
+        valid = j && pw_spotify_parse_library(j, shows, offset, page); cJSON_Delete(j);
+    }
+    lock();
+    pw_spotify_library_page_t *target = &service.library[shows ? 1 : 0];
+    if (service.epoch == epoch && !service.disconnect_pending &&
+        target->state == PW_LIBRARY_LOADING && target->offset == offset) {
+        if (valid) { *target = *page; target->session = service.snapshot.session; }
+        else target->state = r.transport == ESP_OK && r.status == 403 ? PW_LIBRARY_FORBIDDEN : PW_LIBRARY_ERROR;
+    }
+    unlock(); free(page); response_free(&r);
 }
 static void publish_devices(pw_spotify_snapshot_t *value, uint32_t epoch) {
     lock();
@@ -1048,11 +1113,19 @@ static void worker(void *unused) {
             command = true;
         }
         bool playing = service.snapshot.playing;
+        int library_job = !command && service.library_pending[0] ? 0 :
+                          !command && service.library_pending[1] ? 1 : -1;
+        uint32_t library_offset = library_job >= 0 ? service.library[library_job].offset : 0;
+        if (library_job >= 0) service.library_pending[library_job] = false;
         unlock();
         if (command) {
             execute(&item, epoch);
             pw_spotify_wipe(&item, sizeof(item));
             poll_at = 0;
+            continue;
+        }
+        if (library_job >= 0) {
+            poll_library(library_job == 1, library_offset, epoch);
             continue;
         }
         if (force || now >= devices_at) {
