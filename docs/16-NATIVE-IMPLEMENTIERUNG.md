@@ -958,3 +958,12 @@ bedienbar“. Damit sind der schnelle Seitenaufbau und die Pilotfreigabe in dies
 Sitzung auch physisch beobachtet. Anzeige der echten Bibliothek nach Zustimmung
 zu den zusätzlichen Spotify-Leserechten bleibt separat zu bestätigen. Keine
 Aussage über jede WLAN-Umgebung oder Dauerbetrieb.
+
+Die erste GitHub-Browserprüfung des Implementierungscommits scheiterte am
+macOS-spezifischen Screenshotpfad des neuen Testskripts. Der Standardpfad nutzt
+jetzt das Betriebssystem-Tempverzeichnis; CI setzt ausdrücklich `RUNNER_TEMP`.
+Alle sechs Chromium-/WebKit-Läufe bestehen lokal erneut. Diese Korrektur betrifft
+nur Tests/Workflow/Dokumentation, nicht den installierten Firmwarekandidaten.
+Beim echten Bibliotheksabruf bestätigte der Nutzer den erwarteten Hinweis auf
+fehlende Spotify-Leserechte. Erneute Anmeldung mit den vier Scopes ist angeleitet;
+die echte Listenanzeige ist dadurch noch nicht abgenommen.

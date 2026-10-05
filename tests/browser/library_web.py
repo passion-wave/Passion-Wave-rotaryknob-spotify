@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Chromium/WebKit mobile regression against real UI, simulated private API only."""
-import argparse, copy, json, time
+import argparse, copy, json, time, tempfile
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 from playwright.sync_api import sync_playwright
@@ -104,7 +104,7 @@ def run(engine, width, playwright, screenshots):
     browser.close();print(f'{engine} {width}px: library, pagination, consent error, manual links, focus, access, layout PASS; simulated startup {elapsed:.2f}s',flush=True)
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--screenshots',type=Path,default=Path('/private/tmp/pw-dev15-library'));args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--screenshots',type=Path,default=Path(tempfile.gettempdir()) / 'pw-library-browser');args=parser.parse_args()
     with sync_playwright() as p:
         for engine in ('chromium','webkit'):
             for width in (360,390,1280):run(engine,width,p,args.screenshots)

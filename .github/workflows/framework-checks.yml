@@ -78,7 +78,8 @@ jobs:
         run: |
           "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/device_web.py \
             --screenshots "$RUNNER_TEMP/pw-browser-artifacts"
-          "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/library_web.py
+          "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/library_web.py \
+            --screenshots "$RUNNER_TEMP/pw-library-artifacts"
           "$RUNNER_TEMP/pw-browser-env/bin/python" tests/browser/compressed_web.py
       - name: USB login helper with simulated device and Spotify
         run: |
