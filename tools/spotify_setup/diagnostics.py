@@ -22,6 +22,12 @@ def _pattern(tag, message):
 # Each capture is numeric, with a fixed output key, radix, sign and range.
 # DNS hostnames/pointers and socket descriptors are deliberately not captured.
 _RULES = (
+    (_pattern(b"pw_spotify", rb"token_exchange initial=([01]) http=(0|[1-5][0-9]{2}) transport=(-?[0-9]{1,6}) "
+              rb"phase=([0-5]) detail=(-?[0-9]{1,6}) errno=([0-9]{1,4}) elapsed=([0-9]{1,6}) confirmed=([01])"),
+     "spotify_token_exchange", (("initial", 10, 1, 0, 1), ("http_status", 10, 1, 0, 599),
+                                ("transport", 10, 1, -65535, 65535), ("phase", 10, 1, 0, 5),
+                                ("detail", 10, 1, -65535, 65535), ("errno", 10, 1, 0, 4095),
+                                ("elapsed_ms", 10, 1, 0, 600000), ("confirmed", 10, 1, 0, 1))),
     (_pattern(b"pw_http_diag", rb"parser_error code=([0-9]{1,3}) status=(0|[1-5][0-9]{2})"),
      "http_parser_error", (("code", 10, 1, 0, 127), ("http_status", 10, 1, 0, 599))),
     (_pattern(b"pw_spotify", rb"playback_device addressable=([01]) restricted=([01])"),

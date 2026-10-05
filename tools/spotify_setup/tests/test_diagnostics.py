@@ -13,6 +13,17 @@ def log(tag, text, level="E"):
 
 
 class DiagnosticsTests(unittest.TestCase):
+    def test_token_exchange_metadata(self):
+        text = "token_exchange initial=1 http=0 transport=-1 phase=3 detail=-28679 errno=0 elapsed=30000 confirmed=0"
+        self.assertEqual(parse_firmware_diagnostic(log("pw_spotify", text)),
+            dict(event="spotify_token_exchange", initial=1, http_status=0, transport=-1,
+                 phase=3, detail=-28679, errno=0, elapsed_ms=30000, confirmed=0))
+        for bad in (text + " code=SECRET", text.replace("initial=1", "initial=2"),
+                    text.replace("phase=3", "phase=6"), text.replace("http=0", "http=99"),
+                    text.replace("elapsed=30000", "elapsed=600001"),
+                    text.replace("confirmed=0", "confirmed=2"), text.replace("detail=-28679", "detail=-65536")):
+            self.assertIsNone(parse_firmware_diagnostic(log("pw_spotify", bad)))
+
     def test_http_parser_error_metadata(self):
         for code in (0, 1, 127):
             self.assertEqual(parse_firmware_diagnostic(log("pw_http_diag",

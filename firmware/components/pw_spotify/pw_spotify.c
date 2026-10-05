@@ -87,6 +87,7 @@ esp_err_t pw_spotify_disconnect(void) {
 #define DEVICE_FRESH_US 90000000LL
 #define PLAYBACK_FRESH_US 30000000LL
 #define HTTP_DEADLINE_US 18000000LL
+#define TOKEN_DEADLINE_US 30000000LL
 
 typedef struct {
     pw_spotify_command_t command;
@@ -472,6 +473,7 @@ static response_t request(bool token, esp_http_client_method_t method, const cha
     }
     char *bearer = NULL;
     int64_t started = now_us();
+    const int64_t deadline = started + (token ? TOKEN_DEADLINE_US : HTTP_DEADLINE_US);
     if (!token) {
         bearer = malloc(PW_SPOTIFY_TOKEN_BYTES + 8);
         if (!bearer) {
@@ -501,7 +503,7 @@ static response_t request(bool token, esp_http_client_method_t method, const cha
         r.phase = 2;
         size_t offset = 0, n = strlen(body);
         while (offset < n) {
-            if (!allowed(epoch) || now_us() - started > HTTP_DEADLINE_US) {
+            if (!allowed(epoch) || now_us() >= deadline) {
                 r.transport = ESP_ERR_TIMEOUT;
                 goto done;
             }
@@ -515,11 +517,27 @@ static response_t request(bool token, esp_http_client_method_t method, const cha
         }
     }
     r.phase = 3;
-    int64_t content = esp_http_client_fetch_headers(client);
-    r.status = esp_http_client_get_status_code(client);
+    int64_t content;
+    do {
+        if (!allowed(epoch) || now_us() >= deadline) {
+            r.transport = ESP_ERR_TIMEOUT;
+            goto done;
+        }
+        if (token) {
+            int remaining_ms = (int)((deadline - now_us()) / 1000);
+            if (remaining_ms < 1) { r.transport = ESP_ERR_TIMEOUT; goto done; }
+            esp_http_client_set_timeout_ms(client, remaining_ms < 6000 ? remaining_ms : 6000);
+        }
+        content = esp_http_client_fetch_headers(client);
+        r.status = esp_http_client_get_status_code(client);
+        if (content < 0) r.detail = content < -65535 ? -65535 : (int)content;
+        /* IDF explicitly reports a temporary read timeout as -HTTP_EAGAIN.
+         * Continue receiving the SAME token response within the deadline.
+         * Never resend an authorization code after an ambiguous POST result. */
+    } while (token && content == -ESP_ERR_HTTP_EAGAIN && allowed(epoch) && now_us() < deadline);
     if (content < 0) {
         r.detail = content < -65535 ? -65535 : (int)content;
-        r.transport = ESP_FAIL;
+        r.transport = content == -ESP_ERR_HTTP_EAGAIN ? ESP_ERR_TIMEOUT : ESP_FAIL;
         goto done;
     }
     if (content > RESPONSE_BYTES) {
@@ -529,7 +547,7 @@ static response_t request(bool token, esp_http_client_method_t method, const cha
     }
     r.phase = 4;
     while (true) {
-        if (!allowed(epoch) || now_us() - started > HTTP_DEADLINE_US) {
+        if (!allowed(epoch) || now_us() >= deadline) {
             r.transport = ESP_ERR_TIMEOUT;
             goto done;
         }
@@ -557,6 +575,7 @@ static response_t request(bool token, esp_http_client_method_t method, const cha
     }
     r.body[r.size] = 0;
     r.transport = ESP_OK;
+    r.detail = 0;
     r.phase = 5;
 done:
     if (r.transport != ESP_OK) {
@@ -700,8 +719,8 @@ static bool exchange(const char *code, const char *verifier, uint32_t auth_gener
                         service.devices_at_us = service.playback_at_us = 0;
                         clear_commands_locked();
                         service.epoch++;
-    memset(service.library, 0, sizeof(service.library));
-    memset(service.library_pending, 0, sizeof(service.library_pending));
+                        memset(service.library, 0, sizeof(service.library));
+                        memset(service.library_pending, 0, sizeof(service.library_pending));
                     }
                     service.refresh_requested = true;
                     success = true;
@@ -723,6 +742,11 @@ static bool exchange(const char *code, const char *verifier, uint32_t auth_gener
         pw_spotify_secret_json_delete(j);
         token_failure(invalid, PW_SPOTIFY_ERROR_AUTH, epoch);
     }
+    /* Fixed numeric metadata only. No credentials, form/response, URLs, names
+     * or OAuth state may be logged, even when token parsing fails. */
+    ESP_LOGI("pw_spotify", "token_exchange initial=%u http=%d transport=%d phase=%u detail=%d errno=%u elapsed=%u confirmed=%u",
+             initial ? 1u : 0u, r.status >= 100 && r.status <= 599 ? r.status : 0,
+             (int)r.transport, r.phase, r.detail, r.socket_errno, r.elapsed_ms, success ? 1u : 0u);
     response_free(&r);
 cleanup:
     pw_spotify_wipe(encoded, 3 * PW_SPOTIFY_TOKEN_BYTES);

@@ -42,6 +42,7 @@ jobs:
           sh tests/lan_native/run.sh
           python3 tests/lan_native/run_http.py
           python3 tests/http_response_native/run.py
+          python3 tests/http_client_native/run.py
           sh tests/storage_native/run.sh
           sh tests/weather_native/run.sh
           sh tests/setup_native/run.sh

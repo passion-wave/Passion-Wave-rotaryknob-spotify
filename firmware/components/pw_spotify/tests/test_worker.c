@@ -31,11 +31,12 @@ static unsigned http_count, response_count, commits, erased;
 static bool fail_commit;
 static char last_device_log[256], last_playback_log[256], last_validation_log[256];
 static unsigned validation_logs;
-static char last_transport_log[256], last_playback_device_log[256];
+static char last_transport_log[256], last_playback_device_log[256], last_token_log[256];
 void pw_test_logi(const char *tag, const char *format, ...) {
     CHECK(!strcmp(tag, "pw_spotify"));
     char *output;
-    if (!strncmp(format, "devices ", 8)) output = last_device_log;
+    if (!strncmp(format, "token_exchange ", 15)) output = last_token_log;
+    else if (!strncmp(format, "devices ", 8)) output = last_device_log;
     else if (!strncmp(format, "playback_validation ", 20)) {
         output = last_validation_log;
         validation_logs++;
@@ -63,6 +64,7 @@ typedef struct {
     int status;
     const char *body, *retry;
     bool timeout, header_timeout;
+    unsigned transient_headers, header_calls;
     int socket_error, header_error, read_error;
     int64_t header_elapsed_us;
     void (*hook)(void), (*cleanup_hook)(void);
@@ -195,9 +197,18 @@ int esp_http_client_write(esp_http_client_handle_t h, const char *p, int n) {
     strncat(calls[h->index].body, p, (size_t)n);
     return n;
 }
+esp_err_t esp_http_client_set_timeout_ms(esp_http_client_handle_t h, int ms) {
+    CHECK(ms > 0 && ms <= 6000); h->config.timeout_ms = ms; return ESP_OK;
+}
 int64_t esp_http_client_fetch_headers(esp_http_client_handle_t h) {
     fixture_t *r = &responses[h->index];
+    r->header_calls++;
     clock_us += r->header_elapsed_us;
+    if (r->transient_headers) {
+        r->transient_headers--; clock_us += h->config.timeout_ms * 1000LL;
+        if (r->hook) r->hook();
+        return -ESP_ERR_HTTP_EAGAIN;
+    }
     /* IDF sets response status to -1 before reading the first header. A
      * timeout here differs from failure to establish the connection. */
     if (r->header_timeout)
@@ -256,7 +267,7 @@ static void reset(void) {
     fail_commit = false;
     last_device_log[0] = last_playback_log[0] = last_validation_log[0] = 0;
     validation_logs = 0;
-    last_transport_log[0] = last_playback_device_log[0] = 0;
+    last_transport_log[0] = last_playback_device_log[0] = last_token_log[0] = 0;
     clock_us = 10000000;
     CHECK(pw_spotify_init() == ESP_OK);
     pw_spotify_set_network(true);
@@ -669,6 +680,30 @@ static void test_playback_device_and_transport_evidence(void) {
     poll_playback(service.epoch, &scratch);
     CHECK(!strcmp(last_transport_log, "playback_transport phase=3 detail=-65535 errno=0 elapsed=600000"));
 }
+static void test_token_response_wait(void) {
+    reset(); account();
+    fixture(200, token_ok); responses[0].transient_headers = 2;
+    CHECK(exchange("SECRET-CODE", "SECRET-VERIFIER", service.auth.generation, service.epoch));
+    CHECK(http_count == 1 && responses[0].header_calls == 3);
+    CHECK(strstr(calls[0].body, "grant_type=authorization_code"));
+    CHECK(strstr(last_token_log, "initial=1 http=200 transport=0 phase=5"));
+    CHECK(strstr(last_token_log, "elapsed=12000 confirmed=1"));
+    CHECK(!strstr(last_token_log, "SECRET") && !strstr(last_token_log, "new-access"));
+    reset(); account();
+    fixture(0, NULL); responses[0].transient_headers = 99;
+    CHECK(!exchange("SECRET-CODE", "SECRET-VERIFIER", service.auth.generation, service.epoch));
+    CHECK(http_count == 1 && responses[0].header_calls == 5);
+    CHECK(!strcmp(tokens.refresh, "old-refresh") && !service.snapshot.authorization_id[0]);
+    CHECK(strstr(last_token_log, "initial=1 http=0") && strstr(last_token_log, "confirmed=0"));
+    reset(); account();
+    fixture(400, "{\"error\":\"invalid_grant\"}");
+    CHECK(!exchange("SECRET-CODE", "SECRET-VERIFIER", service.auth.generation, service.epoch));
+    CHECK(http_count == 1 && responses[0].header_calls == 1);
+    reset(); account();
+    fixture(0, NULL); responses[0].transient_headers = 99; responses[0].hook = cancel_exchange;
+    CHECK(!exchange("SECRET-CODE", "SECRET-VERIFIER", service.auth.generation, service.epoch));
+    CHECK(http_count == 1); /* A cancelled attempt never repeats the POST or replaces credentials. */
+}
 static void test_library_pages(void) {
     reset(); account();
     pw_spotify_library_page_t page;
@@ -719,6 +754,7 @@ static void test_library_pages(void) {
     CHECK(pw_spotify_parse_library(j, false, 0, &page) && page.count == 0); cJSON_Delete(j);
 }
 int main(void) {
+    test_token_response_wait();
     test_library_pages();
     test_targets_and_uncertain_commands();
     test_refresh_rate_limit_and_invalidation();

@@ -967,3 +967,36 @@ nur Tests/Workflow/Dokumentation, nicht den installierten Firmwarekandidaten.
 Beim echten Bibliotheksabruf bestätigte der Nutzer den erwarteten Hinweis auf
 fehlende Spotify-Leserechte. Erneute Anmeldung mit den vier Scopes ist angeleitet;
 die echte Listenanzeige ist dadurch noch nicht abgenommen.
+
+### dev.16: begrenztes Weiterlesen beim Spotify-Tokenabruf
+
+Nach dev.15 nimmt der Helfer mehrere echte OAuth-Rückmeldungen korrekt an
+(`accepted`), aber der S3 bestätigt keine neue Verknüpfung. Dabei erscheinen
+HTTP-Empfangstimeouts und `http_status=0`; die alte Verknüpfung bleibt nutzbar.
+Ein späterer erfolgreicher Playbackabruf kann den allgemeinen Fehler überlagern,
+weshalb der Helfer dann nur die generische Nichtbestätigung anzeigen kann.
+
+Der Tokenpfad behandelt `-ESP_ERR_HTTP_EAGAIN` der gepinnten IDF-Funktion nun als
+vorübergehende Lesepause: höchstens 30 Sekunden innerhalb derselben Verbindung,
+mit begrenzter verbleibender Socketwartezeit. Kein erneuter POST mit demselben
+Autorisierungscode, keine Änderung an PKCE, Zertifikaten oder Bestätigungsbindung.
+Andere HTTP-Fehler werden nicht automatisch wiederholt. Feste numerische
+Token-Diagnosen unterscheiden HTTP-Code, Transportphase, Fehlernummer, Laufzeit
+und bestätigte Speicherung; keine Codes, Tokens, Antworten oder Kontodaten.
+
+623 Modell-/1791 Worker-Assertions und 51 Helpertests bestehen. Ein zusätzlicher
+Test mit dem echten IDF-Headerempfänger und HTTP-Parser bestätigt Weiterempfang
+nach Timeout sowohl vor als auch mitten in fragmentierten Antwortheadern.
+Native Workerfälle prüfen verzögerte Antwort, Deadline, abgelehnten Grant,
+Abbruch, unveränderte Altverknüpfung und genau einen POST. Alle drei Profile bauen.
+Der gezielte Kandidat ist nach erneut geprüfter Originalbackup-SHA und
+S3-/16-MiB-Identifikation ausschließlich als App an `0x10000` installiert:
+2.733.824 Bytes, SHA-256
+`2552d397c15ac106b6a535a9c5c4640709b2ecb3e487b4ad612d55e15e6159b1`.
+Separater vollständiger Flashvergleich und USB-HELLO mit dev.16 bestehen.
+Quellbaum vor Installation: `9116bde575c4b13b64b7734092080616270ba5db` auf
+`1bfc944`. Fünf LAN-Messrunden liefern alle 25 Antworten erfolgreich; JavaScript
+62–88 ms, alle 15 Assets nach Dekompression exakt gegen die Quellen geprüft.
+Die neue Anmeldung mit Nutzerzustimmung steht noch aus; eine Behebung des
+realen Tokenproblems wird damit noch nicht behauptet. Die GitHub-CI des
+vorherigen dev.15-Standes `1bfc944` ist inzwischen vollständig erfolgreich.

@@ -200,3 +200,10 @@ Ab dev.15 fordert eine neue Anmeldung zusätzlich Leserechte für private Playli
 und gespeicherte Podcasts an. Vorhandene Tokens bleiben für die Wiedergabesteuerung
 nutzbar; ein Bibliotheks-403 trennt das Konto nicht. Für die Dropdowns ggf. einmal
 erneut anmelden. Gerätefirmware und Helper müssen dabei beide aktualisiert sein.
+
+Seit dev.16 enthält die optionale Diagnose für Tokenabrufe ausschließlich feste
+numerische Angaben: initial/refresh, HTTP-Status, Transportphase/-fehler,
+Socketfehler, Laufzeit und bestätigte Speicherung. Weder Anmeldecode noch Token,
+Antwortinhalt oder OAuth-State werden erfasst. Der S3 wartet bei temporären
+Header-Lesepausen begrenzt auf derselben Verbindung weiter; er sendet einen
+Autorisierungscode dabei nicht automatisch ein zweites Mal.
