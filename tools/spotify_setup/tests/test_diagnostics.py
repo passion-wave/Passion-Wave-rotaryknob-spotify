@@ -13,6 +13,31 @@ def log(tag, text, level="E"):
 
 
 class DiagnosticsTests(unittest.TestCase):
+    def test_playback_device_and_transport_metadata(self):
+        for addressable in (0, 1):
+            for restricted in (0, 1):
+                self.assertEqual(parse_firmware_diagnostic(log("pw_spotify",
+                    f"playback_device addressable={addressable} restricted={restricted}", "I")),
+                    {"event": "spotify_playback_device", "addressable": addressable, "restricted": restricted})
+        base = "playback_transport phase=3 detail=-28679 errno=11 elapsed=6000"
+        self.assertEqual(parse_firmware_diagnostic(log("pw_spotify", base, "I")),
+            {"event": "spotify_playback_transport", "phase": 3, "detail": -28679,
+             "errno": 11, "elapsed_ms": 6000})
+        for phase in range(5):
+            self.assertIsNotNone(parse_firmware_diagnostic(log("pw_spotify",
+                f"playback_transport phase={phase} detail=-65535 errno=4095 elapsed=600000", "I")))
+        for invalid in (base + " token=SECRET", "SECRET " + base,
+                        base.replace("phase=3", "phase=5"), base.replace("phase=3", "phase=true"),
+                        base.replace("detail=-28679", "detail=-65536"),
+                        base.replace("detail=-28679", "detail=SECRET"),
+                        base.replace("errno=11", "errno=4096"),
+                        base.replace("errno=11", "errno=-1"),
+                        base.replace("elapsed=6000", "elapsed=600001"),
+                        "playback_device addressable=2 restricted=0",
+                        "playback_device addressable=0 restricted=false",
+                        "playback_device addressable=1 restricted=0 id=SECRET"):
+            self.assertIsNone(parse_firmware_diagnostic(log("pw_spotify", invalid, "I")))
+
     def test_playback_validation_has_only_bounded_numeric_reason(self):
         for reason in range(1, 32):
             with self.subTest(reason=reason):

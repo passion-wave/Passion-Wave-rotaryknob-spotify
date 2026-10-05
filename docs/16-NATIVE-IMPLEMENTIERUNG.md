@@ -1,6 +1,6 @@
 # Native Implementierung und Geräteabnahme
 
-Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.12`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
+Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.13`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
 
 ## Reale Implementierung
 
@@ -733,3 +733,45 @@ Inventur zeigte nur ein anderes USB-Seriell-Gerät (`1a86:55d3`), keinen S3 mit
 Ob der Nutzer umgesteckt hat oder die Verbindung unverändert blieb, wird nun
 separat geklärt. Der bereits erfolgreiche Flashvergleich und dev.12-HELLO-
 Nachweis bleiben davon getrennt gültig.
+
+
+### 5. Oktober: gültiges Playback und Diagnose dev.13
+
+Beim Wiederanschluss war zunächst der bekannte USB-UART-Anschluss des
+Begleitprozessors sichtbar. Nach der angefragten 180°-Drehung erschien wieder der
+S3 (`303a:1001`); HELLO bestätigte dev.12. Der Begleitprozessor wurde nicht
+angesprochen. Die temporäre Arbeitskopie wurde aus dem sauberen Repositorystand
+`fbab72d` wiederhergestellt; vorhandene Firmware und Einstellungen blieben dabei
+unverändert.
+
+Nach zunächst gültigen HTTP-204-Antworten verarbeitete dev.12 erstmals beobachtet
+HTTP 200 mit `valid: 1`, `known: 1` und anschließend `playing: 1`. Die aktive
+Ausgabe passte jedoch nicht zur veröffentlichten Liste (`listed: 0`); eine
+Auswahl war nicht bestätigt (`selected: 0`). Die Geräteliste enthielt inzwischen
+zwei gültige Einträge. Der Nutzer bestätigte danach „Roam läuft“. Das belegt
+hörbare App-Wiedergabe und verarbeitete Playbackdaten, noch keine Knob-Steuerung.
+Die physische Titelanzeige ist zusätzlich abgefragt. Wiederholte Status-0-/
+Transport-−1-Fehler bleiben ein zweiter offener Fehlerpfad.
+
+dev.13 ergänzt zwei feste, ausschließlich numerische Laborereignisse: eine
+Aussage, ob die aktive Ausgabe eine nichtleere ID hat und ob Spotify sie als
+steuerungsgesperrt meldet, sowie bei Playback-Transportfehlern die Phase
+(0 Vorbereitung, 1 Öffnen, 2 Senden, 3 Header, 4 Antwortkörper), den ursprünglichen
+negativen Rückgabecode, ein begrenztes Socket-errno und die Laufzeit in ms.
+Die Metadaten werden vor dem Schließen des HTTP-Clients gesichert; unbekannte
+errno-Werte werden als 0 ausgegeben, Detailcodes unter −65535 und Laufzeiten über
+600000 ms begrenzt. Es werden weder Namen/IDs noch Header, Antwortinhalte oder
+Anmeldedaten ausgegeben. Timeout, Wiederholungs- und Steuerverhalten bleiben
+unverändert.
+
+Prüfung: 623 Modell- und 1324 Worker-Assertions unter ASan/UBSan, 49
+Helper-Tests einschließlich 16 Diagnosefilter-Tests sowie 51 Framework-Tests
+bestanden. Standard-S3, Begleitprozessor und S3-Laborprofil wurden mit ESP-IDF
+5.4.3 gebaut; alle drei Binärversionen sind `0.1.0-dev.13`. Beim parallelen
+Erstkonfigurieren fehlte vorübergehend die LVGL-Komponentenprüfsumme; der
+anschließende sequenzielle Laborbuild bestand. Native USB-Konsole, PSRAM-TLS
+und deaktiviertes WLAN-AMPDU bleiben bestätigt.
+
+Labor-App SHA-256:
+`c8074299ca2d6ce4e7bf7e34f62d862a88109c98b50adec071bf658f17d39d3d`.
+Installation und neue Gerätebeobachtung sind noch ausstehend.

@@ -31,6 +31,7 @@ static unsigned http_count, response_count, commits, erased;
 static bool fail_commit;
 static char last_device_log[256], last_playback_log[256], last_validation_log[256];
 static unsigned validation_logs;
+static char last_transport_log[256], last_playback_device_log[256];
 void pw_test_logi(const char *tag, const char *format, ...) {
     CHECK(!strcmp(tag, "pw_spotify"));
     char *output;
@@ -39,6 +40,10 @@ void pw_test_logi(const char *tag, const char *format, ...) {
         output = last_validation_log;
         validation_logs++;
     }
+    else if (!strncmp(format, "playback_transport ", sizeof("playback_transport ") - 1))
+        output = last_transport_log;
+    else if (!strncmp(format, "playback_device ", sizeof("playback_device ") - 1))
+        output = last_playback_device_log;
     else {
         CHECK(!strncmp(format, "playback ", 9));
         output = last_playback_log;
@@ -58,6 +63,8 @@ typedef struct {
     int status;
     const char *body, *retry;
     bool timeout, header_timeout;
+    int socket_error, header_error, read_error;
+    int64_t header_elapsed_us;
     void (*hook)(void), (*cleanup_hook)(void);
 } fixture_t;
 static fixture_t responses[8];
@@ -190,10 +197,11 @@ int esp_http_client_write(esp_http_client_handle_t h, const char *p, int n) {
 }
 int64_t esp_http_client_fetch_headers(esp_http_client_handle_t h) {
     fixture_t *r = &responses[h->index];
+    clock_us += r->header_elapsed_us;
     /* IDF sets response status to -1 before reading the first header. A
      * timeout here differs from failure to establish the connection. */
     if (r->header_timeout)
-        return -1;
+        return r->header_error ? r->header_error : -1;
     if (r->hook)
         r->hook();
     if (r->retry) {
@@ -208,11 +216,15 @@ int64_t esp_http_client_fetch_headers(esp_http_client_handle_t h) {
 int esp_http_client_get_status_code(esp_http_client_handle_t h) {
     return responses[h->index].status;
 }
+int esp_http_client_get_errno(esp_http_client_handle_t h) {
+    return responses[h->index].socket_error;
+}
 bool esp_http_client_is_complete_data_received(esp_http_client_handle_t h) {
     const char *b = responses[h->index].body;
     return h->offset == (b ? strlen(b) : 0);
 }
 int esp_http_client_read(esp_http_client_handle_t h, char *p, int n) {
+    if (responses[h->index].read_error) return responses[h->index].read_error;
     const char *b = responses[h->index].body;
     if (!b)
         return 0;
@@ -244,6 +256,7 @@ static void reset(void) {
     fail_commit = false;
     last_device_log[0] = last_playback_log[0] = last_validation_log[0] = 0;
     validation_logs = 0;
+    last_transport_log[0] = last_playback_device_log[0] = 0;
     clock_us = 10000000;
     CHECK(pw_spotify_init() == ESP_OK);
     pw_spotify_set_network(true);
@@ -608,6 +621,54 @@ static void test_playback_fetch_diagnostics(void) {
         "playback http=200 transport=0 valid=1 known=1 playing=1 listed=0 selected=0"));
     CHECK(!strstr(last_playback_log, "SECRET") && !strstr(last_playback_log, "speaker-1"));
 }
+static void test_playback_device_and_transport_evidence(void) {
+    pw_spotify_snapshot_t scratch = {0};
+    reset(); account();
+    fixture(200, "{\"device\":{\"id\":null,\"name\":\"SECRET-NAME\","
+                 "\"type\":\"speaker\",\"is_active\":true,\"is_restricted\":true},"
+                 "\"is_playing\":true,\"item\":{\"name\":\"SECRET-TITLE\"}}");
+    poll_playback(service.epoch, &scratch);
+    CHECK(service.snapshot.playback_known && service.snapshot.playing);
+    CHECK(!service.snapshot.active_device_id[0]);
+    CHECK(!strcmp(last_playback_device_log, "playback_device addressable=0 restricted=1"));
+    CHECK(!service.snapshot.can_pause && !service.snapshot.can_next);
+    CHECK(!strstr(last_playback_device_log, "SECRET") && !last_transport_log[0]);
+
+    reset(); account();
+    fixture(200, "{\"device\":{\"id\":\"speaker-1\",\"name\":\"SECRET\","
+                 "\"type\":\"speaker\",\"is_active\":true,\"is_restricted\":false},\"is_playing\":true}");
+    poll_playback(service.epoch, &scratch);
+    CHECK(!strcmp(last_playback_device_log, "playback_device addressable=1 restricted=0"));
+    CHECK(!last_transport_log[0]);
+
+    reset(); account();
+    fixture(0, NULL); responses[0].timeout = true; responses[0].socket_error = 113;
+    poll_playback(service.epoch, &scratch);
+    CHECK(!strcmp(last_transport_log, "playback_transport phase=1 detail=0 errno=113 elapsed=0"));
+    CHECK(!last_playback_device_log[0]);
+
+    reset(); account();
+    fixture(-1, NULL); responses[0].header_timeout = true;
+    responses[0].header_error = -0x7007; responses[0].header_elapsed_us = 6000000;
+    responses[0].socket_error = 11;
+    poll_playback(service.epoch, &scratch);
+    CHECK(!strcmp(last_transport_log, "playback_transport phase=3 detail=-28679 errno=11 elapsed=6000"));
+    CHECK(service.snapshot.http_status == 0 && service.snapshot.error == PW_SPOTIFY_ERROR_NETWORK);
+    CHECK(!last_playback_device_log[0] && validation_logs == 0);
+
+    reset(); account();
+    fixture(200, "SECRET-BODY"); responses[0].read_error = -1; responses[0].socket_error = 104;
+    poll_playback(service.epoch, &scratch);
+    CHECK(!strcmp(last_transport_log, "playback_transport phase=4 detail=-1 errno=104 elapsed=0"));
+    CHECK(!strstr(last_transport_log, "SECRET") && validation_logs == 0);
+
+    reset(); account();
+    fixture(-1, NULL); responses[0].header_timeout = true;
+    responses[0].header_error = -70000; responses[0].header_elapsed_us = 700000000;
+    responses[0].socket_error = -1;
+    poll_playback(service.epoch, &scratch);
+    CHECK(!strcmp(last_transport_log, "playback_transport phase=3 detail=-65535 errno=0 elapsed=600000"));
+}
 int main(void) {
     test_targets_and_uncertain_commands();
     test_refresh_rate_limit_and_invalidation();
@@ -615,6 +676,7 @@ int main(void) {
     test_auth_persistence_cancellation_and_failed_relink();
     test_device_fetch_diagnostics();
     test_playback_fetch_diagnostics();
+    test_playback_device_and_transport_evidence();
     printf("Spotify worker: %u assertions passed; actual provider, simulated IDF HTTP/NVS/tasks\n",
            checks);
     return 0;

@@ -407,6 +407,10 @@ typedef struct {
     esp_err_t transport;
     bool overflow;
     uint32_t epoch;
+    /* Bounded, payload-free transport evidence. Phases: preparation=0,
+     * open=1, request body=2, response headers=3, response body=4, complete=5. */
+    unsigned phase, socket_errno, elapsed_ms;
+    int detail;
 } response_t;
 static bool allowed(uint32_t epoch) {
     lock();
@@ -479,10 +483,12 @@ static response_t request(bool token, esp_http_client_method_t method, const cha
         if (r.transport != ESP_OK)
             goto done;
     }
+    r.phase = 1;
     r.transport = esp_http_client_open(client, body ? (int)strlen(body) : 0);
     if (r.transport != ESP_OK)
         goto done;
     if (body) {
+        r.phase = 2;
         size_t offset = 0, n = strlen(body);
         while (offset < n) {
             if (!allowed(epoch) || now_us() - started > HTTP_DEADLINE_US) {
@@ -491,15 +497,18 @@ static response_t request(bool token, esp_http_client_method_t method, const cha
             }
             int wrote = esp_http_client_write(client, body + offset, n - offset);
             if (wrote <= 0) {
+                r.detail = wrote < -65535 ? -65535 : wrote;
                 r.transport = ESP_FAIL;
                 goto done;
             }
             offset += wrote;
         }
     }
+    r.phase = 3;
     int64_t content = esp_http_client_fetch_headers(client);
     r.status = esp_http_client_get_status_code(client);
     if (content < 0) {
+        r.detail = content < -65535 ? -65535 : (int)content;
         r.transport = ESP_FAIL;
         goto done;
     }
@@ -508,6 +517,7 @@ static response_t request(bool token, esp_http_client_method_t method, const cha
         r.transport = ESP_ERR_INVALID_SIZE;
         goto done;
     }
+    r.phase = 4;
     while (true) {
         if (!allowed(epoch) || now_us() - started > HTTP_DEADLINE_US) {
             r.transport = ESP_ERR_TIMEOUT;
@@ -522,6 +532,7 @@ static response_t request(bool token, esp_http_client_method_t method, const cha
         }
         int n = esp_http_client_read(client, r.body + r.size, RESPONSE_BYTES - r.size);
         if (n < 0) {
+            r.detail = n < -65535 ? -65535 : n;
             r.transport = ESP_FAIL;
             goto done;
         }
@@ -536,7 +547,14 @@ static response_t request(bool token, esp_http_client_method_t method, const cha
     }
     r.body[r.size] = 0;
     r.transport = ESP_OK;
+    r.phase = 5;
 done:
+    if (r.transport != ESP_OK) {
+        int socket_error = esp_http_client_get_errno(client);
+        r.socket_errno = socket_error > 0 && socket_error <= 4095 ? (unsigned)socket_error : 0;
+    }
+    int64_t elapsed = (now_us() - started) / 1000;
+    r.elapsed_ms = elapsed < 0 ? 0 : elapsed > 600000 ? 600000 : (unsigned)elapsed;
     esp_http_client_close(client);
     esp_http_client_cleanup(client);
     if (bearer) {
@@ -795,6 +813,12 @@ static void poll_playback(uint32_t epoch, pw_spotify_snapshot_t *scratch) {
         cJSON *j = pw_spotify_json(r.body, r.size);
         pw_spotify_playback_parse_error_t reason = PW_SPOTIFY_PLAYBACK_PARSE_JSON_PARSE;
         valid = j && pw_spotify_parse_playback_ex(j, scratch, &dis, &reason);
+        if (valid && scratch->playback_known) {
+            const cJSON *device = cJSON_GetObjectItemCaseSensitive(j, "device");
+            const bool restricted = cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(device, "is_restricted"));
+            ESP_LOGI("pw_spotify", "playback_device addressable=%u restricted=%u",
+                     (unsigned)(scratch->active_device_id[0] != 0), (unsigned)restricted);
+        }
         cJSON_Delete(j);
         if (!valid) {
             ESP_LOGI("pw_spotify", "playback_validation reason=%u", (unsigned)reason);
@@ -833,6 +857,9 @@ static void poll_playback(uint32_t epoch, pw_spotify_snapshot_t *scratch) {
              r.status >= 100 && r.status <= 599 ? (unsigned)r.status : 0,
              (int)r.transport, (unsigned)valid, (unsigned)known, (unsigned)playing,
              (unsigned)listed, (unsigned)selected);
+    if (r.transport != ESP_OK)
+        ESP_LOGI("pw_spotify", "playback_transport phase=%u detail=%d errno=%u elapsed=%u",
+                 r.phase, r.detail, r.socket_errno, r.elapsed_ms);
     response_free(&r);
 }
 static void finish_command(uint32_t id, pw_spotify_command_state_t state, uint32_t epoch) {
