@@ -842,3 +842,13 @@ Physische Rückmeldung nach dev.14: Nutzer bestätigt „Ja, Songtitel sichtbar�
 Damit ist die Titelanzeige für diesen laufenden Roam-Test separat vom API-
 Messwert belegt. Als nächste Abnahme wurde Play/Pause mit dem in Spotify aktiv
 gewählten iPhone und derselben Knob-Auswahl angefragt; Ergebnis noch offen.
+
+
+Abnahme des Kontrolltests am 5. Oktober: Auf die Aufforderung, Spotify auf
+„Dieses iPhone“ leise abzuspielen, dieselbe Ausgabe am Knob zu wählen und dort
+Pause sowie anschließend Play zu testen, bestätigt der Nutzer „funktiooniert“.
+Damit sind hörbare Pause und Wiederaufnahme durch den Knob für diese iPhone-
+Sitzung unter dev.14 physisch bestätigt. Dies ist eine Nutzerbeobachtung, keine
+zusätzliche protokollierte HTTP-Abnahme. Lautstärke, Next/Previous, Playliststart,
+Dauerbetrieb und weitere Ausgaben sind dadurch nicht abgenommen. Die gemessene
+Roam-Restriktion und sporadischen Headerabbrüche bleiben separat offen.
