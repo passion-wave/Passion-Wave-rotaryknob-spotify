@@ -836,3 +836,9 @@ Antworten danach belegen Erholung ohne erneute Anmeldung; keine Behebung der
 Abbrüche. Die sichtbare Titelanzeige unter dev.14 ist separat abgefragt. Hörbare
 Knob-Steuerung bleibt unbestätigt. Sonos-LAN-Prüfung siehe Dokument 12; kein
 stiller Anbieterwechsel und keine Produktfreigabe aus diesem Laborbefund.
+
+
+Physische Rückmeldung nach dev.14: Nutzer bestätigt „Ja, Songtitel sichtbar“.
+Damit ist die Titelanzeige für diesen laufenden Roam-Test separat vom API-
+Messwert belegt. Als nächste Abnahme wurde Play/Pause mit dem in Spotify aktiv
+gewählten iPhone und derselben Knob-Auswahl angefragt; Ergebnis noch offen.
