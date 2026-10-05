@@ -1,6 +1,6 @@
 # Sonos: Architekturergänzung und Prüfplan
 
-Stand: 30. September 2026. Auftrag: Sonos-Lautsprecher als weitere Ausgabemöglichkeit prüfen. Dies ist eine Architekturprüfung anhand öffentlicher Primärquellen; noch kein Sonos-Adapter, kein Live-Test und keine Vertriebsfreigabe. Kein Home Assistant und kein Music Assistant werden ergänzt.
+Stand: 5. Oktober 2026. Auftrag: Sonos-Lautsprecher als weitere Ausgabemöglichkeit prüfen. Architekturprüfung anhand öffentlicher Primärquellen mit erstem Spotify-Laborbefund am Roam; noch kein eigener Sonos-Adapter und keine Vertriebsfreigabe. Kein Home Assistant und kein Music Assistant werden ergänzt.
 
 ## Entscheidung
 
@@ -126,3 +126,23 @@ Testmatrix zunächst: vorhandener **Sonos Roam und Sonos Move**, genaue Generati
 Keine pauschale Bluetooth-/Wake-on-LAN-Zusage. Keine Geräte wurden für dieses Dokument angesprochen.
 
 **Mögliche Abschlussentscheidungen nach Geräte- und Zugangsprüfung (alle noch offen):** Sonos als Connect-Ziel bestätigt / LAN-Adapter genehmigt und technisch belegt / Cloud-Alternative separat beschlossen / fehlende Fähigkeiten erklärt gesperrt. Der Sonos-Zweig verändert weder die S3-/ESP32-Aufteilung noch den Zwei-Image-OTA-Prozess.
+
+
+## Laborbefund 5. Oktober 2026
+
+Beim vom Nutzer bestätigten Roam-Betrieb liefert Spotify in vier gültigen
+Playbackantworten laufende Wiedergabe, aber keine adressierbare aktive Geräte-ID
+und `is_restricted=true`. Der aktive Player lässt sich keinem der drei gelisteten
+Geräte zuordnen. Damit ist Route A für diese Sitzung als steuerbare Ausgabe
+nicht nachgewiesen; die Einschränkung erklärt die fehlende Steuerbarkeit.
+Nach [Spotify-Referenz](https://developer.spotify.com/documentation/web-api/reference/get-information-about-the-users-current-playback)
+akzeptiert ein so markiertes Gerät keine Web-API-Befehle. Namenloser Listeneintrag
+und Roam werden nicht gleichgesetzt; keine Verallgemeinerung auf alle Sonos-
+Modelle, Firmwarestände oder Konten. Belege und zusätzlich beobachtete HTTP-
+Abbrüche: [Native Geräteprüfung](16-NATIVE-IMPLEMENTIERUNG.md).
+
+Nächste Prüfaufgaben: Titelanzeige separat bestätigen, generischen Spotify-
+Steuerpfad an einer tatsächlich adressierbaren Ausgabe abnehmen und für Sonos
+Gate S0-LAN klären. Eine rein lokale interne Evaluation von Discovery/Status ist
+von Produktimplementierung und Vertriebsrechten zu trennen. Keine Umgehung der
+Spotify-Sperre durch globale Befehle und kein stiller Wechsel zu Sonos-Steuerung.

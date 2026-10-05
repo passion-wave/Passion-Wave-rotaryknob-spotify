@@ -810,5 +810,29 @@ byteweise fragmentiert und mit unverändertem Rückgabewert sowie Parserzustand;
 Alle drei Profile tragen `0.1.0-dev.14`. Symbolprüfung bestätigt die zusätzliche
 Beobachtung nur im Labor-ELF, nicht im Standard-S3. App-SHA-256:
 `5d8e2ee4839ac15388821d2cbc6e39b61a6cb29a655f6e107d172f8b161131ea`.
-Installation steht aus. Beide vollständigen CI-Läufe für dev.13-Quellcommit
+Installation ist unten belegt. Beide vollständigen CI-Läufe für dev.13-Quellcommit
 `6ec69d2` bestanden.
+
+
+dev.14-Gerätebeleg am 5. Oktober: Identifikation und erneut geprüfter
+Originalbackup-Hash vor App-only-Flash, 2.724.800 Bytes an `0x10000`, Schreibprüfung
+und separater vollständiger Flashvergleich erfolgreich. USB-HELLO bestätigt
+`0.1.0-dev.14`. Einstellungen und Begleitprozessor unverändert.
+
+Während des vom Nutzer bestätigten Roam-Tests lieferten vier gültige HTTP-200-
+Playbackantworten `playing=1`, jeweils `addressable=0, restricted=1`; die aktive
+Ausgabe hat also keine nichtleere Spotify-ID und ist ausdrücklich für Web-API-
+Steuerung gesperrt. Die Liste hatte drei gültige Einträge, keiner entsprach der
+aktiven Ausgabe. Diese Messung korreliert mit dem laufenden Roam-Test, beweist
+aber nicht die Identität eines namenlosen Listeneintrags oder Eigenschaften
+aller Roam-/Move-Geräte. Laut [Spotify-Referenz](https://developer.spotify.com/documentation/web-api/reference/get-information-about-the-users-current-playback)
+werden bei `is_restricted=true` keine Web-API-Befehle angenommen. Es wurden keine
+Umgehungs-/globalen Wiedergabebefehle gesendet.
+
+Daneben traten zwei Headerabrufabbrüche auf (436/504 ms, Detail −1, errno 0),
+ohne beobachtetes HTTP-Parserfehlerereignis. Das bestätigt weiterhin die frühe
+Abbruchphase, aber keinen konkreten Netzwerk-/Serververursacher. Erfolgreiche
+Antworten danach belegen Erholung ohne erneute Anmeldung; keine Behebung der
+Abbrüche. Die sichtbare Titelanzeige unter dev.14 ist separat abgefragt. Hörbare
+Knob-Steuerung bleibt unbestätigt. Sonos-LAN-Prüfung siehe Dokument 12; kein
+stiller Anbieterwechsel und keine Produktfreigabe aus diesem Laborbefund.
