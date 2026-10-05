@@ -774,4 +774,14 @@ und deaktiviertes WLAN-AMPDU bleiben bestätigt.
 
 Labor-App SHA-256:
 `c8074299ca2d6ce4e7bf7e34f62d862a88109c98b50adec071bf658f17d39d3d`.
-Installation und neue Gerätebeobachtung sind noch ausstehend.
+Installation am 5. Oktober erfolgt: Originalbackup erneut per SHA-256 geprüft,
+S3 mit 16 MiB Flash und 8 MiB PSRAM identifiziert, ausschließlich die 2.724.816
+Bytes große App an `0x10000` geschrieben. Schreibprüfung und separater vollständiger
+Flashvergleich bestanden. Zehn USB-HELLO-Abfragen bestätigten anschließend
+`0.1.0-dev.13`, aktiviertes Laborprofil und geschlossenes Setupfenster. NVS,
+Schlüssel, Partitionstabelle und Begleitprozessor wurden nicht verändert.
+Die erste kurze Beobachtung lieferte nur generische Verbindungsfehler, noch keine
+neuen Playbackereignisse; diese Fehler lassen sich keinem Request sicher
+zuordnen. Erneutes Aktualisieren der Ausgabeliste und sichtbarer Musikstatus sind
+beim Nutzer abgefragt. Adressierbarkeit, konkrete Transportursache und hörbare
+Knob-Steuerung bleiben offen. Private Recovery-Belege liegen außerhalb von Git.
