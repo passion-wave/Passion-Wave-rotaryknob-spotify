@@ -687,7 +687,7 @@ static void request_picture(int wanted) {
 }
 static void refresh_visual(void) {
     if (active_visual == VISUAL_NONE) return;
-    if (app_view.setup_open) { close_visual(); return; }
+    if (app_view.setup_open || app_view.lan_open) { close_visual(); return; }
     const time_t now = time(NULL);
     int wanted = PW_ASSET_NONE;
     char text[180];
@@ -760,7 +760,7 @@ static void visual_schedule(int64_t now) {
     struct tm local = {0};
     const bool valid_time = epoch > 1700000000 && localtime_r(&epoch, &local) != NULL;
     const bool morning = app_view.avatar_enabled && valid_time && local.tm_hour >= 6 && local.tm_hour < 10;
-    if (app_view.setup_open || picker_kind != PICKER_NONE) { close_visual(); return; }
+    if (app_view.setup_open || app_view.lan_open || picker_kind != PICKER_NONE) { close_visual(); return; }
     if (active_visual == VISUAL_AVATAR && visual_automatic && !morning) close_visual();
     if (active_visual == VISUAL_PHOTO && visual_automatic && strcmp(app_view.screensaver_mode, "weather_photo")) close_visual();
     if (morning && now - last_activity >= 30000000 &&

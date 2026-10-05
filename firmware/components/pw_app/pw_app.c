@@ -7,6 +7,7 @@
 #include "esp_app_desc.h"
 #include "esp_crt_bundle.h"
 #include "esp_event.h"
+#include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
@@ -888,6 +889,21 @@ static esp_err_t status_handler(httpd_req_t *r) {
 #ifdef CONFIG_PW_LAN_HTTP_LAB
     ok = ok && cJSON_AddBoolToObject(c, "lab_lan_http", true) &&
          cJSON_AddNumberToObject(j, "lab_seconds_left", v.lan_seconds_left);
+    /* Public lab-only numerical diagnostics: never SSID, MAC, credentials,
+     * media, location, session cookie or the physical pairing code. */
+    wifi_ap_record_t access_point = {0};
+    int signal_dbm = esp_wifi_sta_get_ap_info(&access_point) == ESP_OK ? access_point.rssi : 0;
+    wifi_ps_type_t power_save = WIFI_PS_NONE;
+    int power_mode = esp_wifi_get_ps(&power_save) == ESP_OK ? (int)power_save : -1;
+    cJSON *runtime = cJSON_AddObjectToObject(j, "runtime");
+    const uint32_t caps = MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT;
+    ok = ok && runtime &&
+         cJSON_AddNumberToObject(runtime, "uptime_ms", esp_timer_get_time() / 1000) &&
+         cJSON_AddNumberToObject(runtime, "heap_internal_free", heap_caps_get_free_size(caps)) &&
+         cJSON_AddNumberToObject(runtime, "heap_internal_largest", heap_caps_get_largest_free_block(caps)) &&
+         cJSON_AddNumberToObject(runtime, "heap_internal_min", heap_caps_get_minimum_free_size(caps)) &&
+         cJSON_AddNumberToObject(runtime, "wifi_rssi", signal_dbm) &&
+         cJSON_AddNumberToObject(runtime, "wifi_ps_mode", power_mode);
 #endif
     if (admin && ok) {
         take();

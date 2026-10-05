@@ -1,0 +1,6 @@
+# The 64 KiB LVGL software allocator is task-only data, never a DMA buffer.
+# Keep its bounded pool in PSRAM so internal RAM remains available to Wi-Fi.
+[mapping:pw_lvgl_pool_psram]
+archive: liblvgl__lvgl.a
+entries:
+    lv_mem_core_builtin (extram_bss)

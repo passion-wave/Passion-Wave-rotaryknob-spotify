@@ -4,7 +4,7 @@
   const API = "/api/v1";
   const state = { status: null, session: null, busy: false, catalog: { favorites: [], stations: [] }, catalogDirty: false, catalogRevision: null, formRevision: {}, initialized: false, online: false, polling: false, wifiPending: false, wifiTarget: "", conflict: false, places: null, placesLoading: null, selectedPlace: null, update: null, updatePolling: false, updateUploading: false, spotify: null, spotifyDevices: [], spotifyPolling: false, spotifyDeviceSignature: null };
   const library = { playlist: { items: [], next: 0, more: false, loaded: false }, show: { items: [], next: 0, more: false, loaded: false }, busy: false, epoch: 0, session: null };
-  let sessionRefreshedAt = 0;
+  let sessionRefreshedAt = 0, statusRefresh = null;
   // Serialize background reads. User writes use a separate connection and never wait behind a stalled poll.
   let requestQueue = Promise.resolve();
   const kinds = { spotify_playlist: "Playlist", spotify_show: "Podcast", spotify_episode: "Episode" };
@@ -203,8 +203,19 @@
     fillForms(status);
     state.initialized = true;
   }
-  async function refreshStatus({ session = false, silent = false } = {}) {
-    if (state.polling) return;
+  function refreshStatus(options = {}) {
+    if (statusRefresh) {
+      // A physical pairing must refresh its new cookie/CSRF after an older
+      // status read finishes; silently skipping it leaves the UI locked.
+      return options.session ? statusRefresh.then(() => refreshStatus(options)) : statusRefresh;
+    }
+    const running = loadStatus(options);
+    statusRefresh = running;
+    const clear = () => { if (statusRefresh === running) statusRefresh = null; };
+    running.then(clear, clear);
+    return running;
+  }
+  async function loadStatus({ session = false, silent = false } = {}) {
     state.polling = true;
     try {
       if (session || !state.session || Date.now() - sessionRefreshedAt > 120000) await refreshSession();
@@ -233,7 +244,9 @@
       await request("/session/pair", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) });
       $("lan-code").value = "";
       await refreshStatus({ session: true });
-      if (canWrite()) message("Website freigegeben. Du kannst jetzt deine Auswahl bearbeiten.");
+      if (!canWrite()) throw Object.assign(new Error(), { publicMessage: "Die Freigabe konnte im Browser nicht bestätigt werden. Bitte die Website neu laden und am Knob erneut freigeben." });
+      text("lan-pair-status", "Website freigegeben.");
+      message("Website freigegeben. Du kannst jetzt deine Auswahl bearbeiten.");
     } catch (error) { text("lan-pair-status", error.publicMessage || "Freigabe nicht möglich. Öffne „Web freigeben“ am Knob erneut und verwende den neuen Code."); }
     finally { button.disabled = false; }
   });

@@ -12,7 +12,8 @@ def run(engine, width, playwright, screenshots):
     spotify = dict(enabled=True, linked=True, state='ready', error='none', session=23,
                    selection_generation=1, selected={}, playback={}, actions={})
     jobs, reads, writes, errors = {}, [], [], []
-    mode = {'forbidden': False, 'hold': True}
+    mode = {'forbidden': False, 'hold': True, 'hold_status': False}
+    held_status = []
     def route(r):
         req=r.request; u=urlsplit(req.url); path=u.path
         if u.hostname!='192.0.2.1': raise AssertionError('Unexpected external request')
@@ -27,7 +28,10 @@ def run(engine, width, playwright, screenshots):
             assert req.headers.get('origin')=='http://192.0.2.1'
             state.update(copy.deepcopy(BASE));state['secure_write']=False;state['write_allowed']=True;state['unprotected_lab']=True;state['capabilities'].update(spotify=True,lab_lan_http=True)
             result={'paired':True}
-        elif path=='/api/v1/status': result=state
+        elif path=='/api/v1/status':
+            if mode['hold_status']:
+                mode['hold_status']=False;held_status.append((r,json.dumps(state)));return
+            result=state
         elif path=='/api/v1/spotify/snapshot': result=spotify
         elif path=='/api/v1/spotify/devices': result=dict(session=23,devices=[])
         elif path=='/api/v1/spotify/library' and req.method=='POST':
@@ -92,8 +96,17 @@ def run(engine, width, playwright, screenshots):
     assert page.locator('#library-choice').is_disabled()
     state['capabilities']['lab_lan_http']=True
     page.reload();page.locator('#lan-pairing').wait_for(state='visible')
+    # A status response started before pairing must not swallow the refresh.
+    mode['hold_status']=True
+    page.locator('#retry-connection').dispatch_event('click')
+    for _ in range(100):
+        if held_status:break
+        page.wait_for_timeout(10)
+    assert held_status
     page.locator('#lan-code').fill('123456');page.locator('#lan-pair-form button').click()
-    page.wait_for_function('!document.querySelector("#favorite-link").closest("fieldset").disabled')
+    page.wait_for_function('document.querySelector("#lan-code").value===""')
+    pending,body=held_status.pop();pending.fulfill(body=body,content_type='application/json')
+    page.wait_for_function('!document.querySelector("#favorite-link").closest("fieldset").disabled',timeout=3000)
     assert page.locator('#lan-active').is_visible()
     assert page.locator('#lan-code').input_value()==''
     state['write_allowed']=False;state['unprotected_lab']=False

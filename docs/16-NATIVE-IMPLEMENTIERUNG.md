@@ -1022,3 +1022,58 @@ Connect-Empfänger und hörbare Knob-Steuerung dieser Anlage sind damit noch nic
 nachgewiesen. Die Firmware erhält keine hart codierte Umbenennung oder Geräte-ID-
 Zuordnung. Die echte Playlist-/Podcast-Bibliotheksanzeige wird nach der neuen
 Anmeldung als eigener nächster Schritt geprüft.
+
+
+### dev.17-Diagnose und dev.18-Speicherfix: Webfreigabe/Ladezeiten
+
+Der Nutzer meldet nach „Web freigeben“ erneut endloses Laden in iPhone/Safari.
+Die früheren schnellen dev.15/dev.16-Kurzserien waren keine Zuverlässigkeits-
+abnahme. Auf dev.16 bei offenem LAN-Fenster laufen alle fünf JS-Abrufe einer
+25-Anfragen-Serie nach etwa 12 s in ein Timeout; Status und Sitzung antworten
+meist in 28–63 ms. Nach Ablauf des Fensters bleiben Ausreißer bis 10,625 s.
+Das QR-Fenster allein ist damit nicht als Ursache bewiesen.
+
+Ein unabhängiger Browserfehler ist deterministisch reproduziert: Ein laufender
+Statusabruf verschluckt das nach erfolgreichem Pair-POST angeforderte Session-
+Refresh. Der alte Read-only-Zustand bleibt erhalten. Der neue Regressionstest
+schlägt gegen den alten Code fehl und besteht mit der serialisierten expliziten
+Aktualisierung in Chromium/WebKit bei 360, 390 und 1280 px. Die UI bestätigt
+Freigabe erst bei tatsächlich schreibfähiger Sitzung; automatische Visuals
+bleiben während des LAN-Freigabefensters geschlossen.
+
+Der dev.17-Diagnoseflash ist nach erneuter Originalbackupprüfung und
+S3-/16-MiB-Identifikation separat vollständig verglichen und über HTTP als
+dev.17 bestätigt: 2.734.608 Bytes, SHA-256
+`47db212a69d40d874e8dd02dd0d08329d902cfbc4beb52c5aea52038dd22ae50`,
+Quellbaum `0a1b0c30dbac09e9ba260d1f192842caf8cad326` auf `a434004`.
+Die neuen numerischen Laborwerte zeigen nach 16 s nur 11.555 Bytes freien
+internen Heap; nach 36 s 4.663 Bytes, größter Block 1.600 Bytes. Das Minimum
+sinkt auf 1.067 Bytes. RSSI liegt bei etwa −62/−63 dBm, Stromsparmodus ist 0
+(`WIFI_PS_NONE`). Bereits der erste JS-Abruf läuft in ein Timeout; in den
+zuerst ausgewerteten 33 Antworten scheitern 20. Der USB-HELLO bleibt ohne
+Antwort. dev.17 ist ausdrücklich kein erfolgreich abgenommener Performancefix.
+
+Das gelinkte Programm enthält einen 65.536-Byte-LVGL-Pool in `.dram0.bss`.
+dev.18 aktiviert die von IDF vorgesehene externe BSS-Unterstützung und legt
+nur das LVGL-Allocatorobjekt über `pw_ui/lvgl_psram.lf` in `.ext_ram.bss`.
+ESP-IDF ordnet damit zusätzlich seine dafür vorgesehenen Netzwerk-BSS-Daten
+extern zu. Die bestehenden Display-DMA- und Stackplatzierungen bleiben
+unverändert. Keine Vergrößerung der Puffer, keine erneute Änderung des
+TCP-Sendetimings. Die neue ELF-Prüfung lehnt den vorherigen dev.17-Standardbuild
+ab und bestätigt 65.536 Bytes im PSRAM des neuen Laborbuilds; sie läuft künftig
+auch in CI für beide S3-Profile.
+
+Der dev.18-Laborkandidat ist privat archiviert: 2.734.784 Bytes, SHA-256
+`d2b19fd3cf23fb6ca24e3e00d336e01aa471369cec386934c7877e5748778748`,
+Quellbaum `b57b52ca0a7182e1ea83921f5c697718f2c04e18` auf `a434004`.
+Der Vergleichsflash steht noch aus: Der USB-Port antwortet bei zwei
+Identifikationsversuchen nicht; der Nutzer wurde um Wiedereinstecken in
+unveränderter Orientierung gebeten. Kein Schreibversuch mit dev.18 ausgeführt.
+Ladezeit, Freigabe und Bedienbarkeit am echten iPhone bleiben offen.
+
+Lokale Prüfungen: alle drei Profile kompilieren als dev.18, beide S3-ELFs
+bestehen die neue Speicherprüfung, Versionsprüfung aller drei Images besteht.
+51 Frameworktests, LAN-Gate/HTTP-Autorisierung und 25 echte HTTP-Writerfälle
+mit 20 exakten gzip-Roundtrips bestehen. Browser-Freigabetest: sechs Kombinationen
+aus Chromium/WebKit und drei Bildschirmbreiten bestanden. Simulierte HTTP-/
+Browserfälle beweisen keine reale WLAN- oder iPhone-Performance.

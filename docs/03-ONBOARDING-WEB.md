@@ -108,3 +108,25 @@ zur Löschung der bestehenden Verknüpfung. Auswahl hinzufügen und anschließen
 „Auswahl speichern“ ändert nur den lokalen Knob-Katalog, nicht die Spotify-
 Bibliothek. Gespeicherte Podcasts sind damit verwaltbar; ihr Wiedergabepfad ist
 durch diese Änderung noch nicht abgenommen.
+
+
+## Wiederkehrende Ladeprobleme und Freigaberennen (dev.18)
+
+Die Paarung muss nach einem erfolgreichen Code-POST die neue Sitzung abrufen,
+auch wenn noch eine ältere Statusabfrage läuft. Sie wartet nun deren Abschluss
+ab und führt den expliziten Sitzungsabruf anschließend aus. Ein absichtlich
+zurückgehaltener alter Read-only-Status reproduziert den Fehler; Chromium und
+WebKit prüfen, dass die Eingabefelder danach ohne Neuladen freigegeben werden.
+Der QR-/Freigabebildschirm unterdrückt auch im LAN-Modus die automatischen
+Wetter-/Avatarbilder.
+
+Der 64-KiB-Pool von LVGL liegt über ein eigenes Linkerfragment in PSRAM.
+Der Pool bleibt begrenzt; Display-DMA-Puffer und Taskstacks bleiben intern.
+`tools/check_s3_memory.py` prüft im fertigen ELF beider S3-Profile die externe
+Speicherzuordnung. Im HTTP-Laborprofil enthält der öffentliche Status außerdem
+nur numerische Laufzeitwerte: Uptime, freier/größter/minimaler interner Heap,
+WLAN-Signalstärke und Stromsparmodus. Keine Identitäten, Zugangsdaten oder
+Freigabecodes. Diese Werte dienen der Gerätequalifikation, nicht der
+Kundenbedienung. Gemessene schnelle Einzelabrufe direkt nach Neustart reichen
+nicht mehr als Webabnahme; Freigabefenster, parallele Browser und längerer
+Betrieb müssen einbezogen werden. Gerätestand: [Prüfbericht](16-NATIVE-IMPLEMENTIERUNG.md).
