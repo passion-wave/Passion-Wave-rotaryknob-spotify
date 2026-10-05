@@ -1,6 +1,6 @@
 # Native Implementierung und Geräteabnahme
 
-Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.13`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
+Stand 02.10.2026, Entwicklungsstand `0.1.0-dev.14`. Dieses Dokument ergänzt den Gesamtplan; es erklärt **keine vollständige Feature-, Pilot- oder Produktabnahme**.
 
 ## Reale Implementierung
 
@@ -785,3 +785,30 @@ neuen Playbackereignisse; diese Fehler lassen sich keinem Request sicher
 zuordnen. Erneutes Aktualisieren der Ausgabeliste und sichtbarer Musikstatus sind
 beim Nutzer abgefragt. Adressierbarkeit, konkrete Transportursache und hörbare
 Knob-Steuerung bleiben offen. Private Recovery-Belege liegen außerhalb von Git.
+
+
+### dev.13 Livebefund und dev.14 Parserdiagnose
+
+Der Nutzer bestätigt weiterhin „Deine Musik“. Nach dem Neustart wurden mehrfach
+drei Ausgaben erfolgreich geparst. Playback scheiterte dagegen reproduzierbar in
+Phase 3 (HTTP-Header), ursprünglicher Rückgabecode −1, Socket-errno 0 und
+Laufzeiten von 455 bis 916 ms. Das ist noch keine Aussage über eine Spotify-
+Steuerungssperre und kein JSON-Fehler. Der gepinnte IDF-Headerabruf meldet sowohl
+Streamabbrüche als auch Folgen eines Parserfehlers auf diesem Weg unspezifisch.
+
+dev.14 ergänzt daher ausschließlich im Laborbuild eine lesende Beobachtung des
+HTTP-Parsers per Linker-Wrapping. Der Originalparser wird unverändert einmal
+aufgerufen; Rückgabewert, Eingabe und Parserzustand werden nicht verändert. Nur
+der erstmalige Übergang einer HTTP-Antwort in einen Fehlerzustand erzeugt einen
+begrenzten numerischen Fehlercode und gegebenenfalls HTTP-Status. Keine Header-
+oder Antwortinhalte werden gespeichert. Das Ereignis ist transportübergreifend
+und muss zeitlich korreliert werden.
+
+Prüfung: sieben Fälle mit dem echten IDF-HTTP-Parser unter ASan/UBSan,
+byteweise fragmentiert und mit unverändertem Rückgabewert sowie Parserzustand;
+623 Modell- und 1324 Worker-Assertions, 50 Helper- und 51 Frameworktests bestanden.
+Alle drei Profile tragen `0.1.0-dev.14`. Symbolprüfung bestätigt die zusätzliche
+Beobachtung nur im Labor-ELF, nicht im Standard-S3. App-SHA-256:
+`5d8e2ee4839ac15388821d2cbc6e39b61a6cb29a655f6e107d172f8b161131ea`.
+Installation steht aus. Beide vollständigen CI-Läufe für dev.13-Quellcommit
+`6ec69d2` bestanden.

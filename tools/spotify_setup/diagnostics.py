@@ -22,6 +22,8 @@ def _pattern(tag, message):
 # Each capture is numeric, with a fixed output key, radix, sign and range.
 # DNS hostnames/pointers and socket descriptors are deliberately not captured.
 _RULES = (
+    (_pattern(b"pw_http_diag", rb"parser_error code=([0-9]{1,3}) status=(0|[1-5][0-9]{2})"),
+     "http_parser_error", (("code", 10, 1, 0, 127), ("http_status", 10, 1, 0, 599))),
     (_pattern(b"pw_spotify", rb"playback_device addressable=([01]) restricted=([01])"),
      "spotify_playback_device", (("addressable", 10, 1, 0, 1), ("restricted", 10, 1, 0, 1))),
     (_pattern(b"pw_spotify", rb"playback_transport phase=([0-4]) detail=(-?[0-9]{1,6}) "

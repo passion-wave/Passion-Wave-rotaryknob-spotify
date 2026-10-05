@@ -36,3 +36,12 @@ UBSAN_OPTIONS=halt_on_error=1 "$build_dir/test_model"
   "$build_dir/cJSON.o" "$build_dir/sha256.o" "$build_dir/base64.o" "$build_dir/platform_util.o" \
   -lm -o "$build_dir/test_worker"
 UBSAN_OPTIONS=halt_on_error=1 "$build_dir/test_worker"
+parser_dir="$IDF_PATH/components/http_parser"
+"$cc" -std=c11 -fsanitize=address,undefined -fno-omit-frame-pointer \
+  -Dhttp_parser_execute=__real_http_parser_execute -I"$parser_dir" \
+  -c "$parser_dir/http_parser.c" -o "$build_dir/http_parser.o"
+"$cc" -std=c11 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer \
+  -I"$parser_dir" -I"$component_dir/tests/stubs" \
+  "$component_dir/pw_http_diagnostic.c" "$component_dir/tests/test_http_diagnostic.c" \
+  "$build_dir/http_parser.o" -o "$build_dir/test_http_diagnostic"
+UBSAN_OPTIONS=halt_on_error=1 "$build_dir/test_http_diagnostic"

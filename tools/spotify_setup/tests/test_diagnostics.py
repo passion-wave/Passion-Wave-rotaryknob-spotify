@@ -13,6 +13,16 @@ def log(tag, text, level="E"):
 
 
 class DiagnosticsTests(unittest.TestCase):
+    def test_http_parser_error_metadata(self):
+        for code in (0, 1, 127):
+            self.assertEqual(parse_firmware_diagnostic(log("pw_http_diag",
+                f"parser_error code={code} status=200", "I")),
+                {"event": "http_parser_error", "code": code, "http_status": 200})
+        for text in ("parser_error code=128 status=200", "parser_error code=-1 status=200",
+                     "parser_error code=1 status=600", "parser_error code=1 status=99",
+                     "parser_error code=1 status=200 secret", "parser_error code=secret status=200"):
+            self.assertIsNone(parse_firmware_diagnostic(log("pw_http_diag", text, "I")))
+
     def test_playback_device_and_transport_metadata(self):
         for addressable in (0, 1):
             for restricted in (0, 1):
